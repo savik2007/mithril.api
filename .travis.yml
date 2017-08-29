@@ -16,10 +16,10 @@ notifications:
   slack: 
     rooms:
       - secure: "bt5f6r5kl4XmmIeRN2JwB2N17QWz1Uj+KAOfW3UT7+r4+U7ggWFix+HuuZNJBjVzsvvHrPn/4L7uCLOSuSrBqt2mhPxJ3QGO/xVVCLI2luUawPFlm2AVRfRVvCUb9nx+YWpMSDAR1Qkzjl20mx3BxHeW54fnDw13lCV4EAzvsYVkA94HU6bDk9BWXolVrUggx26OdQ6TdzE3Y5ce841//q1VuzaFmlf9K9FWKFf7OlWPuToWNZj5PfiWNLiwMOYnTrt0shpNMT8HkdPKDHLFS1h8RHuimoOb3CLGyBWehgEK6tlAP7O9RZ5ECeezHbmsIAeZgZVQqhU/t2mSzGS9rRidl2hTeVcXW6EzLWZqi0VhUljjq2CFe3ZmWH3/Ql65hmvpJxPlsz3VhcELV6JGZGe9vpuqmK8KZWVqwj5H1MOwO6Kr29vnli6KwXGcDUGAvbMyWrjySWpmWs7AYrjCG7v5PVfy7vYPneLjuP/tgIivgsZFXRwANaozjVo03Dp17Yz/UpZ6DymwYtn7ZpjfHqLAFxw2ZN3azQXCD6N9jvehjIOInY+V+gYEqoI/M8H1qCu+Bd+nfSqR7doX7Pt+fQf/+gFy3dBWQTAOu4GwEkZEBlEhXAmLiWK5r2G5rxtm2XCgs3W/RnE4vYyCW8XHDPfKebtS92+pLrWahsBxhv4="
-    on_success: always  
+    on_success: always
 env:
-  global
-    - Chart=mithril:
+  global:
+    - Chart=mithril
     - MIX_ENV=test
     - DOCKER_HUB_ACCOUNT=edenlabllc
     - MAIN_BRANCHES="master develop staging" # Branches on which you want version to be incremented
@@ -56,7 +56,7 @@ script:
   - sudo ./bin/start.sh || travis_terminate 1
   # Run acceptance tests on Docker container
   - "CONTAINER_HTTP_HOST=localhost CONTAINER_HTTP_PORT=4000 mix test test/acceptance"
-  # Submit Docker container to Docker Hub and create GitHub Release by pushing tag with changelog
+    # Submit Docker container to Docker Hub and create GitHub Release by pushing tag with changelog
   - ./bin/ci/push.sh || travis_terminate 1
   # CD to Dev
   - sudo ./bin/deploy.sh || travis_terminate 1
