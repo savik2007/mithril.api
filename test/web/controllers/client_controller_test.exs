@@ -186,9 +186,10 @@ defmodule Mithril.Web.ClientControllerTest do
   test "refresh client secret", %{conn: conn} do
     %{id: id, secret: old_secret} = fixture(:client)
     conn = patch conn, client_refresh_secret_path(conn, :refresh_secret, id)
-    assert response(conn, 200)
+    resp = json_response(conn, 200)
 
     %{secret: new_secret} = Repo.one(Client)
+    assert %{"secret" => ^new_secret} = resp["data"]
     assert old_secret != new_secret
   end
 end

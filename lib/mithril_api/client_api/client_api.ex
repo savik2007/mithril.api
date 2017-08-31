@@ -74,8 +74,7 @@ defmodule Mithril.ClientAPI do
 
   def refresh_secret(%Client{} = client) do
     client
-    |> change(%{secret: nil})
-    |> put_secret()
+    |> change(%{secret: SecureRandom.urlsafe_base64})
     |> Repo.update
   end
 
