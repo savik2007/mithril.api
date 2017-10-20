@@ -1,6 +1,7 @@
 defmodule Mithril.Authorization.GrantType.Password do
   @moduledoc false
   alias Mithril.Authorization.GrantType.Error, as: GrantTypeError
+  alias Mithril.TokenAPI.Token
 
   def authorize(%{"email" => email, "password" => password, "client_id" => client_id, "scope" => scope}) do
     client = Mithril.ClientAPI.get_client_with_type(client_id)
@@ -37,6 +38,7 @@ defmodule Mithril.Authorization.GrantType.Password do
     |> match_with_user_password(password)
     |> validate_token_scope(client.client_type.scope, scope)
     |> create_access_token(client, scope)
+    |> deactivate_old_tokens()
   end
 
   defp create_access_token({:error, err, code}, _, _), do: {:error, err, code}
@@ -51,6 +53,12 @@ defmodule Mithril.Authorization.GrantType.Password do
       }
     })
   end
+
+  defp deactivate_old_tokens({:ok, %Token{} = token}) do
+    Mithril.TokenAPI.deactivate_old_tokens(token)
+    {:ok, token}
+  end
+  defp deactivate_old_tokens({:error, _, _} = error), do: error
 
   defp validate_token_scope({:error, err, code}, _, _), do: {:error, err, code}
   defp validate_token_scope({:ok, user}, client_scope, required_scope) do

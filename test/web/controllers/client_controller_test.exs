@@ -4,6 +4,7 @@ defmodule Mithril.Web.ClientControllerTest do
   alias Ecto.UUID
   alias Mithril.ClientAPI
   alias Mithril.ClientAPI.Client
+  alias Mithril.Repo
 
   @update_attrs %{
     name: "some updated name",
@@ -180,5 +181,15 @@ defmodule Mithril.Web.ClientControllerTest do
     assert_error_sent 404, fn ->
       get conn, client_path(conn, :show, client)
     end
+  end
+
+  test "refresh client secret", %{conn: conn} do
+    %{id: id, secret: old_secret} = fixture(:client)
+    conn = patch conn, client_refresh_secret_path(conn, :refresh_secret, id)
+    resp = json_response(conn, 200)
+
+    %{secret: new_secret} = Repo.one(Client)
+    assert %{"secret" => ^new_secret} = resp["data"]
+    assert old_secret != new_secret
   end
 end

@@ -45,4 +45,11 @@ defmodule Mithril.Web.ClientController do
       send_resp(conn, :no_content, "")
     end
   end
+
+  def refresh_secret(conn, %{"client_id" => id}) do
+    client = ClientAPI.get_client!(id)
+    with {:ok, %Client{} = client} <- ClientAPI.refresh_secret(client) do
+      render(conn, "show.json", client: client)
+    end
+  end
 end

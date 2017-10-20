@@ -1,6 +1,8 @@
 defmodule Mithril.OAuth.TokenControllerTest do
   use Mithril.Web.ConnCase
 
+  alias Mithril.TokenAPI.Token
+
   setup %{conn: conn} do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
   end
@@ -91,5 +93,36 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
     result = json_response(conn, 400)["error"]
     assert result["invalid_client"] == "Request must include grant_type."
+  end
+
+  test "expire old password tokens", %{conn: conn} do
+    allowed_scope = "app:authorize"
+    client_type = Mithril.Fixtures.create_client_type(%{scope: allowed_scope})
+    client = Mithril.Fixtures.create_client(%{
+      settings: %{"allowed_grant_types" => ["password"]},
+      client_type_id: client_type.id
+    })
+    user = Mithril.Fixtures.create_user(%{password: "secret_password"})
+
+    request_payload = %{
+      "token": %{
+        "grant_type": "password",
+        "email": user.email,
+        "password": "secret_password",
+        "client_id": client.id,
+        "scope": "app:authorize"
+      }
+    }
+
+    conn1 = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
+    %{"data" => %{"id" => token1_id, "expires_at" => expires_at}} = json_response(conn1, 201)
+    conn2 = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
+    assert json_response(conn2, 201)
+
+    now = DateTime.to_unix(DateTime.utc_now)
+    assert expires_at > now
+
+    %{expires_at: expires_at} = Repo.get!(Token, token1_id)
+    assert expires_at <= now
   end
 end

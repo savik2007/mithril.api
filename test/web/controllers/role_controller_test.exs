@@ -21,12 +21,12 @@ defmodule Mithril.Web.RoleControllerTest do
   end
 
   describe "list roles" do
-    test "search by name by like works", %{conn: conn} do
+    test "search by name works", %{conn: conn} do
       fixture(:role, %{name: "admin"})
       fixture(:role, %{name: "administrator"})
       fixture(:role, %{name: "user"})
-      conn = get conn, role_path(conn, :index), %{name: "min"}
-      assert 2 == length(json_response(conn, 200)["data"])
+      conn = get conn, role_path(conn, :index), %{name: "admin"}
+      assert 1 == length(json_response(conn, 200)["data"])
     end
 
     test "lists all entries on index", %{conn: conn} do

@@ -33,7 +33,10 @@ defmodule Mithril.TokenAPITest do
 
   test "list_tokens/1 returns all tokens" do
     token = fixture(:token)
-    paging = %Ecto.Paging{cursors: %Ecto.Paging.Cursors{starting_after: token.id}, has_more: false}
+    paging = %Ecto.Paging{
+      cursors: %Ecto.Paging.Cursors{starting_after: token.id, ending_before: token.id},
+      has_more: false
+    }
     assert TokenAPI.list_tokens(%{}) == {[token], paging}
   end
 

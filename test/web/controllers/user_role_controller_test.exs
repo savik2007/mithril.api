@@ -27,30 +27,6 @@ defmodule Mithril.Web.UserRoleControllerTest do
     assert 3 == length(json_response(conn, 200)["data"])
   end
 
-  test "does not list all entries on index when limit is set", %{user_id: user_id, conn: conn} do
-    fixture(:user_role, user_id)
-    fixture(:user_role, user_id)
-    fixture(:user_role, user_id)
-    conn = get conn, user_role_path(conn, :index, %User{id: user_id}), %{limit: 2}
-    assert 2 == length(json_response(conn, 200)["data"])
-  end
-
-  test "does not list all entries on index when starting_after is set", %{user_id: user_id, conn: conn} do
-    user_role = fixture(:user_role, user_id)
-    fixture(:user_role, user_id)
-    fixture(:user_role, user_id)
-    conn = get conn, user_role_path(conn, :index, %User{id: user_id}), %{starting_after: user_role.id}
-    assert 2 == length(json_response(conn, 200)["data"])
-  end
-
-  test "does not list all entries on index when ending_before is set", %{user_id: user_id, conn: conn} do
-    fixture(:user_role, user_id)
-    fixture(:user_role, user_id)
-    user_role = fixture(:user_role, user_id)
-    conn = get conn, user_role_path(conn, :index, %User{id: user_id}), %{ending_before: user_role.id}
-    assert 2 == length(json_response(conn, 200)["data"])
-  end
-
   test "creates user_role and renders user_role when data is valid", %{user_id: user_id, conn: conn} do
     create_attrs = user_role_attrs()
     conn = post conn, user_role_path(conn, :create, %User{id: user_id}), user_role: create_attrs
@@ -65,6 +41,27 @@ defmodule Mithril.Web.UserRoleControllerTest do
     }
   end
 
+  test "create user_role twice with same user_id, client_id", %{user_id: user_id, conn: conn} do
+    create_attrs = user_role_attrs()
+    %{client_id: client_id, role_id: role_id, user_id: attr_user_id} = create_attrs
+    conn1 = post conn, user_role_path(conn, :create, %User{id: user_id}), user_role: create_attrs
+    assert %{
+      "id" => _,
+      "client_id" => ^client_id,
+      "role_id" => ^role_id,
+      "user_id" => ^attr_user_id,
+    } = json_response(conn1, 201)["data"]
+
+    conn2 = post conn, user_role_path(conn, :create, %User{id: user_id}), user_role: create_attrs
+    assert %{
+      "error" => %{
+        "invalid" => [
+          %{"rules" => [%{"description" => "has already been taken"}]}
+        ]
+      }
+    } = json_response(conn2, 422)
+  end
+
   test "does not create user_role and renders errors when data is invalid", %{user_id: user_id, conn: conn} do
     invalid_attrs = %{client_id: nil, role_id: nil}
     conn = post conn, user_role_path(conn, :create, %User{id: user_id}), user_role: invalid_attrs
@@ -74,7 +71,7 @@ defmodule Mithril.Web.UserRoleControllerTest do
   test "deletes chosen user_role", %{conn: conn} do
     create_attrs = user_role_attrs()
     {:ok, user_role} = UserRoleAPI.create_user_role(create_attrs)
-    conn = delete conn, user_role_path(conn, :delete, user_role.user_id, user_role.id)
+    conn = delete conn, user_role_path(conn, :delete, user_role.id)
     assert response(conn, 204)
     assert_error_sent 404, fn ->
       get conn, user_role_path(conn, :show, user_role.user_id, user_role.id)
@@ -95,6 +92,16 @@ defmodule Mithril.Web.UserRoleControllerTest do
 
     conn = get conn, user_role_path(conn, :index, %User{id: user.id})
     assert 1 == length(json_response(conn, 200)["data"])
+  end
+
+  test "delete user_role by role_id", %{user_id: user_id, conn: conn} do
+    user_role = fixture(:user_role, user_id)
+    conn = delete conn, "/admin/users/roles/#{user_role.id}"
+    assert response(conn, 204)
+
+    assert_raise Ecto.NoResultsError, fn ->
+      get conn, user_role_path(conn, :show, user_id, user_role.id)
+    end
   end
 
   test "deletes user_roles by user_id and client_id", %{user_id: user_id, conn: conn} do

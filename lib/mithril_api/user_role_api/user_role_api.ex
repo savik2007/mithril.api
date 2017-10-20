@@ -12,9 +12,18 @@ defmodule Mithril.UserRoleAPI do
   alias Mithril.UserRoleAPI.UserRoleSearch
 
   def list_user_roles(params \\ %{}) do
-    %UserRoleSearch{}
-    |> user_role_changeset(params)
-    |> search(params, UserRole, 50)
+    search_user_roles(user_role_changeset(%UserRoleSearch{}, params))
+  end
+
+  defp search_user_roles(%Ecto.Changeset{valid?: false} = changeset), do: {:error, changeset}
+  defp search_user_roles(%Ecto.Changeset{valid?: true} = changeset) do
+    changes = Map.to_list(changeset.changes)
+    UserRole
+    |> where([ur], ^changes)
+    |> join(:left, [ur], r in assoc(ur, :role))
+    |> join(:left, [ur, r], c in assoc(ur, :client))
+    |> preload([ur, r, c], [role: r, client: c])
+    |> Repo.all
   end
 
   def get_user_role!(id), do: Repo.get!(UserRole, id) # get_by
@@ -43,7 +52,8 @@ defmodule Mithril.UserRoleAPI do
     |> user_role_changeset(params)
     |> case do
          %Ecto.Changeset{valid?: true, changes: changes} ->
-           UserRole |> get_search_query(changes) |> Repo.delete_all()
+           changes = Map.to_list(changes)
+           UserRole |> where([ur], ^changes) |> Repo.delete_all()
 
          changeset
           -> changeset

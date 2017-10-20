@@ -15,13 +15,19 @@ defmodule Mithril.UserAPITest do
 
   test "list_users/1 returns all users without search params" do
     user = fixture(:user)
-    paging = %Ecto.Paging{cursors: %Ecto.Paging.Cursors{starting_after: user.id}, has_more: false}
+    paging = %Ecto.Paging{
+      cursors: %Ecto.Paging.Cursors{starting_after: user.id, ending_before: user.id},
+      has_more: false
+    }
     assert UserAPI.list_users(%{}) == {[user], paging}
   end
 
   test "list_users/1 returns all users with valid search params" do
     user = fixture(:user)
-    paging = %Ecto.Paging{cursors: %Ecto.Paging.Cursors{starting_after: user.id}, has_more: false}
+    paging = %Ecto.Paging{
+      cursors: %Ecto.Paging.Cursors{starting_after: user.id, ending_before: user.id},
+      has_more: false
+    }
     assert UserAPI.list_users(%{"email" => user.email}) == {[user], paging}
   end
 

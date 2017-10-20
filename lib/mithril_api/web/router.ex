@@ -27,7 +27,7 @@ defmodule Mithril.Web.Router do
     pipe_through :api
 
     resources "/users", UserController, except: [:new, :edit] do
-      resources "/roles", UserRoleController, except: [:new, :edit, :update], as: :role
+      resources "/roles", UserRoleController, except: [:new, :edit, :update, :delete], as: :role
       delete "/roles", UserRoleController, :delete_by_user, as: :role
       delete "/tokens", TokenController, :delete_by_user
       delete "/apps", AppController, :delete_by_user
@@ -35,8 +35,11 @@ defmodule Mithril.Web.Router do
       patch "/actions/change_password", UserController, :change_password
     end
 
+    delete "/users/roles/:id", UserRoleController, :delete
+
     resources "/clients", ClientController, except: [:new, :edit] do
       get "/details", ClientController, :details, as: :details
+      patch "/refresh_secret", ClientController, :refresh_secret, as: :refresh_secret
     end
 
     resources "/tokens", TokenController, except: [:new, :edit] do
