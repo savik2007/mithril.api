@@ -8,6 +8,12 @@ defmodule Mithril.ClientAPI do
   alias Mithril.ClientAPI.Client
   alias Mithril.ClientAPI.ClientSearch
 
+  @access_type_direct "DIRECT"
+  @access_type_broker "BROKER"
+
+  def access_type(:direct), do: @access_type_direct
+  def access_type(:broker), do: @access_type_broker
+
   def list_clients(params) do
     %ClientSearch{}
     |> client_changeset(params)
@@ -28,6 +34,15 @@ defmodule Mithril.ClientAPI do
   end
 
   def get_client_by(attrs), do: Repo.get_by(Client, attrs)
+
+  def get_client_broker_by_secret(secret) do
+    query =
+      from c in Client,
+      where: [secret: ^secret],
+      where: fragment("? \\?| ?", c.priv_settings, ["broker_scope"])
+
+    Repo.one(query)
+  end
 
   def edit_client(id, attrs \\ %{}) do
     case Repo.get(Client, id) do

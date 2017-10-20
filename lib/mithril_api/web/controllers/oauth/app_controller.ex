@@ -3,7 +3,8 @@ defmodule Mithril.OAuth.AppController do
 
   def authorize(conn, %{"app" => app_params}) do
     [user_id | _] = Plug.Conn.get_req_header(conn, "x-consumer-id")
-    params = Map.put(app_params, "user_id", user_id)
+    api_key = conn |> Plug.Conn.get_req_header("api-key") |> List.first()
+    params = Map.merge(app_params, %{"user_id" => user_id, "api_key" => api_key})
 
     case process(params) do
       {:ok, %{"token" => token}} ->
@@ -20,7 +21,7 @@ defmodule Mithril.OAuth.AppController do
 
   defp process(params) do
     case Mithril.Authorization.App.grant(params) do
-      {:error, errors, http_status_code} ->
+      {:error, http_status_code, errors} ->
         {:error, {http_status_code, errors}}
       {:error, changeset} ->
         {:error, {:unprocessable_entity, changeset}}
