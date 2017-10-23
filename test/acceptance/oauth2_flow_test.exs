@@ -8,7 +8,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
     client = Mithril.Fixtures.create_client(%{
       redirect_uri: "http://localhost",
       client_type_id: client_type.id,
-      priv_settings: %{"access_type": @direct}
+      priv_settings: %{"access_type" => @direct}
     })
     user   = Mithril.Fixtures.create_user(%{password: "super$ecre7"})
     user_role = Mithril.Fixtures.create_role(%{scope: "legal_entity:read legal_entity:write"})

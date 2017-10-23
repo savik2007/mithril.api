@@ -4,9 +4,12 @@ defmodule Mithril.ClientAPITest do
   alias Mithril.ClientAPI
   alias Mithril.ClientAPI.Client
 
+  @broker ClientAPI.access_type(:broker)
+  @direct ClientAPI.access_type(:direct)
+
   @update_attrs %{
     name: "some updated name",
-    priv_settings: %{},
+    priv_settings: %{"access_type" => @broker},
     redirect_uri: "https://localhost",
     secret: "some updated secret",
     settings: %{}
@@ -40,7 +43,7 @@ defmodule Mithril.ClientAPITest do
     attrs = Mithril.Fixtures.client_create_attrs()
     assert {:ok, %Client{} = client} = ClientAPI.create_client(attrs)
     assert client.name == "some name"
-    assert client.priv_settings == %{}
+    assert client.priv_settings == %{"access_type" => @direct}
     assert client.redirect_uri == "http://localhost"
     assert client.secret
     assert client.settings == %{}
@@ -61,7 +64,7 @@ defmodule Mithril.ClientAPITest do
     assert {:ok, client} = ClientAPI.update_client(client, @update_attrs)
     assert %Client{} = client
     assert client.name == "some updated name"
-    assert client.priv_settings == %{}
+    assert client.priv_settings == %{"access_type" => @broker}
     assert client.redirect_uri == "https://localhost"
     assert client.settings == %{}
   end
@@ -92,7 +95,7 @@ defmodule Mithril.ClientAPITest do
       name: "some updated name",
       user_id: user.id,
       client_type_id: client_type.id,
-      priv_settings: %{},
+      priv_settings: %{"access_type" => @broker},
       redirect_uri: "https://localhost",
       settings: %{}
     })

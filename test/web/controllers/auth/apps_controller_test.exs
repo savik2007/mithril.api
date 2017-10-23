@@ -11,7 +11,6 @@ defmodule Mithril.OAuth.AppControllerTest do
   test "successfully approves new client request & issues a code grant", %{conn: conn} do
     client_type = Mithril.Fixtures.create_client_type(%{scope: "legal_entity:read legal_entity:write"})
     client = Mithril.Fixtures.create_client(%{
-      priv_settings: %{"access_type": @direct},
       redirect_uri: "http://some_host.com:3000/",
       client_type_id: client_type.id
     })
@@ -60,7 +59,6 @@ defmodule Mithril.OAuth.AppControllerTest do
   test "successfully updates existing approval with more scopes", %{conn: conn} do
     client_type = Mithril.Fixtures.create_client_type(%{scope: "legal_entity:read legal_entity:write"})
     client = Mithril.Fixtures.create_client(%{
-      priv_settings: %{"access_type": @direct},
       redirect_uri: "http://some_host.com:3000/",
       client_type_id: client_type.id
     })
@@ -124,7 +122,7 @@ defmodule Mithril.OAuth.AppControllerTest do
   test "returns error when redirect uri is not whitelisted", %{conn: conn} do
     client = Mithril.Fixtures.create_client(%{
       redirect_uri: "http://some_host.com:3000/",
-      priv_settings: %{"access_type": @direct}
+      priv_settings: %{"access_type" => @direct}
     })
     user   = Mithril.Fixtures.create_user()
     user_role = Mithril.Fixtures.create_role(%{scope: "legal_entity:read legal_entity:write"})
@@ -154,7 +152,7 @@ defmodule Mithril.OAuth.AppControllerTest do
 
   test "validates list of available user scopes", %{conn: conn} do
     client_type = Mithril.Fixtures.create_client_type(%{scope: "b c d"})
-    client = Mithril.Fixtures.create_client(%{client_type_id: client_type.id, priv_settings: %{"access_type": @direct}})
+    client = Mithril.Fixtures.create_client(%{client_type_id: client_type.id})
     user = Mithril.Fixtures.create_user()
     user_role = Mithril.Fixtures.create_role(%{scope: "a b c"})
     Mithril.UserRoleAPI.create_user_role(%{user_id: user.id, role_id: user_role.id, client_id: client.id})
@@ -180,7 +178,7 @@ defmodule Mithril.OAuth.AppControllerTest do
 
   test "validates list of available client scopes", %{conn: conn} do
     client_type = Mithril.Fixtures.create_client_type(%{scope: "a c d"})
-    client = Mithril.Fixtures.create_client(%{priv_settings: %{"access_type": @direct}, client_type_id: client_type.id})
+    client = Mithril.Fixtures.create_client(%{client_type_id: client_type.id})
     user = Mithril.Fixtures.create_user()
     user_role = Mithril.Fixtures.create_role(%{scope: "b c d"})
     Mithril.UserRoleAPI.create_user_role(%{user_id: user.id, role_id: user_role.id, client_id: client.id})
@@ -209,13 +207,13 @@ defmodule Mithril.OAuth.AppControllerTest do
       client_type = Mithril.Fixtures.create_client_type(%{scope: "b c d"})
       client = Mithril.Fixtures.create_client(%{
         client_type_id: client_type.id,
-        priv_settings: %{access_type: @broker}
+        priv_settings: %{"access_type" => @broker}
       })
 
       broker_client_type = Mithril.Fixtures.create_client_type(%{scope: "a b c"})
       broker = Mithril.Fixtures.create_client(%{
         client_type_id: broker_client_type.id,
-        priv_settings: %{broker_scope: "b c"}
+        priv_settings: %{"access_type" => @direct, "broker_scope" => "b c"}
       })
 
       user = Mithril.Fixtures.create_user()
