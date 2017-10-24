@@ -264,7 +264,6 @@ defmodule Mithril.Web.TokenControllerTest do
           client_id: client.id
       })
 
-      conn = put_req_header(conn, "x-consumer-id", user.id)
       %{conn: conn, client: client, broker: broker, token: token.value, user: user}
     end
 
