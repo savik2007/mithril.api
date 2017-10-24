@@ -5,6 +5,9 @@ defmodule Mithril.Web.TokenControllerTest do
   alias Mithril.TokenAPI
   alias Mithril.TokenAPI.Token
 
+  @broker Mithril.ClientAPI.access_type(:broker)
+  @direct Mithril.ClientAPI.access_type(:direct)
+
   @create_attrs %{details: %{}, expires_at: 42, name: "some name", value: "some value"}
   @update_attrs %{details: %{}, expires_at: 43, name: "some updated name", value: "some updated value"}
   @invalid_attrs %{details: nil, expires_at: nil, name: nil, value: nil}
@@ -226,5 +229,76 @@ defmodule Mithril.Web.TokenControllerTest do
     error = json_response(conn, 401)["error"]
 
     assert error == %{"invalid_grant" => "Token expired or client approval was revoked."}
+  end
+
+  describe "verify token using token value via broker client" do
+    setup %{conn: conn} do
+
+      client_type = insert(:client_type, scope: "b c d")
+      client = insert(
+        :client,
+        client_type_id: client_type.id,
+        priv_settings: %{
+          "access_type" => @broker
+        }
+      )
+
+      broker_client_type = insert(:client_type, scope: "a b c")
+      broker = insert(
+        :client,
+        client_type_id: broker_client_type.id,
+        priv_settings: %{
+          "access_type" => @direct,
+          "broker_scope" => "b c"
+        }
+      )
+
+      user = insert(:user)
+      role = insert(:role, scope: "a b c")
+      insert(:user_role, user_id: user.id, role_id: role.id, client_id: client.id)
+
+      token = insert(:token,
+        user_id: user.id,
+        details: %{
+          scope: "b",
+          client_id: client.id
+      })
+
+      conn = put_req_header(conn, "x-consumer-id", user.id)
+      %{conn: conn, client: client, broker: broker, token: token.value, user: user}
+    end
+
+    test "API-KEY Header required", %{conn: conn, token: token} do
+      conn = get conn, token_verify_path(conn, :verify, token)
+      assert "API-KEY header required." == json_response(conn, 422)["error"]["api_key"]
+    end
+
+    test "invalid API-KEY Header", %{conn: conn, token: token} do
+      conn = put_req_header(conn, "api-key", "invalid_api_key")
+      conn = get conn, token_verify_path(conn, :verify, token)
+      assert "API-KEY header is invalid." == json_response(conn, 422)["error"]["api_key"]
+    end
+
+    test "not broker API-KEY Header)", %{conn: conn, client: client, token: token} do
+      conn = put_req_header(conn, "api-key", client.secret)
+      conn = get conn, token_verify_path(conn, :verify, token)
+      assert "API-KEY header is invalid." == json_response(conn, 422)["error"]["api_key"]
+    end
+
+    test "valid request with broker scope", %{conn: conn, client: client, broker: broker, user: user} do
+      token = insert(:token,
+        user_id: user.id,
+        value: "code",
+        details: %{
+          scope: "c",
+          client_id: client.id
+        })
+      conn = put_req_header(conn, "api-key", broker.secret)
+      conn = get conn, token_verify_path(conn, :verify, token.value)
+
+      result = json_response(conn, 200)["data"]
+
+      assert result["details"]["broker_scope"] == "b c"
+    end
   end
 end

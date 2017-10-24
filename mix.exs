@@ -64,6 +64,7 @@ defmodule Mithril.Mixfile do
      {:comeonin, ">= 0.0.0"},
      {:secure_random, ">= 0.0.0"},
      {:benchfella, ">= 0.3.4", only: [:dev, :test]},
+     {:ex_machina, ">= 1.0.0", only: [:dev, :test]},
      {:ex_doc, ">= 0.15.0", only: [:dev, :test]},
      {:excoveralls, ">= 0.5.0", only: [:dev, :test]},
      {:dogma, ">= 0.1.12", only: [:dev, :test]},
