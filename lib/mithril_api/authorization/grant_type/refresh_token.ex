@@ -3,7 +3,9 @@ defmodule Mithril.Authorization.GrantType.RefreshToken do
 
   alias Mithril.Authorization.GrantType.Error, as: GrantTypeError
 
-  def authorize(%{"client_id" => client_id, "client_secret" => client_secret, "refresh_token" => token}) do
+  def authorize(%{"client_id" => client_id, "client_secret" => client_secret, "refresh_token" => token})
+      when not (is_nil(client_id) or is_nil(client_secret) or is_nil(token))
+  do
     {client_id, client_secret, token}
     |> load_client
     |> load_token
