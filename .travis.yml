@@ -9,9 +9,9 @@ services:
 addons:
   postgresql: "9.5"
 elixir:
-  - 1.5.2
+  - 1.4.5
 otp_release:
-  - 20.0.4
+  - 19.3
 notifications:
   slack: 
     rooms:

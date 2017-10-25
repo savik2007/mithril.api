@@ -1,4 +1,7 @@
-FROM nebo15/alpine-elixir:latest
+# Alpine 3.6 last musl version 1.1.17, that doesn't works with elixir 1.5
+FROM nebo15/alpine-elixir:1.4.5
+
+RUN apk add --no-cache --update --virtual .build-deps musl=1.1.16-r14 make g++
 
 # Maintainers
 MAINTAINER Nebo#15 support@nebo15.com
@@ -8,19 +11,14 @@ ENV MIX_ENV=prod \
     APP_NAME=mithril_api \
     APP_PORT=4000
 
-RUN apk add --update make
-
 WORKDIR ${HOME}
 
-# Add project sources
+# Install deps and compile project
 COPY . .
 
-# Install and compile project dependencies
-COPY mix.* ./
-RUN mix do deps.get, deps.compile
+RUN mix do deps.get, compile, release --verbose
 
-# Compile project for Erlang VM
-RUN mix do compile, release --verbose
+RUN apk del --no-cache .build-deps
 
 # Move release to /opt/$APP_NAME
 RUN \
