@@ -4,15 +4,18 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCode do
   alias Mithril.Authorization.GrantType.Error, as: GrantTypeError
 
   def authorize(%{
-      "client_id" => client_id,
-      "client_secret" => client_secret,
-      "code" => code,
-      "redirect_uri" => redirect_uri}) do
+    "client_id" => client_id,
+    "client_secret" => client_secret,
+    "code" => code,
+    "redirect_uri" => redirect_uri
+  })
+  when not (is_nil(client_id) or is_nil(client_secret) or is_nil(code) or is_nil(redirect_uri))
+  do
     client = Mithril.ClientAPI.get_client_by(id: client_id, secret: client_secret)
     do_authorize(client, code, redirect_uri)
   end
   def authorize(_) do
-    message = "Request must include at least client_id, client_secret, code, scopes and redirect_uri parameters."
+    message = "Request must include at least client_id, client_secret, code and redirect_uri parameters."
     GrantTypeError.invalid_request(message)
   end
 
