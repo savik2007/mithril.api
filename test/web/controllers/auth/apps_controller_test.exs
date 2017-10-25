@@ -1,6 +1,9 @@
 defmodule Mithril.OAuth.AppControllerTest do
   use Mithril.Web.ConnCase
 
+  @broker Mithril.ClientAPI.access_type(:broker)
+  @direct Mithril.ClientAPI.access_type(:direct)
+
   setup %{conn: conn} do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
   end
@@ -117,7 +120,10 @@ defmodule Mithril.OAuth.AppControllerTest do
   end
 
   test "returns error when redirect uri is not whitelisted", %{conn: conn} do
-    client = Mithril.Fixtures.create_client(%{redirect_uri: "http://some_host.com:3000/"})
+    client = Mithril.Fixtures.create_client(%{
+      redirect_uri: "http://some_host.com:3000/",
+      priv_settings: %{"access_type" => @direct}
+    })
     user   = Mithril.Fixtures.create_user()
     user_role = Mithril.Fixtures.create_role(%{scope: "legal_entity:read legal_entity:write"})
     Mithril.UserRoleAPI.create_user_role(%{user_id: user.id, role_id: user_role.id, client_id: client.id})
@@ -194,5 +200,83 @@ defmodule Mithril.OAuth.AppControllerTest do
 
     message = "Scope is not allowed by client type."
     assert %{"invalid_client" => ^message} = result
+  end
+
+  describe "broker client" do
+    setup %{conn: conn} do
+      client_type = Mithril.Fixtures.create_client_type(%{scope: "b c d"})
+      client = Mithril.Fixtures.create_client(%{
+        client_type_id: client_type.id,
+        priv_settings: %{"access_type" => @broker}
+      })
+
+      broker_client_type = Mithril.Fixtures.create_client_type(%{scope: "a b c"})
+      broker = Mithril.Fixtures.create_client(%{
+        client_type_id: broker_client_type.id,
+        priv_settings: %{"access_type" => @direct, "broker_scope" => "b c"}
+      })
+
+      user = Mithril.Fixtures.create_user()
+      user_role = Mithril.Fixtures.create_role(%{scope: "a b c"})
+      Mithril.UserRoleAPI.create_user_role(%{user_id: user.id, role_id: user_role.id, client_id: client.id})
+
+      request = %{
+        app: %{
+          client_id: client.id,
+          redirect_uri: client.redirect_uri,
+          scope: "b",
+        }
+      }
+
+      %{conn: put_req_header(conn, "x-consumer-id", user.id), client: client, broker: broker, request: request}
+    end
+
+    test "API-KEY Header required", %{conn: conn, request: request} do
+      conn = post conn, oauth2_app_path(conn, :authorize), request
+      assert "API-KEY header required." == json_response(conn, 422)["error"]["api_key"]
+    end
+
+    test "invalid API-KEY Header", %{conn: conn, request: request} do
+      conn = put_req_header(conn, "api-key", "invalid_api_key")
+      conn = post conn, oauth2_app_path(conn, :authorize), request
+      assert "API-KEY header is invalid." == json_response(conn, 422)["error"]["api_key"]
+    end
+
+    test "not broker API-KEY Header)", %{conn: conn, client: client, request: request} do
+      conn = put_req_header(conn, "api-key", client.secret)
+      conn = post conn, oauth2_app_path(conn, :authorize), request
+      assert "API-KEY header is invalid." == json_response(conn, 422)["error"]["api_key"]
+    end
+
+    test "invalid broker scope", %{conn: conn, client: client, broker: broker} do
+      request = %{
+        app: %{
+          client_id: client.id,
+          redirect_uri: client.redirect_uri,
+          scope: "a b",
+        }
+      }
+      conn = put_req_header(conn, "api-key", broker.secret)
+      conn = post conn, oauth2_app_path(conn, :authorize), request
+
+      assert "Scope is not allowed by broker." == json_response(conn, 422)["error"]["scope"]
+    end
+
+    test "valid request", %{conn: conn, client: client, broker: broker} do
+      request = %{
+        app: %{
+          client_id: client.id,
+          redirect_uri: client.redirect_uri,
+          scope: "c",
+        }
+      }
+      conn = put_req_header(conn, "api-key", broker.secret)
+      conn = post conn, oauth2_app_path(conn, :authorize), request
+
+      result = json_response(conn, 201)["data"]
+
+      assert result["name"] == "authorization_code"
+      assert result["details"]["scope"] == "c"
+    end
   end
 end

@@ -27,7 +27,8 @@ defmodule Mithril.Web.TokenController do
   end
 
   def verify(conn, %{"token_id" => value}) do
-    case TokenAPI.verify(value) do
+    api_key = conn |> Plug.Conn.get_req_header("api-key") |> List.first()
+    case TokenAPI.verify_client_token(value, api_key) do
       {:ok, token} ->
         render(conn, "show.json", token: token)
       {:error, errors, http_status_code} ->

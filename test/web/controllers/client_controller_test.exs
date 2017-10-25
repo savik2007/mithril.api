@@ -6,9 +6,12 @@ defmodule Mithril.Web.ClientControllerTest do
   alias Mithril.ClientAPI.Client
   alias Mithril.Repo
 
+  @broker ClientAPI.access_type(:broker)
+  @direct ClientAPI.access_type(:direct)
+
   @update_attrs %{
     name: "some updated name",
-    priv_settings: %{},
+    priv_settings: %{"access_type" => @broker},
     redirect_uri: "https://localhost",
     secret: "some updated secret",
     settings: %{}
@@ -126,7 +129,7 @@ defmodule Mithril.Web.ClientControllerTest do
       "name" => ^name,
       "secret" => _secret,
       "settings" => %{},
-      "priv_settings" => %{},
+      "priv_settings" => %{"access_type" => @direct},
       "redirect_uri" => "http://localhost"
     } = json_response(conn, 200)["data"]
   end
@@ -161,7 +164,7 @@ defmodule Mithril.Web.ClientControllerTest do
     assert json_response(conn, 200)["data"] == %{
       "id" => id,
       "name" => "some updated name",
-      "priv_settings" => %{},
+      "priv_settings" => %{"access_type" => @broker},
       "redirect_uri" => "https://localhost",
       "secret" => client.secret,
       "settings" => %{},

@@ -15,6 +15,7 @@ redirect_uri  | varchar   | not null
 settings      | jsonb
 priv_settings | jsonb
 user_id       | uuid      | not null
+client_type_id| uuid      | not null
 inserted_at   | timestamp | not null
 updated_at    | timestamp | not null
 
@@ -54,7 +55,7 @@ updated_at  | timestamp | not null
 [client_types]
 id          | uuid      | not null
 name        | varchar   | not null
-scope      | varchar   | not null
+scope       | varchar   | not null
 inserted_at | timestamp | not null
 updated_at  | timestamp | not null
 
@@ -79,8 +80,9 @@ client_client_types
 
 users        1--* tokens
 users        1--* apps
+users        1--* clients
 users        1--+ user_roles
 roles        1--* user_roles
 client_types 1--* client_client_types
-clients      1--* client_client_types
+clients      1--* client_types
 clients      1--* apps

@@ -6,8 +6,12 @@ defmodule Mithril.TokenAPI do
 
   alias Mithril.Paging
   alias Mithril.Repo
+  alias Mithril.ClientAPI
   alias Mithril.TokenAPI.Token
   alias Mithril.TokenAPI.TokenSearch
+
+  @direct ClientAPI.access_type(:direct)
+  @broker ClientAPI.access_type(:broker)
 
   def list_tokens(params) do
     %TokenSearch{}
@@ -76,7 +80,7 @@ defmodule Mithril.TokenAPI do
            Token |> get_search_query(changes) |> Repo.delete_all()
 
          changeset
-          -> changeset
+         -> changeset
        end
   end
 
@@ -98,8 +102,60 @@ defmodule Mithril.TokenAPI do
     end
   end
 
+  def verify_client_token(token_value, api_key) do
+    token = get_token_by_value!(token_value)
+
+    with false <- expired?(token),
+         _app <- Mithril.AppAPI.approval(token.user_id, token.details["client_id"]),
+         client <- ClientAPI.get_client!(token.details["client_id"]),
+         {:ok, token} <- put_broker_scopes(token, client, api_key) do
+      {:ok, token}
+    else
+      {:error, _, _} = err ->
+        err
+      _ ->
+        message = "Token expired or client approval was revoked."
+        Mithril.Authorization.GrantType.Error.invalid_grant(message)
+    end
+  end
+
   def expired?(%Token{} = token) do
     token.expires_at < :os.system_time(:seconds)
+  end
+
+  defp put_broker_scopes(token, client, api_key) do
+    case Map.get(client.priv_settings, "access_type") do
+      nil -> {:error, %{invalid_client: "Client settings must contain access_type."}, :unprocessable_entity}
+
+      # Clients such as NHS Admin, MIS
+      @direct -> {:ok, token}
+
+      # Clients such as MSP, PHARMACY
+      @broker ->
+        api_key
+        |> validate_api_key()
+        |> fetch_broker_scope()
+        |> put_broker_scope_into_token_details(token)
+    end
+  end
+
+  defp validate_api_key(api_key) when is_binary(api_key), do: api_key
+  defp validate_api_key(_), do: {:error, %{api_key: "API-KEY header required."}, :unprocessable_entity}
+
+  defp fetch_broker_scope({:error, errors, status}), do: {:error, errors, status}
+  defp fetch_broker_scope(api_key) do
+    case ClientAPI.get_client_broker_by_secret(api_key) do
+      %ClientAPI.Client{priv_settings: settings} ->
+        Map.get(settings, "broker_scope")
+      _ ->
+        {:error, %{api_key: "API-KEY header is invalid."}, :unprocessable_entity}
+    end
+  end
+
+  defp put_broker_scope_into_token_details({:error, errors, status}, _token), do: {:error, errors, status}
+  defp put_broker_scope_into_token_details(broker_scope, token) do
+    details = Map.put(token.details, "broker_scope", broker_scope)
+    {:ok, Map.put(token, :details, details)}
   end
 
   def deactivate_old_tokens(%Token{id: id, user_id: user_id}) do

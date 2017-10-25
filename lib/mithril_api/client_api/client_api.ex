@@ -8,6 +8,12 @@ defmodule Mithril.ClientAPI do
   alias Mithril.ClientAPI.Client
   alias Mithril.ClientAPI.ClientSearch
 
+  @access_type_direct "DIRECT"
+  @access_type_broker "BROKER"
+
+  def access_type(:direct), do: @access_type_direct
+  def access_type(:broker), do: @access_type_broker
+
   def list_clients(params) do
     %ClientSearch{}
     |> client_changeset(params)
@@ -28,6 +34,15 @@ defmodule Mithril.ClientAPI do
   end
 
   def get_client_by(attrs), do: Repo.get_by(Client, attrs)
+
+  def get_client_broker_by_secret(secret) do
+    query =
+      from c in Client,
+      where: [secret: ^secret],
+      where: fragment("? \\?| ?", c.priv_settings, ["broker_scope"])
+
+    Repo.one(query)
+  end
 
   def edit_client(id, attrs \\ %{}) do
     case Repo.get(Client, id) do
@@ -89,9 +104,21 @@ defmodule Mithril.ClientAPI do
     |> put_secret()
     |> validate_required([:name, :user_id, :redirect_uri, :settings, :priv_settings, :client_type_id])
     |> validate_format(:redirect_uri, ~r{^https?://.+})
+    |> validate_priv_settings()
     |> unique_constraint(:name)
     |> assoc_constraint(:user)
     |> assoc_constraint(:client_type)
+  end
+
+  defp validate_priv_settings(changeset) do
+    validate_change changeset, :priv_settings, fn :priv_settings, priv_settings ->
+      case Map.get(priv_settings, "access_type") do
+        nil -> [priv_settings: "access_type required."]
+        @access_type_direct -> []
+        @access_type_broker -> []
+        _ -> [priv_settings: "access_type is invalid."]
+      end
+    end
   end
 
   defp put_secret(changeset) do

@@ -67,7 +67,10 @@ defmodule Mithril.Fixtures do
       name: name,
       user_id: create_user().id,
       redirect_uri: "http://localhost",
-      client_type_id: client_type_id
+      client_type_id: client_type_id,
+      priv_settings: %{
+        "access_type" => Mithril.ClientAPI.access_type(:direct)
+      }
     }
   end
 

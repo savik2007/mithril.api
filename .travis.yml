@@ -9,7 +9,7 @@ services:
 addons:
   postgresql: "9.5"
 elixir:
-  - 1.4.2
+  - 1.4.5
 otp_release:
   - 19.3
 notifications:

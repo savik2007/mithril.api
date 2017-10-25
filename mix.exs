@@ -24,10 +24,7 @@ defmodule Mithril.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [extra_applications: [:logger, :logger_json, :confex, :runtime_tools,
-                          :ecto, :postgrex,
-                          :cowboy, :httpoison, :poison,
-                          :phoenix, :phoenix_ecto, :eview],
+    [extra_applications: [:logger, :runtime_tools],
      mod: {Mithril, []}]
   end
 
@@ -49,7 +46,7 @@ defmodule Mithril.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:distillery, "~> 1.2"},
+    [{:distillery, "~> 1.4.1"},
      {:confex, "~> 3.2"},
      {:ecto, "~> 2.1"},
      {:postgrex, "~> 0.13.2"},
@@ -62,8 +59,10 @@ defmodule Mithril.Mixfile do
      {:phoenix_ecto, "~> 3.2"},
      {:ecto_paging, ">= 0.0.0"},
      {:comeonin, ">= 0.0.0"},
+     {:bcrypt_elixir, "~> 0.12"},
      {:secure_random, ">= 0.0.0"},
      {:benchfella, ">= 0.3.4", only: [:dev, :test]},
+     {:ex_machina, ">= 1.0.0", only: [:dev, :test]},
      {:ex_doc, ">= 0.15.0", only: [:dev, :test]},
      {:excoveralls, ">= 0.5.0", only: [:dev, :test]},
      {:dogma, ">= 0.1.12", only: [:dev, :test]},
