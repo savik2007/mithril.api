@@ -40,7 +40,7 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
       "scope" => "legal_entity:read"
     })
 
-    message = "Request must include at least client_id, client_secret, code, scopes and redirect_uri parameters."
+    message = "Request must include at least client_id, client_secret, code and redirect_uri parameters."
     assert %{invalid_request: ^message} = errors
     assert :bad_request = code
   end
@@ -202,7 +202,7 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
       "scope" => nil
     })
 
-    message = "Request must include at least client_id, client_secret, code, scopes and redirect_uri parameters."
+    message = "Request must include at least client_id, client_secret, code and redirect_uri parameters."
     assert %{invalid_request: ^message} = errors
     assert :bad_request = code
   end
