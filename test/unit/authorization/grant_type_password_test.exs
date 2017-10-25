@@ -100,4 +100,17 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
     assert %{invalid_request: ^message} = errors
     assert :bad_request = code
   end
+
+  test "it returns error on missing values" do
+    {:error, errors, code} = PasswordGrantType.authorize(%{
+      "email" => nil,
+      "password" => nil,
+      "client_id" => nil,
+      "scope" => nil
+    })
+
+    message = "Request must include at least email, password, client_id and scope parameters."
+    assert %{invalid_request: ^message} = errors
+    assert :bad_request = code
+  end
 end

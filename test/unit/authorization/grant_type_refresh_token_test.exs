@@ -124,4 +124,16 @@ defmodule Mithril.Authorization.GrantType.RefreshTokenTest do
     assert %{invalid_grant: "Token not found or expired."} = errors
     assert :unauthorized = code
   end
+
+  test "it returns error on missing values" do
+    {:error, errors, code} = RefreshTokenGrantType.authorize(%{
+      "client_id" => nil,
+      "client_secret" => nil,
+      "refresh_token" => nil
+    })
+
+    message = "Request must include at least client_id, client_secret and refresh_token parameters."
+    assert %{invalid_request: ^message} = errors
+    assert :bad_request = code
+  end
 end
