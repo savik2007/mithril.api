@@ -3,6 +3,7 @@ defmodule Mithril.Web.Endpoint do
   Phoenix Endpoint for mithril_api application.
   """
   use Phoenix.Endpoint, otp_app: :mithril_api
+  alias Confex.Resolver
 
   # Allow acceptance tests to run in concurrent mode
   if Application.get_env(:mithril_api, :sql_sandbox) do
@@ -37,8 +38,8 @@ defmodule Mithril.Web.Endpoint do
   It receives the endpoint configuration from the config files
   and must return the updated configuration.
   """
-  def load_from_system_env(config) do
-    config = Confex.Resolver.resolve!(config)
+  def init(_key, config) do
+    config = Resolver.resolve!(config)
 
     unless config[:secret_key_base] do
       raise "Set SECRET_KEY environment variable!"

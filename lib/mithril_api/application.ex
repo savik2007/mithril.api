@@ -4,6 +4,7 @@ defmodule Mithril do
   """
   use Application
   alias Mithril.Web.Endpoint
+  alias Confex.Resolver
 
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
   # for more information on OTP Applications
@@ -36,12 +37,11 @@ defmodule Mithril do
     :ok
   end
 
-  # Loads configuration in `:on_init` callbacks and replaces `{:system, ..}` tuples via Confex
+  # Loads configuration in `:init` callbacks and replaces `{:system, ..}` tuples via Confex
   @doc false
-  def load_from_system_env(config) do
-    Confex.Resolver.resolve(config)
+  def init(_key, config) do
+    Resolver.resolve(config)
   end
-
   # Configures Logger level via LOG_LEVEL environment variable.
   defp configure_log_level do
     case System.get_env("LOG_LEVEL") do
