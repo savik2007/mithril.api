@@ -49,7 +49,7 @@ defmodule Mithril.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:distillery, "~> 1.2"},
+    [{:distillery, "~> 1.4.1"},
      {:confex, "~> 3.2"},
      {:ecto, "~> 2.1"},
      {:postgrex, "~> 0.13.2"},
