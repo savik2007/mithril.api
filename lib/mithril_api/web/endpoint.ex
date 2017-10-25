@@ -3,6 +3,7 @@ defmodule Mithril.Web.Endpoint do
   Phoenix Endpoint for mithril_api application.
   """
   use Phoenix.Endpoint, otp_app: :mithril_api
+  alias Confex.Resolver
 
   # Allow acceptance tests to run in concurrent mode
   if Application.get_env(:mithril_api, :sql_sandbox) do

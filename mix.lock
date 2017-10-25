@@ -1,4 +1,4 @@
-%{"bcrypt_elixir": {:hex, :bcrypt_elixir, "1.0.4", "7598efbe9bd56fdc04412b4377a6a3add0bcf8e0cf1f31684190425a404f14e2", [:make, :mix], [{:elixir_make, "~> 0.4", [hex: :elixir_make, repo: "hexpm", optional: false]}], "hexpm"},
+%{"bcrypt_elixir": {:hex, :bcrypt_elixir, "0.12.1", "41ff5a4739fcff365fe840637462dc9e22beac07a9dcf3cb5e79b127f5b3a099", [:make, :mix], [{:elixir_make, "~> 0.4", [hex: :elixir_make, repo: "hexpm", optional: false]}], "hexpm"},
   "benchfella": {:hex, :benchfella, "0.3.5", "b2122c234117b3f91ed7b43b6e915e19e1ab216971154acd0a80ce0e9b8c05f5", [:mix], [], "hexpm"},
   "bunt": {:hex, :bunt, "0.2.0", "951c6e801e8b1d2cbe58ebbd3e616a869061ddadcc4863d0a2182541acae9a38", [:mix], [], "hexpm"},
   "certifi": {:hex, :certifi, "1.2.1", "c3904f192bd5284e5b13f20db3ceac9626e14eeacfbb492e19583cf0e37b22be", [:rebar3], [], "hexpm"},
