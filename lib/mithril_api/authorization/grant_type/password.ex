@@ -3,7 +3,9 @@ defmodule Mithril.Authorization.GrantType.Password do
   alias Mithril.Authorization.GrantType.Error, as: GrantTypeError
   alias Mithril.TokenAPI.Token
 
-  def authorize(%{"email" => email, "password" => password, "client_id" => client_id, "scope" => scope}) do
+  def authorize(%{"email" => email, "password" => password, "client_id" => client_id, "scope" => scope})
+      when not (is_nil(email) or is_nil(password) or is_nil(client_id) or is_nil(scope))
+  do
     client = Mithril.ClientAPI.get_client_with_type(client_id)
 
     case allowed_to_login?(client) do
