@@ -1,6 +1,5 @@
 # Mithril
-[![Build Status](https://travis-ci.org/Nebo15/mithril.api.svg?branch=master)](https://travis-ci.org/Nebo15/mithril.api)[![Coverage Status](https://coveralls.io/repos/github/Nebo15/mithril.api/badge.svg?branch=master)](https://coveralls.io/github/Nebo15/mithril.api?branch=master)
-[![Ebert](https://ebertapp.io/github/Nebo15/mithril.api.svg)](https://ebertapp.io/github/Nebo15/mithril.api)
+[![Build Status](https://travis-ci.org/edenlabllc/mithril.api.svg?branch=master)](https://travis-ci.org/edenlabllc/mithril.api)[![Coverage Status](https://coveralls.io/repos/github/edenlabllc/mithril.api/badge.svg?branch=master)](https://coveralls.io/github/edenlabllc/mithril.api?branch=master)
 
 Mithril – authentication and role management service.
 
@@ -15,8 +14,8 @@ Mithril is known for:
 
 Mithril consists of two main parts:
 
-- [REST API back-end](https://github.com/Nebo15/mithril.api),
-- [Management UI](https://github.com/Nebo15/mithril.web).
+- [REST API back-end](https://github.com/edenlabllc/mithril.api),
+- [Management UI](https://github.com/edenlabllc/mithril.web).
 
 Mithril by itself does not have any authorization tools, but you have two options to integrate with it:
 
@@ -37,14 +36,14 @@ Mithril by itself does not have any authorization tools, but you have two option
 
 Mithril can be deployed by one button click on Heroku, by-default instance will fit in free tier and you will be able to change it later:
 
-  [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/nebo15/mithril.api)
+  [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/edenlabllc/mithril.api)
 
 ### Docker container
 
 Official Docker containers can be found on Docker Hub:
 
-* [nebo15/mithril_api](https://hub.docker.com/r/nebo15/mithril_api/),
-* [nebo15/mithril-web](https://hub.docker.com/r/nebo15/mithril-web/).
+* [edenlabllc/mithril_api](https://hub.docker.com/r/edenlabllc/mithril_api/),
+* [edenlabllc/mithril-web](https://hub.docker.com/r/edenlabllc/mithril-web/).
 
 ### Dependencies
 
