@@ -21,7 +21,7 @@ defmodule Mithril.RoleAPI do
   def list_roles(params \\ %{}) do
     %RoleSearch{}
     |> role_changeset(params)
-    |> search(params, Role, 50)
+    |> search(params, Role)
   end
 
   def get_search_query(entity, %{scope: scopes} = changes) do

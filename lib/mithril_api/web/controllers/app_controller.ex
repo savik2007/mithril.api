@@ -3,12 +3,13 @@ defmodule Mithril.Web.AppController do
 
   alias Mithril.AppAPI
   alias Mithril.AppAPI.App
+  alias Scrivener.Page
 
   action_fallback Mithril.Web.FallbackController
 
   def index(conn, params) do
-    with {apps, %Ecto.Paging{} = paging} <- AppAPI.list_apps(params) do
-      render(conn, "index.json", apps: apps, paging: paging)
+    with %Page{} = paging <- AppAPI.list_apps(params) do
+      render(conn, "index.json", apps: paging.entries, paging: paging)
     end
   end
 

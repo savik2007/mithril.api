@@ -3,6 +3,7 @@ defmodule Mithril.ClientTypeAPITest do
 
   alias Mithril.ClientTypeAPI
   alias Mithril.ClientTypeAPI.ClientType
+  alias Scrivener.Page
 
   @create_attrs %{name: "some name", scope: "some scope"}
   @update_attrs %{name: "some updated name", scope: "some updated scope"}
@@ -15,8 +16,7 @@ defmodule Mithril.ClientTypeAPITest do
 
   test "list_client_types/1 returns all client_types" do
     client_type = fixture(:client_type)
-    {client_types, _paging} = ClientTypeAPI.list_client_types()
-    assert [client_type] == client_types
+    assert %Page{entries: [^client_type]} = ClientTypeAPI.list_client_types()
   end
 
   test "get_client_type! returns the client_type with given id" do

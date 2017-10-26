@@ -17,7 +17,7 @@ defmodule Mithril.ClientAPI do
   def list_clients(params) do
     %ClientSearch{}
     |> client_changeset(params)
-    |> search(params, Client, 50)
+    |> search(params, Client)
   end
 
   def get_client!(id), do: Repo.get!(Client, id)

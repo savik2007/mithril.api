@@ -3,12 +3,13 @@ defmodule Mithril.Web.TokenController do
 
   alias Mithril.TokenAPI
   alias Mithril.TokenAPI.Token
+  alias Scrivener.Page
 
   action_fallback Mithril.Web.FallbackController
 
   def index(conn, params) do
-    with {tokens, %Ecto.Paging{} = paging} <- TokenAPI.list_tokens(params) do
-      render(conn, "index.json", tokens: tokens, paging: paging)
+    with %Page{} = paging <- TokenAPI.list_tokens(params) do
+      render(conn, "index.json", tokens: paging.entries, paging: paging)
     end
   end
 

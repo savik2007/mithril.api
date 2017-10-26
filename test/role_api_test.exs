@@ -3,6 +3,7 @@ defmodule Mithril.RoleAPITest do
 
   alias Mithril.RoleAPI
   alias Mithril.RoleAPI.Role
+  alias Scrivener.Page
 
   @create_attrs %{name: "some name", scope: "some scope"}
   @update_attrs %{name: "some updated name", scope: "some updated scope"}
@@ -15,7 +16,7 @@ defmodule Mithril.RoleAPITest do
 
   test "list_roles/1 returns all roles" do
     role = fixture(:role)
-    assert {roles, %Ecto.Paging{}} = RoleAPI.list_roles()
+    assert %Page{entries: roles} = RoleAPI.list_roles()
     assert List.first(roles) == role
   end
 

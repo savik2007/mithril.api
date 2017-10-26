@@ -3,12 +3,13 @@ defmodule Mithril.Web.ClientController do
 
   alias Mithril.ClientAPI
   alias Mithril.ClientAPI.Client
+  alias Scrivener.Page
 
   action_fallback Mithril.Web.FallbackController
 
   def index(conn, params) do
-    with {clients, %Ecto.Paging{} = paging} <- ClientAPI.list_clients(params) do
-      render(conn, "index.json", clients: clients, paging: paging)
+    with %Page{} = paging <- ClientAPI.list_clients(params) do
+      render(conn, "index.json", clients: paging.entries, paging: paging)
     end
   end
 

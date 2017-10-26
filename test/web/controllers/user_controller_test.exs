@@ -29,24 +29,18 @@ defmodule Mithril.Web.UserControllerTest do
     fixture(:user, %{email: "1", password: "1", settings: %{}})
     fixture(:user, %{email: "2", password: "2", settings: %{}})
     fixture(:user, %{email: "3", password: "3", settings: %{}})
-    conn = get conn, user_path(conn, :index), %{limit: 2}
+    conn = get conn, user_path(conn, :index), %{page_size: 2}
     assert 2 == length(json_response(conn, 200)["data"])
   end
 
   test "does not list all entries on index when starting_after is set", %{conn: conn} do
-    user = fixture(:user, %{email: "1", password: "1", settings: %{}})
-    fixture(:user, %{email: "2", password: "2", settings: %{}})
-    fixture(:user, %{email: "3", password: "3", settings: %{}})
-    conn = get conn, user_path(conn, :index), %{starting_after: user.id}
-    assert 2 == length(json_response(conn, 200)["data"])
-  end
-
-  test "does not list all entries on index when ending_before is set", %{conn: conn} do
     fixture(:user, %{email: "1", password: "1", settings: %{}})
     fixture(:user, %{email: "2", password: "2", settings: %{}})
     user = fixture(:user, %{email: "3", password: "3", settings: %{}})
-    conn = get conn, user_path(conn, :index), %{ending_before: user.id}
-    assert 2 == length(json_response(conn, 200)["data"])
+    conn = get conn, user_path(conn, :index), %{page_size: 2, page: 2}
+    resp = json_response(conn, 200)["data"]
+    assert 1 == length(resp)
+    assert user.id == Map.get(hd(resp), "id")
   end
 
   test "finds user by valid email", %{conn: conn} do

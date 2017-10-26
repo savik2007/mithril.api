@@ -5,7 +5,7 @@ defmodule Mithril.Repo do
   More info: https://hexdocs.pm/ecto/Ecto.Repo.html
   """
   use Ecto.Repo, otp_app: :mithril_api
-  use Ecto.Paging.Repo
+  use Scrivener, page_size: 50, max_page_size: 50
 
   @doc """
   Dynamically loads the repository configuration from the environment variables.

@@ -4,7 +4,6 @@ defmodule Mithril.TokenAPI do
   use Mithril.Search
   import Ecto.{Query, Changeset}, warn: false
 
-  alias Mithril.Paging
   alias Mithril.Repo
   alias Mithril.ClientAPI
   alias Mithril.TokenAPI.Token
@@ -16,7 +15,7 @@ defmodule Mithril.TokenAPI do
   def list_tokens(params) do
     %TokenSearch{}
     |> token_changeset(params)
-    |> search(params, Token, 50)
+    |> search(params, Token)
   end
 
   def get_search_query(entity, %{client_id: client_id} = changes) do

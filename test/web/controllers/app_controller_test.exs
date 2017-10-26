@@ -33,24 +33,18 @@ defmodule Mithril.Web.AppControllerTest do
     fixture(:app)
     fixture(:app)
     fixture(:app)
-    conn = get conn, app_path(conn, :index), %{limit: 2}
+    conn = get conn, app_path(conn, :index), %{page_size: 2}
     assert 2 == length(json_response(conn, 200)["data"])
   end
 
   test "does not list all entries on index when starting_after is set", %{conn: conn} do
-    app = fixture(:app)
-    fixture(:app)
-    fixture(:app)
-    conn = get conn, app_path(conn, :index), %{starting_after: app.id}
-    assert 2 == length(json_response(conn, 200)["data"])
-  end
-
-  test "does not list all entries on index when ending_before is set", %{conn: conn} do
     fixture(:app)
     fixture(:app)
     app = fixture(:app)
-    conn = get conn, app_path(conn, :index), %{ending_before: app.id}
-    assert 2 == length(json_response(conn, 200)["data"])
+    conn = get conn, app_path(conn, :index), %{page_size: 2, page: 2}
+    resp = json_response(conn, 200)["data"]
+    assert 1 == length(resp)
+    assert app.id == Map.get(hd(resp), "id")
   end
 
   test "creates app and renders app when data is valid", %{conn: conn} do

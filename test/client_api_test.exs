@@ -3,6 +3,7 @@ defmodule Mithril.ClientAPITest do
 
   alias Mithril.ClientAPI
   alias Mithril.ClientAPI.Client
+  alias Scrivener.Page
 
   @broker ClientAPI.access_type(:broker)
   @direct ClientAPI.access_type(:direct)
@@ -30,8 +31,7 @@ defmodule Mithril.ClientAPITest do
 
   test "list_clients/1 returns all clients" do
     client = fixture(:client)
-    {clients, _paging} = ClientAPI.list_clients(%{})
-    assert [client] == clients
+    assert %Page{entries: [^client]} = ClientAPI.list_clients(%{})
   end
 
   test "get_client! returns the client with given id" do
