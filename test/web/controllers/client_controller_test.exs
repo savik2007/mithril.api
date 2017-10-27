@@ -107,7 +107,9 @@ defmodule Mithril.Web.ClientControllerTest do
       "name" => client.name,
       "settings" => client.settings,
       "redirect_uri" => client.redirect_uri,
-      "client_type_name" => "some_kind_of_client"
+      "client_type_name" => "some_kind_of_client",
+      "is_blocked" => false,
+      "block_reason" => nil
     }
   end
 
@@ -161,6 +163,8 @@ defmodule Mithril.Web.ClientControllerTest do
       "priv_settings" => %{"access_type" => @broker},
       "redirect_uri" => "https://localhost",
       "secret" => client.secret,
+      "is_blocked" => false,
+      "block_reason" => nil,
       "settings" => %{},
     }
   end
