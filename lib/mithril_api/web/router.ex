@@ -1,4 +1,4 @@
-defmodule Mithril.Web.Router do
+defmodule MithrilWeb.Router do
   @moduledoc """
   The router provides a set of macros for generating routes
   that dispatch to specific controllers and actions.
@@ -35,6 +35,7 @@ defmodule Mithril.Web.Router do
       patch "/actions/change_password", UserController, :change_password
     end
 
+    get "/user_roles", UserRoleController, :index, as: :user_roles
     delete "/users/roles/:id", UserRoleController, :delete
 
     resources "/clients", ClientController, except: [:new, :edit] do

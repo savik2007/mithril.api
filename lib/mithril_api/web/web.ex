@@ -20,7 +20,7 @@ defmodule Mithril.Web do
     quote do
       use Phoenix.Controller, namespace: Mithril.Web
       import Plug.Conn
-      import Mithril.Web.Router.Helpers
+      import MithrilWeb.Router.Helpers
     end
   end
 
@@ -29,7 +29,7 @@ defmodule Mithril.Web do
       # Import convenience functions from controllers
       import Phoenix.View
       import Phoenix.Controller, only: [view_module: 1]
-      import Mithril.Web.Router.Helpers
+      import MithrilWeb.Router.Helpers
 
       @view_resource String.to_atom(Phoenix.Naming.resource_name(__MODULE__, "View"))
 

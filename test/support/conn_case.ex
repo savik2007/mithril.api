@@ -18,7 +18,7 @@ defmodule Mithril.Web.ConnCase do
     quote do
       # Import conveniences for testing with connections
       use Phoenix.ConnTest
-      import Mithril.Web.Router.Helpers
+      import MithrilWeb.Router.Helpers
       import Ecto
       import Ecto.Changeset
       import Ecto.Query

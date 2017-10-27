@@ -17,13 +17,25 @@ defmodule Mithril.UserRoleAPI do
 
   defp search_user_roles(%Ecto.Changeset{valid?: false} = changeset), do: {:error, changeset}
   defp search_user_roles(%Ecto.Changeset{valid?: true} = changeset) do
-    changes = Map.to_list(changeset.changes)
     UserRole
-    |> where([ur], ^changes)
+    |> query_where(changeset.changes)
     |> join(:left, [ur], r in assoc(ur, :role))
     |> join(:left, [ur, r], c in assoc(ur, :client))
     |> preload([ur, r, c], [role: r, client: c])
-    |> Repo.all
+    |> Repo.all()
+  end
+
+  def query_where(entity, changes) do
+    params = Enum.filter(changes, fn({_key, value}) -> !is_tuple(value) end)
+    q = where(entity, ^params)
+
+    Enum.reduce(changes, q, fn({key, val}, query) ->
+      case val do
+        # ToDo: hardcoded db_field :user_id. It's not good
+        {value, :in} -> where(query, [r], field(r, :user_id) in ^value)
+        _ -> query
+      end
+    end)
   end
 
   def get_user_role!(id), do: Repo.get!(UserRole, id) # get_by
@@ -70,8 +82,12 @@ defmodule Mithril.UserRoleAPI do
   end
 
   defp user_role_changeset(%UserRoleSearch{} = user_role, attrs) do
-    user_role
-    |> cast(attrs, [:user_id, :role_id, :client_id])
-    |> validate_required([:user_id])
+    cast(user_role, attrs, UserRoleSearch.__schema__(:fields))
+  end
+
+  def convert_comma_params_to_where_in_clause(changes, param_name, db_field) do
+    changes
+    |> Map.put(db_field, {String.split(changes[param_name], ","), :in})
+    |> Map.delete(param_name)
   end
 end

@@ -29,7 +29,7 @@ defmodule Mithril.Web.Endpoint do
     key: "_trump_key",
     signing_salt: "signing_salt"
 
-  plug Mithril.Web.Router
+  plug MithrilWeb.Router
 
   @doc """
   Dynamically loads configuration from the system environment
