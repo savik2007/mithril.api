@@ -5,26 +5,68 @@ defmodule Mithril.Web.UserRoleControllerTest do
   alias Mithril.UserRoleAPI
   import Mithril.Fixtures
 
-  def fixture(:user_role, user_id) do
-    {:ok, user_role} =
-      user_id
-      |> user_role_attrs()
-      |> UserRoleAPI.create_user_role()
-    user_role
-  end
-
   setup %{conn: conn} do
     {:ok, user} = Mithril.UserAPI.create_user(%{email: "some email", password: "some password", settings: %{}})
 
     {:ok, conn: put_req_header(conn, "accept", "application/json"), user_id: user.id}
   end
 
-  test "lists all entries on index", %{user_id: user_id, conn: conn} do
-    fixture(:user_role, user_id)
-    fixture(:user_role, user_id)
-    fixture(:user_role, user_id)
-    conn = get conn, user_role_path(conn, :index, %User{id: user_id})
-    assert 3 == length(json_response(conn, 200)["data"])
+  describe "list user_roles" do
+    test "all entries on index", %{user_id: user_id, conn: conn} do
+      insert(:user_role, user_id: user_id)
+      insert(:user_role, user_id: user_id)
+      insert(:user_role, user_id: user_id)
+      conn = get conn, user_role_path(conn, :index, %User{id: user_id})
+      assert 3 == length(json_response(conn, 200)["data"])
+    end
+
+    test "search by user_ids", %{conn: conn} do
+      %{id: id1} = insert(:user)
+      %{id: id2} = insert(:user)
+      %{id: id3} = insert(:user)
+
+      insert(:user_role, user_id: id1)
+      insert(:user_role, user_id: id1)
+      insert(:user_role, user_id: id2)
+      insert(:user_role, user_id: id3)
+
+      # all user_roles
+      conn = get conn, user_roles_path(conn, :index)
+      assert 4 == length(json_response(conn, 200)["data"])
+
+      # filter by user_ids and client_id
+      conn = get conn, user_roles_path(conn, :index), user_ids: "#{id1},#{id2}"
+      data = json_response(conn, 200)["data"]
+      assert 3 == length(data)
+      Enum.each(data, fn %{"user_id" => user_id} ->
+        assert user_id in [id1, id2]
+      end)
+    end
+
+    test "search by user_ids and client_id", %{conn: conn} do
+      %{id: id1} = insert(:user)
+      %{id: id2} = insert(:user)
+      %{id: client_id1} = insert(:client)
+      %{id: client_id2} = insert(:client)
+
+      insert(:user_role, user_id: id1, client_id: client_id1)
+      insert(:user_role, user_id: id1, client_id: client_id2)
+      insert(:user_role, user_id: id2, client_id: client_id1)
+      insert(:user_role, user_id: id2, client_id: client_id2)
+
+      # all user_roles
+      conn = get conn, user_roles_path(conn, :index)
+      assert 4 == length(json_response(conn, 200)["data"])
+
+      # filter by user_ids and client_id
+      conn = get conn, user_roles_path(conn, :index), [user_ids: "#{id1},#{id2}", client_id: client_id1]
+      data = json_response(conn, 200)["data"]
+      assert 2 == length(data)
+      Enum.each(data, fn %{"user_id" => user_id, "client_id" => client_id} ->
+        assert user_id in [id1, id2]
+        assert client_id in [client_id1, client_id2]
+      end)
+    end
   end
 
   test "creates user_role and renders user_role when data is valid", %{user_id: user_id, conn: conn} do
@@ -79,10 +121,10 @@ defmodule Mithril.Web.UserRoleControllerTest do
   end
 
   test "deletes user_roles by user_id", %{user_id: user_id, conn: conn} do
-    fixture(:user_role, user_id)
-    fixture(:user_role, user_id)
+    insert(:user_role, user_id: user_id)
+    insert(:user_role, user_id: user_id)
     {:ok, user} = Mithril.UserAPI.create_user(%{email: "email@example.com", password: "some password", settings: %{}})
-    fixture(:user_role, user.id)
+    insert(:user_role, user_id: user.id)
 
     conn = delete conn, user_role_path(conn, :delete_by_user, user_id)
     assert response(conn, 204)
@@ -95,7 +137,7 @@ defmodule Mithril.Web.UserRoleControllerTest do
   end
 
   test "delete user_role by role_id", %{user_id: user_id, conn: conn} do
-    user_role = fixture(:user_role, user_id)
+    user_role = insert(:user_role, user_id: user_id)
     conn = delete conn, "/admin/users/roles/#{user_role.id}"
     assert response(conn, 204)
 
