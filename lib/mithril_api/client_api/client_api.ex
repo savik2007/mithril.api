@@ -11,6 +11,20 @@ defmodule Mithril.ClientAPI do
   @access_type_direct "DIRECT"
   @access_type_broker "BROKER"
 
+  @fields_required ~w(
+    name
+    user_id
+    redirect_uri
+    settings
+    priv_settings
+    client_type_id
+  )a
+
+  @fields_optional ~w(
+    is_blocked
+    block_reason
+  )a
+
   def access_type(:direct), do: @access_type_direct
   def access_type(:broker), do: @access_type_broker
 
@@ -95,14 +109,14 @@ defmodule Mithril.ClientAPI do
 
   defp client_changeset(%ClientSearch{} = client, attrs) do
     client
-    |> cast(attrs, [:name, :user_id])
+    |> cast(attrs, ~w(name user_id is_blocked)a)
     |> set_like_attributes([:name])
   end
   defp client_changeset(%Client{} = client, attrs) do
     client
-    |> cast(attrs, [:name, :user_id, :redirect_uri, :settings, :priv_settings, :client_type_id])
+    |> cast(attrs, @fields_required ++ @fields_optional)
     |> put_secret()
-    |> validate_required([:name, :user_id, :redirect_uri, :settings, :priv_settings, :client_type_id])
+    |> validate_required(@fields_required)
     |> validate_format(:redirect_uri, ~r{^https?://.+})
     |> validate_priv_settings()
     |> unique_constraint(:name)

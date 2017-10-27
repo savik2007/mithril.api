@@ -1,30 +1,21 @@
 defmodule Mithril.Web.ClientView do
   use Mithril.Web, :view
-  alias Mithril.Web.ClientView
 
   def render("index.json", %{clients: clients}) do
-    render_many(clients, ClientView, "client.json")
+    render_many(clients, __MODULE__, "client.json")
   end
 
   def render("show.json", %{client: client}) do
-    render_one(client, ClientView, "client.json")
+    render_one(client, __MODULE__, "client.json")
   end
 
   def render("client.json", %{client: client}) do
-    %{id: client.id,
-      name: client.name,
-      secret: client.secret,
-      redirect_uri: client.redirect_uri,
-      settings: client.settings,
-      priv_settings: client.priv_settings}
+    Map.take(client, ~w(id name secret is_blocked block_reason redirect_uri settings priv_settings)a)
   end
 
   def render("details.json", %{client: client, client_type_name: client_type_name}) do
-    %{id: client.id,
-      name: client.name,
-      redirect_uri: client.redirect_uri,
-      settings: client.settings,
-      client_type_name: client_type_name
-    }
+    client
+    |> Map.take(~w(id name redirect_uri settings is_blocked block_reason)a)
+    |> Map.put(:client_type_name, client_type_name)
   end
 end

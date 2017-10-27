@@ -32,7 +32,9 @@ defmodule Mithril.Factory do
       secret: sequence("secret-"),
       priv_settings: %{
         "access_type" => Mithril.ClientAPI.access_type(:direct)
-      }
+      },
+      is_blocked: false,
+      block_reason: nil,
     }
   end
 

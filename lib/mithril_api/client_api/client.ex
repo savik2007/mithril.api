@@ -9,6 +9,8 @@ defmodule Mithril.ClientAPI.Client do
     field :redirect_uri, :string
     field :secret, :string
     field :settings, :map, default: %{}
+    field :is_blocked, :boolean, default: false
+    field :block_reason, :string
 
     belongs_to :client_type, Mithril.ClientTypeAPI.ClientType
     belongs_to :user, Mithril.UserAPI.User
