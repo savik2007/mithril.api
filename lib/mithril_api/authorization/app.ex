@@ -66,7 +66,7 @@ defmodule Mithril.Authorization.App do
   defp find_broker(api_key) do
     case ClientAPI.get_client_broker_by_secret(api_key) do
       %ClientAPI.Client{} = broker -> broker
-      _ -> {:error, :unprocessable_entity, %{api_key: "API-KEY header is invalid."}}
+      _ -> {:error, :unprocessable_entity, %{api_key: "Incorrect broker settings."}}
     end
   end
 
