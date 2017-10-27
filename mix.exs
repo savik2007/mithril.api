@@ -1,7 +1,7 @@
 defmodule Mithril.Mixfile do
   use Mix.Project
 
-  @version "0.1.114"
+  @version "0.1.115"
 
   def project do
     [app: :mithril_api,
