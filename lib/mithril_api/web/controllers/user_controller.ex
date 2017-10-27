@@ -5,12 +5,13 @@ defmodule Mithril.Web.UserController do
 
   alias Mithril.UserAPI
   alias Mithril.UserAPI.User
+  alias Scrivener.Page
 
   action_fallback Mithril.Web.FallbackController
 
   def index(conn, params) do
-    with {users, %Ecto.Paging{} = paging} <- UserAPI.list_users(params) do
-      render(conn, "index.json", users: users, paging: paging)
+    with %Page{} = paging <- UserAPI.list_users(params) do
+      render(conn, "index.json", users: paging.entries, paging: paging)
     end
   end
 

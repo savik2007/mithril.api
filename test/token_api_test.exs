@@ -3,6 +3,7 @@ defmodule Mithril.TokenAPITest do
 
   alias Mithril.TokenAPI
   alias Mithril.TokenAPI.Token
+  alias Scrivener.Page
 
   @create_attrs %{
     details: %{},
@@ -33,11 +34,13 @@ defmodule Mithril.TokenAPITest do
 
   test "list_tokens/1 returns all tokens" do
     token = fixture(:token)
-    paging = %Ecto.Paging{
-      cursors: %Ecto.Paging.Cursors{starting_after: token.id, ending_before: token.id},
-      has_more: false
+    assert TokenAPI.list_tokens(%{}) == %Page{
+      entries: [token],
+      page_number: 1,
+      page_size: 50,
+      total_entries: 1,
+      total_pages: 1
     }
-    assert TokenAPI.list_tokens(%{}) == {[token], paging}
   end
 
   test "get_token! returns the token with given id" do

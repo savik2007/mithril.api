@@ -50,24 +50,18 @@ defmodule Mithril.Web.TokenControllerTest do
     fixture(:token, "1")
     fixture(:token, "2")
     fixture(:token, "3")
-    conn = get conn, token_path(conn, :index), %{limit: 2}
+    conn = get conn, token_path(conn, :index), %{page_size: 2}
     assert 2 == length(json_response(conn, 200)["data"])
   end
 
-  test "does not list all entries on index when starting_after is set", %{conn: conn} do
-    token = fixture(:token, "1")
-    fixture(:token, "2")
-    fixture(:token, "3")
-    conn = get conn, token_path(conn, :index), %{starting_after: token.id}
-    assert 2 == length(json_response(conn, 200)["data"])
-  end
-
-  test "does not list all entries on index when ending_before is set", %{conn: conn} do
+  test "does not list all entries on index when page_size and page are set", %{conn: conn} do
     fixture(:token, "1")
     fixture(:token, "2")
     token = fixture(:token, "3")
-    conn = get conn, token_path(conn, :index), %{ending_before: token.id}
-    assert 2 == length(json_response(conn, 200)["data"])
+    conn = get conn, token_path(conn, :index), %{page_size: 2, page: 2}
+    resp = json_response(conn, 200)["data"]
+    assert 1 == length(resp)
+    assert token.id == Map.get(hd(resp), "id")
   end
 
   test "search by name by like works", %{conn: conn} do

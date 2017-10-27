@@ -3,6 +3,7 @@ defmodule Mithril.AppAPITest do
 
   alias Mithril.AppAPI
   alias Mithril.AppAPI.App
+  alias Scrivener.Page
 
   @create_attrs %{scope: "some scope"}
   @update_attrs %{scope: "some updated scope"}
@@ -19,11 +20,7 @@ defmodule Mithril.AppAPITest do
 
   test "list_apps/1 returns all apps" do
     app = fixture(:app)
-    paging = %Ecto.Paging{
-      cursors: %Ecto.Paging.Cursors{starting_after: app.id, ending_before: app.id},
-      has_more: false
-    }
-    assert AppAPI.list_apps(%{}) == {[app], paging}
+    assert %Page{entries: [^app]} = AppAPI.list_apps(%{})
   end
 
   test "get_app! returns the app with given id" do

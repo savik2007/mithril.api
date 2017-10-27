@@ -41,24 +41,18 @@ defmodule Mithril.Web.RoleControllerTest do
       fixture(:role)
       fixture(:role)
       fixture(:role)
-      conn = get conn, role_path(conn, :index), %{limit: 2}
+      conn = get conn, role_path(conn, :index), %{page_size: 2}
       assert 2 == length(json_response(conn, 200)["data"])
     end
 
     test "does not list all entries on index when starting_after is set", %{conn: conn} do
-      role = fixture(:role)
-      fixture(:role)
-      fixture(:role)
-      conn = get conn, role_path(conn, :index), %{starting_after: role.id}
-      assert 2 == length(json_response(conn, 200)["data"])
-    end
-
-    test "does not list all entries on index when ending_before is set", %{conn: conn} do
       fixture(:role)
       fixture(:role)
       role = fixture(:role)
-      conn = get conn, role_path(conn, :index), %{ending_before: role.id}
-      assert 2 == length(json_response(conn, 200)["data"])
+      conn = get conn, role_path(conn, :index), %{page_size: 2, page: 2}
+      resp = json_response(conn, 200)["data"]
+      assert 1 == length(resp)
+      assert role.id == Map.get(hd(resp), "id")
     end
 
     test "list roles by scopes", %{conn: conn} do

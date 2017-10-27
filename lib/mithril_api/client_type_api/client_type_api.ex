@@ -22,7 +22,7 @@ defmodule Mithril.ClientTypeAPI do
   def list_client_types(params \\ %{}) do
     %ClientTypeSearch{}
     |> client_type_changeset(params)
-    |> search(params, ClientType, 50)
+    |> search(params, ClientType)
   end
 
   def get_search_query(entity, %{scope: scopes} = changes) do

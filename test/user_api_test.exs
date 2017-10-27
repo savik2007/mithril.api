@@ -3,6 +3,7 @@ defmodule Mithril.UserAPITest do
 
   alias Mithril.UserAPI
   alias Mithril.UserAPI.User
+  alias Scrivener.Page
 
   @create_attrs %{email: "some email", password: "some password", settings: %{}}
   @update_attrs %{email: "some updated email", password: "some updated password", settings: %{}}
@@ -15,26 +16,35 @@ defmodule Mithril.UserAPITest do
 
   test "list_users/1 returns all users without search params" do
     user = fixture(:user)
-    paging = %Ecto.Paging{
-      cursors: %Ecto.Paging.Cursors{starting_after: user.id, ending_before: user.id},
-      has_more: false
+    assert UserAPI.list_users(%{}) == %Page{
+      entries: [user],
+      page_number: 1,
+      page_size: 50,
+      total_pages: 1,
+      total_entries: 1
     }
-    assert UserAPI.list_users(%{}) == {[user], paging}
   end
 
   test "list_users/1 returns all users with valid search params" do
     user = fixture(:user)
-    paging = %Ecto.Paging{
-      cursors: %Ecto.Paging.Cursors{starting_after: user.id, ending_before: user.id},
-      has_more: false
+    assert UserAPI.list_users(%{"email" => user.email}) == %Page{
+      entries: [user],
+      page_number: 1,
+      page_size: 50,
+      total_pages: 1,
+      total_entries: 1
     }
-    assert UserAPI.list_users(%{"email" => user.email}) == {[user], paging}
   end
 
   test "list_users/1 returns empty list with invalid search params" do
     user = fixture(:user)
-    paging = %Ecto.Paging{has_more: false}
-    assert UserAPI.list_users(%{"email" => user.email <> "111"}) == {[], paging}
+    assert UserAPI.list_users(%{"email" => user.email <> "111"}) == %Page{
+      entries: [],
+      page_number: 1,
+      page_size: 50,
+      total_entries: 0,
+      total_pages: 1,
+    }
   end
 
   test "get_user! returns the user with given id" do

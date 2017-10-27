@@ -5,7 +5,6 @@ defmodule Mithril.AppAPI do
   use Mithril.Search
   import Ecto.{Query, Changeset}, warn: false
 
-  alias Mithril.Paging
   alias Mithril.Repo
   alias Mithril.AppAPI.App
   alias Mithril.AppAPI.AppSearch
@@ -13,7 +12,7 @@ defmodule Mithril.AppAPI do
   def list_apps(params) do
     %AppSearch{}
     |> app_changeset(params)
-    |> search(params, App, 50)
+    |> search(params, App)
   end
 
   def get_app!(id), do: Repo.get!(App, id)

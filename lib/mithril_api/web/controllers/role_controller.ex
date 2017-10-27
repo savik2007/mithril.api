@@ -3,12 +3,13 @@ defmodule Mithril.Web.RoleController do
 
   alias Mithril.RoleAPI
   alias Mithril.RoleAPI.Role
+  alias Scrivener.Page
 
   action_fallback Mithril.Web.FallbackController
 
   def index(conn, params) do
-    with {roles, %Ecto.Paging{} = paging} <- RoleAPI.list_roles(params) do
-      render(conn, "index.json", roles: roles, paging: paging)
+    with %Page{} = paging <- RoleAPI.list_roles(params) do
+      render(conn, "index.json", roles: paging.entries, paging: paging)
     end
   end
 
