@@ -215,6 +215,21 @@ defmodule Mithril.Web.TokenControllerTest do
     assert token["details"]["scope"] == "app:authorize"
   end
 
+  test "verify blocked client", %{conn: conn} do
+    client = insert(:client, is_blocked: true)
+    token = insert(:token, details: %{
+      scope: "app:authorize",
+      client_id: client.id,
+      grant_type: "password",
+      redirect_uri: "http://localhost",
+    })
+
+    conn = get conn, token_verify_path(conn, :verify, token.value)
+
+    resp = json_response(conn, 401)
+    assert %{"error" => %{"invalid_client" => "Authentication failed"}} = resp
+  end
+
   test "returns error during token verification", %{conn: conn} do
     token = fixture(:token)
 
