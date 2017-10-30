@@ -7,6 +7,7 @@ defmodule Mithril.TokenAPI do
   alias Mithril.Repo
   alias Mithril.ClientAPI
   alias Mithril.TokenAPI.Token
+  alias Mithril.ClientAPI.Client
   alias Mithril.TokenAPI.TokenSearch
 
   @direct ClientAPI.access_type(:direct)
@@ -107,6 +108,7 @@ defmodule Mithril.TokenAPI do
     with false <- expired?(token),
          _app <- Mithril.AppAPI.approval(token.user_id, token.details["client_id"]),
          client <- ClientAPI.get_client!(token.details["client_id"]),
+         :ok <- check_client_is_blocked(client),
          {:ok, token} <- put_broker_scopes(token, client, api_key) do
       {:ok, token}
     else
@@ -215,4 +217,9 @@ defmodule Mithril.TokenAPI do
 
   defp get_token_lifetime,
     do: Confex.fetch_env!(:mithril_api, :token_lifetime)
+
+  defp check_client_is_blocked(%Client{is_blocked: false}), do: :ok
+  defp check_client_is_blocked(_) do
+    {:error, %{invalid_client: "Authentication failed"}, :unauthorized}
+  end
 end
