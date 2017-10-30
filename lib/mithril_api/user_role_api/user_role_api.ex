@@ -29,7 +29,7 @@ defmodule Mithril.UserRoleAPI do
     params = Enum.filter(changes, fn({_key, value}) -> !is_tuple(value) end)
     q = where(entity, ^params)
 
-    Enum.reduce(changes, q, fn({key, val}, query) ->
+    Enum.reduce(changes, q, fn({_key, val}, query) ->
       case val do
         # ToDo: hardcoded db_field :user_id. It's not good
         {value, :in} -> where(query, [r], field(r, :user_id) in ^value)
