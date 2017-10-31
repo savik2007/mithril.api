@@ -2,6 +2,7 @@ defmodule Mithril.Authorization.App do
   @moduledoc false
 
   alias Mithril.ClientAPI
+  alias Mithril.ClientAPI.Client
 
   @direct ClientAPI.access_type(:direct)
   @broker ClientAPI.access_type(:broker)
@@ -14,6 +15,7 @@ defmodule Mithril.Authorization.App do
   def grant(%{"user_id" => _, "client_id" => _, "redirect_uri" => _, "scope" => _} = params) do
     params
     |> find_client()
+    |> check_client_is_blocked()
     |> find_user()
     |> validate_access_type()
     |> validate_redirect_uri()
@@ -148,5 +150,11 @@ defmodule Mithril.Authorization.App do
       })
 
     Map.put(params, "token", token)
+  end
+
+  defp check_client_is_blocked({:error, status, errors}), do: {:error, status, errors}
+  defp check_client_is_blocked(%{"client" => %Client{is_blocked: false}} = params), do: params
+  defp check_client_is_blocked(%{"client" => _client}) do
+    {:error, :unauthorized, %{invalid_client: "Authentication failed"}}
   end
 end

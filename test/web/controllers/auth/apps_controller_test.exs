@@ -97,6 +97,26 @@ defmodule Mithril.OAuth.AppControllerTest do
     assert app.scope == "legal_entity:write legal_entity:read"
   end
 
+  test "client is blocked", %{conn: conn} do
+    user = insert(:user)
+    client = insert(:client, is_blocked: true)
+
+    request = %{
+      app: %{
+        client_id: client.id,
+        redirect_uri: client.redirect_uri,
+        scope: "legal_entity:write",
+      }
+    }
+
+    conn =
+      conn
+      |> put_req_header("x-consumer-id", user.id)
+      |> post("/oauth/apps/authorize", Poison.encode!(request))
+    resp = json_response(conn, 401)
+    assert %{"error" => %{"invalid_client" => "Authentication failed"}} = resp
+  end
+
   test "incorrectly crafted body is still treated nicely", %{conn: conn} do
     assert_error_sent 400, fn ->
       post(conn, "/oauth/apps/authorize", Poison.encode!(%{"scope" => "legal_entity:read"}))
