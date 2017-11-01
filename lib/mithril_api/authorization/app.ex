@@ -56,7 +56,8 @@ defmodule Mithril.Authorization.App do
       @broker ->
         params
         |> validate_api_key()
-        |> find_broker()
+        |> fetch_client_by_secret()
+        |> validate_broker_priv_settings()
         |> validate_broker_scope(params)
     end
   end
@@ -64,12 +65,21 @@ defmodule Mithril.Authorization.App do
   defp validate_api_key(%{"api_key" => api_key}) when is_binary(api_key), do: api_key
   defp validate_api_key(_), do: {:error, :unprocessable_entity, %{api_key: "API-KEY header required."}}
 
-  defp find_broker({:error, status, errors}), do: {:error, status, errors}
-  defp find_broker(api_key) do
-    case ClientAPI.get_client_broker_by_secret(api_key) do
-      %ClientAPI.Client{} = broker -> broker
-      _ -> {:error, :unprocessable_entity, %{api_key: "Incorrect broker settings."}}
+  defp fetch_client_by_secret({:error, errors, status}), do: {:error, errors, status}
+  defp fetch_client_by_secret(api_key) do
+    case ClientAPI.get_client_by([secret: api_key]) do
+      %ClientAPI.Client{} = client -> client
+      _ ->
+        {:error, :unprocessable_entity, %{api_key: "API-KEY header is invalid."}}
     end
+  end
+
+  defp validate_broker_priv_settings({:error, errors, status}), do: {:error, errors, status}
+  defp validate_broker_priv_settings(%ClientAPI.Client{priv_settings: %{"broker_scope" => _}} = broker) do
+    broker
+  end
+  defp validate_broker_priv_settings(_) do
+    {:error, :unprocessable_entity, %{broker_settings: "Incorrect broker settings."}}
   end
 
   defp validate_redirect_uri({:error, status, errors}), do: {:error, status, errors}

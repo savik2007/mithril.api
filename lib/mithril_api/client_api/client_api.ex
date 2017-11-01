@@ -49,15 +49,6 @@ defmodule Mithril.ClientAPI do
 
   def get_client_by(attrs), do: Repo.get_by(Client, attrs)
 
-  def get_client_broker_by_secret(secret) do
-    query =
-      from c in Client,
-      where: [secret: ^secret],
-      where: fragment("? \\?| ?", c.priv_settings, ["broker_scope"])
-
-    Repo.one(query)
-  end
-
   def edit_client(id, attrs \\ %{}) do
     case Repo.get(Client, id) do
       nil                -> create_client(id, attrs)

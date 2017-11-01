@@ -259,13 +259,13 @@ defmodule Mithril.OAuth.AppControllerTest do
     test "Incorrect broker settings", %{conn: conn, request: request} do
       conn = put_req_header(conn, "api-key", "invalid_api_key")
       conn = post conn, oauth2_app_path(conn, :authorize), request
-      assert "Incorrect broker settings." == json_response(conn, 422)["error"]["api_key"]
+      assert "API-KEY header is invalid." == json_response(conn, 422)["error"]["api_key"]
     end
 
     test "not broker API-KEY Header)", %{conn: conn, client: client, request: request} do
       conn = put_req_header(conn, "api-key", client.secret)
       conn = post conn, oauth2_app_path(conn, :authorize), request
-      assert "Incorrect broker settings." == json_response(conn, 422)["error"]["api_key"]
+      assert "Incorrect broker settings." == json_response(conn, 422)["error"]["broker_settings"]
     end
 
     test "invalid broker scope", %{conn: conn, client: client, broker: broker} do

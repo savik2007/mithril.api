@@ -287,10 +287,10 @@ defmodule Mithril.Web.TokenControllerTest do
       assert "API-KEY header is invalid." == json_response(conn, 422)["error"]["api_key"]
     end
 
-    test "not broker API-KEY Header)", %{conn: conn, client: client, token: token} do
+    test "not broker API-KEY Header", %{conn: conn, client: client, token: token} do
       conn = put_req_header(conn, "api-key", client.secret)
       conn = get conn, token_verify_path(conn, :verify, token)
-      assert "API-KEY header is invalid." == json_response(conn, 422)["error"]["api_key"]
+      assert "Incorrect broker settings." == json_response(conn, 422)["error"]["broker_settings"]
     end
 
     test "valid request with broker scope", %{conn: conn, client: client, broker: broker, user: user} do
