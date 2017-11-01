@@ -5,7 +5,7 @@ defmodule Mithril.ClientAPI.Client do
   @foreign_key_type :binary_id
   schema "clients" do
     field :name, :string
-    field :priv_settings, :map, default: %{}
+    field :priv_settings, :map, default: %{"access_type" => "BROKER"}
     field :redirect_uri, :string
     field :secret, :string
     field :settings, :map, default: %{}
