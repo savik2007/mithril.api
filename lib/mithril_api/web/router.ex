@@ -47,6 +47,8 @@ defmodule MithrilWeb.Router do
       get "/verify", TokenController, :verify, as: :verify
       get "/user", TokenController, :user, as: :user
     end
+    delete "/tokens", TokenController, :delete_by_user_ids
+
     resources "/apps", AppController, except: [:new, :edit]
     resources "/client_types", ClientTypeController, except: [:new, :edit]
     resources "/roles", RoleController, except: [:new, :edit]
