@@ -28,7 +28,11 @@ defmodule Mithril.Web.TokenController do
   end
 
   def verify(conn, %{"token_id" => value}) do
-    api_key = conn |> Plug.Conn.get_req_header("api-key") |> List.first()
+    api_key =
+      conn
+      |> Plug.Conn.get_req_header("api-key")
+      |> List.first()
+
     case TokenAPI.verify_client_token(value, api_key) do
       {:ok, token} ->
         render(conn, "show.json", token: token)
@@ -69,6 +73,14 @@ defmodule Mithril.Web.TokenController do
 
   def delete_by_user(conn, %{"user_id" => _} = params) do
     with {_, nil} <- TokenAPI.delete_tokens_by_params(params) do
+      send_resp(conn, :no_content, "")
+    end
+  end
+
+  def delete_by_user_ids(conn, %{"user_ids" => ids}) do
+    with {_, nil} <- ids
+                     |> String.split(",")
+                     |> TokenAPI.delete_tokens_by_user_ids() do
       send_resp(conn, :no_content, "")
     end
   end

@@ -72,6 +72,11 @@ defmodule Mithril.TokenAPI do
     Repo.delete(token)
   end
 
+  def delete_tokens_by_user_ids(user_ids) do
+    q = from(t in Token, where: t.user_id in ^user_ids)
+    Repo.delete_all(q)
+  end
+
   def delete_tokens_by_params(params) do
     %TokenSearch{}
     |> token_changeset(params)
