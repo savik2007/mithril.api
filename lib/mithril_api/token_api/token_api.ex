@@ -135,6 +135,7 @@ defmodule Mithril.TokenAPI do
       @broker ->
         api_key
         |> validate_api_key()
+        |> fetch_client_by_secret()
         |> fetch_broker_scope()
         |> put_broker_scope_into_token_details(token)
     end
@@ -143,14 +144,21 @@ defmodule Mithril.TokenAPI do
   defp validate_api_key(api_key) when is_binary(api_key), do: api_key
   defp validate_api_key(_), do: {:error, %{api_key: "API-KEY header required."}, :unprocessable_entity}
 
-  defp fetch_broker_scope({:error, errors, status}), do: {:error, errors, status}
-  defp fetch_broker_scope(api_key) do
-    case ClientAPI.get_client_broker_by_secret(api_key) do
-      %ClientAPI.Client{priv_settings: settings} ->
-        Map.get(settings, "broker_scope")
+  defp fetch_client_by_secret({:error, errors, status}), do: {:error, errors, status}
+  defp fetch_client_by_secret(api_key) do
+    case ClientAPI.get_client_by([secret: api_key]) do
+      %ClientAPI.Client{} = client -> client
       _ ->
         {:error, %{api_key: "API-KEY header is invalid."}, :unprocessable_entity}
     end
+  end
+
+  defp fetch_broker_scope({:error, errors, status}), do: {:error, errors, status}
+  defp fetch_broker_scope(%ClientAPI.Client{priv_settings: %{"broker_scope" => broker_scope}}) do
+    broker_scope
+  end
+  defp fetch_broker_scope(_) do
+    {:error, %{broker_settings: "Incorrect broker settings."}, :unprocessable_entity}
   end
 
   defp put_broker_scope_into_token_details({:error, errors, status}, _token), do: {:error, errors, status}
