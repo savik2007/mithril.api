@@ -59,7 +59,7 @@ defmodule Mithril.Mixfile do
      {:phoenix_ecto, "~> 3.2"},
      {:scrivener_ecto, "~> 1.2"},
      {:comeonin, ">= 0.0.0"},
-     {:bcrypt_elixir, "~> 0.12"},
+     {:bcrypt_elixir, "~> 1.0"},
      {:secure_random, ">= 0.0.0"},
      {:benchfella, ">= 0.3.4", only: [:dev, :test]},
      {:ex_machina, ">= 1.0.0", only: [:dev, :test]},
