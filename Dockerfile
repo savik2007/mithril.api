@@ -1,7 +1,6 @@
-# Alpine 3.6 last musl version 1.1.17, that doesn't works with elixir 1.5
-FROM nebo15/alpine-elixir:1.4.5
+FROM edenlabllc/alpine-elixir
 
-RUN apk add --no-cache --update --virtual .build-deps musl=1.1.16-r14 make g++
+RUN apk add --no-cache --update --virtual .build-deps musl=1.1.18-r0 make g++
 
 # Maintainers
 MAINTAINER Nebo#15 support@nebo15.com
