@@ -4,15 +4,14 @@ defmodule Mithril.Web.RoleControllerTest do
   alias Mithril.RoleAPI
   alias Mithril.RoleAPI.Role
 
-  @create_attrs %{name: "some name", scope: "some scope"}
+  @create_attrs %{scope: "some scope"}
   @update_attrs %{name: "some updated name", scope: "some updated scope"}
   @invalid_attrs %{name: nil, scope: nil}
 
   def fixture(:role, params \\ %{}) do
-    {:ok, role} =
-      @create_attrs
-      |> Map.merge(params)
-      |> RoleAPI.create_role()
+    params = Map.merge(@create_attrs, params)
+    params = if Map.has_key?(params, :name), do: params, else: Map.put(params, :name, to_string(:rand.uniform))
+    {:ok, role} = RoleAPI.create_role(params)
     role
   end
 
@@ -76,7 +75,7 @@ defmodule Mithril.Web.RoleControllerTest do
   end
 
   test "creates role and renders role when data is valid", %{conn: conn} do
-    conn = post conn, role_path(conn, :create), role: @create_attrs
+    conn = post conn, role_path(conn, :create), role: Map.put(@create_attrs, :name, "some name")
     assert %{"id" => id} = json_response(conn, 201)["data"]
 
     conn = get conn, role_path(conn, :show, id)

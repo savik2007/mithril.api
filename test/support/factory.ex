@@ -40,7 +40,7 @@ defmodule Mithril.Factory do
 
   def client_type_factory do
     %Mithril.ClientTypeAPI.ClientType{
-      name: "some name",
+      name: to_string(:rand.uniform),
       scope: "some scope",
     }
   end
@@ -55,7 +55,7 @@ defmodule Mithril.Factory do
 
   def role_factory do
     %Mithril.RoleAPI.Role{
-      name: "some name",
+      name: to_string(:rand.uniform),
       scope: "some scope"
     }
   end
