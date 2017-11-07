@@ -4,12 +4,14 @@ defmodule Mithril.Web.ClientTypeControllerTest do
   alias Mithril.ClientTypeAPI
   alias Mithril.ClientTypeAPI.ClientType
 
-  @create_attrs %{name: "some name", scope: "some scope"}
+  @create_attrs %{scope: "some scope"}
   @update_attrs %{name: "some updated name", scope: "some updated scope"}
   @invalid_attrs %{name: nil, scope: nil}
 
   def fixture(:client_type, params \\ %{}) do
-    {:ok, client_type} = ClientTypeAPI.create_client_type(Map.merge(@create_attrs, params))
+    params = Map.merge(@create_attrs, params)
+    params = if Map.has_key?(params, :name), do: params, else: Map.put(params, :name, to_string(:rand.uniform))
+    {:ok, client_type} = ClientTypeAPI.create_client_type(params)
     client_type
   end
 
@@ -78,7 +80,7 @@ defmodule Mithril.Web.ClientTypeControllerTest do
   end
 
   test "creates client_type and renders client_type when data is valid", %{conn: conn} do
-    conn = post conn, client_type_path(conn, :create), client_type: @create_attrs
+    conn = post conn, client_type_path(conn, :create), client_type: Map.put(@create_attrs, :name, "some name")
     assert %{"id" => id} = json_response(conn, 201)["data"]
 
     conn = get conn, client_type_path(conn, :show, id)

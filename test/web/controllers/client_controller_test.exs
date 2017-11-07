@@ -24,10 +24,11 @@ defmodule Mithril.Web.ClientControllerTest do
     settings: nil
   }
 
-  def fixture(:client, name \\ "some_name") do
+  def fixture(:client, name \\ "some_name", client_type_params \\ %{}) do
+    %{id: client_type_id} = Mithril.Fixtures.create_client_type(client_type_params)
     {:ok, client} =
       name
-      |> Mithril.Fixtures.client_create_attrs()
+      |> Mithril.Fixtures.client_create_attrs(client_type_id)
       |> ClientAPI.create_client()
     client
   end
@@ -99,7 +100,7 @@ defmodule Mithril.Web.ClientControllerTest do
   end
 
   test "show client details", %{conn: conn} do
-    client = fixture(:client)
+    client = fixture(:client, "some name", %{name: "some_kind_of_client"})
 
     conn = get conn, client_details_path(conn, :details, client.id)
     assert json_response(conn, 200)["data"] == %{
