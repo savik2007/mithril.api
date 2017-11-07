@@ -26,7 +26,10 @@ use Mix.Config
 
 config :mithril_api,
   ecto_repos: [Mithril.Repo],
-  namespace: Mithril
+  namespace: Mithril,
+  otp_ttl: {:system, :integer, "OTP_LIFETIME", 300}, # seconds
+  otp_length: {:system, :integer, "OTP_LENGTH", 6},
+  otp_error_max: {:system, :integer, "OTP_ERROR_MAX", 3}
 
 # Configure your database
 config :mithril_api, Mithril.Repo,
