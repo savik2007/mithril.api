@@ -62,6 +62,12 @@ defmodule Mithril.TokenAPI do
     |> Repo.insert()
   end
 
+  def create_2fa_access_token(attrs \\ %{}) do
+    %Token{}
+    |> access_token_2fa_changeset(attrs)
+    |> Repo.insert()
+  end
+
   def update_token(%Token{} = token, attrs) do
     token
     |> token_changeset(attrs)
@@ -198,34 +204,30 @@ defmodule Mithril.TokenAPI do
     |> set_like_attributes([:name, :value])
   end
 
-  defp refresh_token_changeset(%Token{} = token, attrs) do
+  defp token_changeset(%Token{} = token, attrs, type, name) do
     token
     |> cast(attrs, [:name, :expires_at, :details, :user_id])
     |> validate_required([:user_id])
     |> put_change(:value, SecureRandom.urlsafe_base64)
-    |> put_change(:name, "refresh_token")
-    |> put_change(:expires_at, :os.system_time(:seconds) + Map.fetch!(get_token_lifetime(), :refresh))
+    |> put_change(:name, name)
+    |> put_change(:expires_at, :os.system_time(:seconds) + Map.fetch!(get_token_lifetime(), type))
     |> unique_constraint(:value, name: :tokens_value_name_index)
+  end
+
+  defp refresh_token_changeset(%Token{} = token, attrs) do
+    token_changeset(token, attrs, :refresh, "refresh_token")
   end
 
   defp access_token_changeset(%Token{} = token, attrs) do
-    token
-    |> cast(attrs, [:name, :expires_at, :details, :user_id])
-    |> validate_required([:user_id])
-    |> put_change(:value, SecureRandom.urlsafe_base64)
-    |> put_change(:name, "access_token")
-    |> put_change(:expires_at, :os.system_time(:seconds) + Map.fetch!(get_token_lifetime(), :access))
-    |> unique_constraint(:value, name: :tokens_value_name_index)
+    token_changeset(token, attrs, :access, "access_token")
+  end
+
+  defp access_token_2fa_changeset(%Token{} = token, attrs) do
+    token_changeset(token, attrs, :access, "2fa_access_token")
   end
 
   defp authorization_code_changeset(%Token{} = token, attrs) do
-    token
-    |> cast(attrs, [:name, :expires_at, :details, :user_id])
-    |> validate_required([:user_id])
-    |> put_change(:value, SecureRandom.urlsafe_base64)
-    |> put_change(:name, "authorization_code")
-    |> put_change(:expires_at, :os.system_time(:seconds) + Map.fetch!(get_token_lifetime(), :code))
-    |> unique_constraint(:value, name: :tokens_value_name_index)
+    token_changeset(token, attrs, :code, "authorization_code")
   end
 
   defp get_token_lifetime,

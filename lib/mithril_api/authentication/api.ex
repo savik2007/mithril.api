@@ -22,6 +22,7 @@ defmodule Mithril.Authentication do
   def get_authentication_factor(id), do: Repo.get(FactorSchema, id)
   def get_authentication_factor!(id), do: Repo.get!(FactorSchema, id)
 
+  def get_authentication_factor_by(params), do: Repo.get_by(FactorSchema, params)
   def get_authentication_factor_by!(params), do: Repo.get_by!(FactorSchema, params)
 
   def create_factor(attrs) do
