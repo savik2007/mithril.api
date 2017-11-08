@@ -47,7 +47,7 @@ defmodule Mithril.Fixtures do
 
   def role_attrs do
     %{
-      name: "some name",
+      name: to_string(:rand.uniform),
       scope: "some scope"
     }
   end
@@ -74,7 +74,13 @@ defmodule Mithril.Fixtures do
     }
   end
 
-  def client_type_attrs(name \\ "some_kind_of_client") do
+  def client_type_attrs do
+    %{
+      name: to_string(:rand.uniform),
+      scope: "some scope"
+    }
+  end
+  def client_type_attrs(name) do
     %{
       name: name,
       scope: "some scope"
