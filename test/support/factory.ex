@@ -67,4 +67,13 @@ defmodule Mithril.Factory do
       role_id: insert(:role).id
     }
   end
+
+  def authentication_factor_factory do
+    %Mithril.Authentication.Factors{
+      type: Mithril.Authentication.type(:sms),
+      factor: "+380901112233",
+      is_active: true,
+      user_id: insert(:user).id,
+    }
+  end
 end

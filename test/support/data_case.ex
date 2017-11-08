@@ -21,6 +21,7 @@ defmodule Mithril.DataCase do
       import Ecto
       import Ecto.Changeset
       import Ecto.Query
+      import Mithril.Factory
       import Mithril.DataCase
     end
   end
