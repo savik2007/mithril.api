@@ -49,7 +49,9 @@ defmodule Mithril.Factory do
     %Mithril.UserAPI.User{
       email: sequence("mail@example.com-"),
       password: "some password",
-      settings: %{}
+      settings: %{},
+      is_blocked: false,
+      block_reason: nil,
     }
   end
 

@@ -10,6 +10,8 @@ defmodule Mithril.UserAPI.User do
     field :current_password, :string, virtual: true
     field :settings, :map, default: %{}
     field :priv_settings, :map, default: %{}
+    field :is_blocked, :boolean, default: false
+    field :block_reason, :string
 
     has_many :user_roles, Mithril.UserRoleAPI.UserRole
     has_many :roles, through: [:user_roles, :role]

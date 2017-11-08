@@ -51,3 +51,14 @@ If you want to run migrations when container starts, use a `DB_MIGRATE` variable
 | AUTH_CODE_GRANT_LIFETIME    | 300              | Lifetime of code grant   |
 | AUTH_ACCESS_TOKEN_LIFETIME  | 2592000          | Lifetime of access token |
 | AUTH_REFRESH_TOKEN_LIFETIME | 604800           | Lifetime of secret token |
+
+## Two-factor authentication
+
+| VAR_NAME              | Default Value  | Description              |
+| --------------------- | -------------- | ------------------------ |
+| USER_2FA_ENABLED      | true           | Create or not default auth factor for user|
+| USER_LOGIN_ERROR_MAX  | 3              | Max failed user login attempts until user will be blocked |
+| USER_OTP_ERROR_MAX    | 3              | Max failed OTP verifications attempts until user will be blocked |
+| OTP_LENGTH            | 6              | OTP code length |
+| OTP_LIFETIME          | 300            | OTP lifetime in seconds |
+| OTP_MAX_ATTEMPTS      | 3              | Max attempts for verification OTP |

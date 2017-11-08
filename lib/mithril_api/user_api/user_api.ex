@@ -5,8 +5,10 @@ defmodule Mithril.UserAPI do
 
   import Ecto.{Query, Changeset}, warn: false
 
+  alias Ecto.Multi
   alias Mithril.Repo
   alias Mithril.UserAPI.User
+  alias Mithril.Authentication
 
   def list_users(params) do
     User
@@ -35,9 +37,20 @@ defmodule Mithril.UserAPI do
   end
 
   def create_user(attrs \\ %{}) do
-    %User{}
-    |> user_changeset(attrs)
-    |> Repo.insert()
+    user_changeset = user_changeset(%User{}, attrs)
+    Multi.new
+    |> Multi.insert(:user, user_changeset)
+    |> Multi.run(:authentication_factors, fn %{user: user} ->
+         case Confex.get_env(:mithril_api, :user_2fa_enabled) do
+           true -> Authentication.create_factor(%{type: Authentication.type(:sms), user_id: user.id})
+           false -> {:ok, :not_enabled}
+         end
+    end)
+    |> Repo.transaction()
+    |> case do
+         {:ok, %{user: user}} -> {:ok, user}
+         {:error, _, err, _} -> {:error, err}
+       end
   end
 
   def update_user(%User{} = user, attrs) do

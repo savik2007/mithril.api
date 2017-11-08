@@ -22,6 +22,8 @@ defmodule Mithril.Authentication do
   def get_authentication_factor(id), do: Repo.get(FactorSchema, id)
   def get_authentication_factor!(id), do: Repo.get!(FactorSchema, id)
 
+  def get_authentication_factor_by!(params), do: Repo.get_by!(FactorSchema, params)
+
   def create_factor(attrs) do
     %FactorSchema{}
     |> changeset(attrs)
@@ -34,7 +36,7 @@ defmodule Mithril.Authentication do
     |> Repo.update()
   end
 
-  defp changeset(%FactorSchema{} = client, attrs) do
+  def changeset(%FactorSchema{} = client, attrs) do
     client
     |> cast(attrs, @fields_required ++ @fields_optional)
     |> validate_required(@fields_required)

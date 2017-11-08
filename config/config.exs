@@ -27,9 +27,12 @@ use Mix.Config
 config :mithril_api,
   ecto_repos: [Mithril.Repo],
   namespace: Mithril,
+  user_2fa_enabled: {:system, :boolean, "USER_2FA_ENABLED", true},
+  user_login_error_max: {:system, :integer, "USER_LOGIN_ERROR_MAX", 3},
+  user_otp_error_max: {:system, :integer, "USER_OTP_ERROR_MAX", 3},
   otp_ttl: {:system, :integer, "OTP_LIFETIME", 300}, # seconds
   otp_length: {:system, :integer, "OTP_LENGTH", 6},
-  otp_error_max: {:system, :integer, "OTP_ERROR_MAX", 3}
+  otp_max_attempts: {:system, :integer, "OTP_MAX_ATTEMPTS", 3}
 
 # Configure your database
 config :mithril_api, Mithril.Repo,
