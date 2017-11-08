@@ -10,7 +10,7 @@ defmodule Mithril.Web.ClientView do
   end
 
   def render("client.json", %{client: client}) do
-    Map.take(client, ~w(id name secret is_blocked block_reason redirect_uri settings priv_settings)a)
+    Map.take(client, ~w(id name secret is_blocked block_reason redirect_uri settings)a)
   end
 
   def render("details.json", %{client: client, client_type_name: client_type_name}) do
