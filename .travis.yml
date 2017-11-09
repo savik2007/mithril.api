@@ -52,5 +52,5 @@ script:
     # Submit Docker container to Docker Hub and create GitHub Release by pushing tag with changelog
   - ./bin/ci/push.sh || travis_terminate 1
   # CD to Dev
-  - openssl aes-256-cbc -K $encrypted_792e32fefb8e_key -iv $encrypted_792e32fefb8e_iv -in eHealth-8110bd102a69.json.enc eHealth-8110bd102a69.json -d
+  - openssl aes-256-cbc -K $encrypted_6a0dda48e28c_key -iv $encrypted_6a0dda48e28c_iv -in $TRAVIS_BUILD_DIR/eHealth-8110bd102a69.json.enc -out $TRAVIS_BUILD_DIR/eHealth-8110bd102a69.json -d
   - sudo ./bin/deploy.sh || travis_terminate 1
