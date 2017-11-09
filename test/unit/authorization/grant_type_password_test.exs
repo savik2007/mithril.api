@@ -19,7 +19,7 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
       "scope" => "legal_entity:read",
     })
 
-    assert token.name == "access_token"
+    assert token.name == "2fa_access_token"
     assert token.value
     assert token.expires_at
     assert token.user_id == user.id

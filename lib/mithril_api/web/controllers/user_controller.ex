@@ -4,6 +4,7 @@ defmodule Mithril.Web.UserController do
   use Mithril.Web, :controller
 
   alias Mithril.UserAPI
+  alias Mithril.Authentication
   alias Mithril.UserAPI.User
   alias Scrivener.Page
 

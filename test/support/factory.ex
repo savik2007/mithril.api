@@ -49,7 +49,9 @@ defmodule Mithril.Factory do
     %Mithril.UserAPI.User{
       email: sequence("mail@example.com-"),
       password: "some password",
-      settings: %{}
+      settings: %{},
+      is_blocked: false,
+      block_reason: nil,
     }
   end
 
@@ -69,7 +71,7 @@ defmodule Mithril.Factory do
   end
 
   def authentication_factor_factory do
-    %Mithril.Authentication.Factors{
+    %Mithril.Authentication.Factor{
       type: Mithril.Authentication.type(:sms),
       factor: "+380901112233",
       is_active: true,

@@ -2,6 +2,8 @@ defmodule Mithril.Authorization.GrantType.Password do
   @moduledoc false
   alias Mithril.Authorization.GrantType.Error, as: GrantTypeError
   alias Mithril.TokenAPI.Token
+  alias Mithril.Authentication
+  alias Mithril.Authentication.Factor
 
   def authorize(%{"email" => email, "password" => password, "client_id" => client_id, "scope" => scope})
       when not (is_nil(email) or is_nil(password) or is_nil(client_id) or is_nil(scope))
@@ -45,7 +47,7 @@ defmodule Mithril.Authorization.GrantType.Password do
 
   defp create_access_token({:error, err, code}, _, _), do: {:error, err, code}
   defp create_access_token({:ok, user}, client, scope) do
-    Mithril.TokenAPI.create_access_token(%{
+    data = %{
       user_id: user.id,
       details: %{
         grant_type: "password",
@@ -53,7 +55,13 @@ defmodule Mithril.Authorization.GrantType.Password do
         scope: scope,
         redirect_uri: client.redirect_uri
       }
-    })
+    }
+
+    case Mithril.Authentication.get_factor_by([user_id: user.id, is_active: true]) do
+      %Factor{} -> Mithril.TokenAPI.create_2fa_access_token(data)
+      _ -> Mithril.TokenAPI.create_access_token(data)
+    end
+
   end
 
   defp deactivate_old_tokens({:ok, %Token{} = token}) do

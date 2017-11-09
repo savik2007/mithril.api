@@ -33,6 +33,13 @@ defmodule MithrilWeb.Router do
       delete "/apps", AppController, :delete_by_user
 
       patch "/actions/change_password", UserController, :change_password
+
+      resources "/authentication_factor", AuthenticationFactorController,
+        except: [:new, :edit, :delete], as: :authentication_factor
+      patch "/authentication_factor/:id/actions/reset", AuthenticationFactorController, :reset,
+        as: :authentication_factor
+      patch "/authentication_factor/:id/actions/disable", AuthenticationFactorController, :disable,
+        as: :authentication_factor
     end
 
     get "/user_roles", UserRoleController, :index, as: :user_roles

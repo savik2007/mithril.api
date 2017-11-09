@@ -30,7 +30,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
     token = json_response(conn, 201)["data"]
 
-    assert token["name"] == "access_token"
+    assert token["name"] == "2fa_access_token"
     assert token["value"]
     assert token["expires_at"]
     assert token["user_id"] == user.id

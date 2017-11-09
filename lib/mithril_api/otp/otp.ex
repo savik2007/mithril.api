@@ -20,7 +20,7 @@ defmodule Mithril.OTP do
 
   @otp_ttl Confex.get_env(:mithril_api, :otp_ttl)
   @otp_length Confex.get_env(:mithril_api, :otp_length)
-  @otp_error_max Confex.get_env(:mithril_api, :otp_error_max)
+  @otp_max_attempts Confex.get_env(:mithril_api, :otp_max_attempts)
 
   @doc """
   Returns the list of otps.
@@ -136,7 +136,7 @@ defmodule Mithril.OTP do
 
   @spec verify_max_attemps(otp :: OTPSchema.t) :: atom()
   defp verify_max_attemps(%OTPSchema{attempts_count: attempts_count}) do
-    if attempts_count < @otp_error_max,
+    if attempts_count < @otp_max_attempts,
        do: :ok,
        else: :reached_max_attempts
   end
