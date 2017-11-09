@@ -67,30 +67,40 @@ defmodule Mithril.Authentication do
     |> cast(attrs, @fields_required ++ @fields_optional)
     |> validate_required(@fields_required)
     |> validate_inclusion(:type, [@type_sms])
-    |> validate_factor()
+    |> validate_factor_reseted()
+    |> validate_factor_format()
     |> unique_constraint(:user_id, name: "authentication_factors_user_id_type_index")
     |> assoc_constraint(:user)
   end
 
-  defp validate_factor(changeset) do
+  defp validate_factor_reseted(%Ecto.Changeset{data: %Factor{factor: factor}} = changeset) do
+    validate_change changeset, :factor, fn :factor, _ ->
+      case factor do
+          nil -> []
+          _ -> [factor: "factor alredy set and cannot be updated"]
+      end
+    end
+  end
+
+  defp validate_factor_format(changeset) do
     validate_change changeset, :factor, fn :factor, factor ->
       changeset
       |> fetch_field(:type)
       |> elem(1)
-      |> validate_factor(factor)
+      |> validate_factor_format(factor)
     end
   end
 
-  def validate_factor(@type_sms, nil) do
+  defp validate_factor_format(@type_sms, nil) do
     []
   end
-  def validate_factor(@type_sms, value) do
+  defp validate_factor_format(@type_sms, value) do
     case value =~ ~r/^\+380[0-9]{9}$/ do
       true -> []
       false -> [factor: "invalid phone"]
     end
   end
-  def validate_factor(_, _) do
+  defp validate_factor_format(_, _) do
     []
   end
 
