@@ -9,9 +9,13 @@ defmodule Mithril.UserAPI.User do
     field :password, :string
     field :current_password, :string, virtual: true
     field :settings, :map, default: %{}
-    field :priv_settings, :map, default: %{}
     field :is_blocked, :boolean, default: false
     field :block_reason, :string
+
+    embeds_one :priv_settings, PrivSettings do
+      field :login_error_counter, :integer
+      field :otp_error_counter, :integer
+    end
 
     has_many :user_roles, Mithril.UserRoleAPI.UserRole
     has_many :roles, through: [:user_roles, :role]

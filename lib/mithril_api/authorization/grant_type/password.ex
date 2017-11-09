@@ -58,7 +58,7 @@ defmodule Mithril.Authorization.GrantType.Password do
     }
 
     case Mithril.Authentication.get_authentication_factor_by([user_id: user.id, is_active: true]) do
-      %Factors{} -> Mithril.TokenAPI.create_access_2fa_token(data)
+      %Factors{} -> Mithril.TokenAPI.create_2fa_access_token(data)
       _ -> Mithril.TokenAPI.create_access_token(data)
     end
 

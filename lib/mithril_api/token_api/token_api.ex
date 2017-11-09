@@ -182,7 +182,7 @@ defmodule Mithril.TokenAPI do
     now = :os.system_time(:seconds)
     Token
     |> where([t], t.id != ^id)
-    |> where([t], t.name == "access_token" and t.user_id == ^user_id)
+    |> where([t], t.name in ["access_token", "2fa_access_token"] and t.user_id == ^user_id)
     |> where([t], t.expires_at >= ^now)
     |> where([t], fragment("?->>'grant_type' = 'password'", t.details))
     |> Repo.update_all(set: [expires_at: now])
