@@ -71,7 +71,7 @@ defmodule Mithril.Factory do
   end
 
   def authentication_factor_factory do
-    %Mithril.Authentication.Factors{
+    %Mithril.Authentication.Factor{
       type: Mithril.Authentication.type(:sms),
       factor: "+380901112233",
       is_active: true,

@@ -1,4 +1,4 @@
-defmodule Mithril.Authentication.Factors do
+defmodule Mithril.Authentication.Factor do
   @doc false
 
   use Ecto.Schema

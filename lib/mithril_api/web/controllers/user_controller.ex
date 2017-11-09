@@ -38,14 +38,6 @@ defmodule Mithril.Web.UserController do
     end
   end
 
-  def disable2fa(conn, %{"user_id" => id}) do
-    user = UserAPI.get_user!(id)
-
-    with {:ok, %User{}} <- Authentication.disable_factor_by_user(user) do
-      render(conn, "show.json", user: user)
-    end
-  end
-
   def delete(conn, %{"id" => id}) do
     user = UserAPI.get_user!(id)
     with {:ok, %User{}} <- UserAPI.delete_user(user) do

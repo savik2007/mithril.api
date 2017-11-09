@@ -3,7 +3,7 @@ defmodule Mithril.Authorization.GrantType.Password do
   alias Mithril.Authorization.GrantType.Error, as: GrantTypeError
   alias Mithril.TokenAPI.Token
   alias Mithril.Authentication
-  alias Mithril.Authentication.Factors
+  alias Mithril.Authentication.Factor
 
   def authorize(%{"email" => email, "password" => password, "client_id" => client_id, "scope" => scope})
       when not (is_nil(email) or is_nil(password) or is_nil(client_id) or is_nil(scope))
@@ -57,8 +57,8 @@ defmodule Mithril.Authorization.GrantType.Password do
       }
     }
 
-    case Mithril.Authentication.get_authentication_factor_by([user_id: user.id, is_active: true]) do
-      %Factors{} -> Mithril.TokenAPI.create_2fa_access_token(data)
+    case Mithril.Authentication.get_factor_by([user_id: user.id, is_active: true]) do
+      %Factor{} -> Mithril.TokenAPI.create_2fa_access_token(data)
       _ -> Mithril.TokenAPI.create_access_token(data)
     end
 
