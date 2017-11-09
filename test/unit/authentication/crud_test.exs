@@ -66,19 +66,6 @@ defmodule Mithril.Authentication.CRUDTest do
     end
   end
 
-  describe "update" do
-    setup do
-      user = insert(:user)
-      factor = insert(:authentication_factor, user_id: user.id)
-      %{factor: factor}
-    end
-
-    test "success", %{factor: factor} do
-      phone = "+380909998877"
-      assert {:ok, %Factor{factor: ^phone}} = Authentication.update_factor(factor, %{"factor" => phone})
-    end
-  end
-
   describe "authentication factor created when user created" do
     test "success" do
       assert {:ok, user} = UserAPI.create_user(%{"email" => "test@example.com", "password" => "p@S$w0rD"})

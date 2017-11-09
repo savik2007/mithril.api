@@ -37,6 +37,28 @@ defmodule Mithril.Web.AuthenticationFactorControllerTest do
       {:ok, conn: conn, user: user, factor: factor}
     end
 
+    test "reset factor", %{conn: conn, user: user, factor: factor} do
+      conn = patch conn, user_authentication_factor_path(conn, :reset, user, factor.id)
+      assert json_response(conn, 200)
+
+      conn = patch conn, user_authentication_factor_path(conn, :update, user, factor.id), %{factor: "+380901002030"}
+      assert %{"id" => id} = json_response(conn, 200)["data"]
+
+      conn = get conn, user_authentication_factor_path(conn, :show, user.id, id)
+      data = json_response(conn, 200)["data"]
+
+      assert user.id == data["user_id"]
+      assert "+380901002030" == data["factor"]
+      assert data["is_active"]
+    end
+
+    test "factor already set", %{conn: conn, user: user, factor: factor} do
+      conn = patch conn, user_authentication_factor_path(conn, :update, user, factor.id), %{factor: "100500"}
+
+      assert [error] = json_response(conn, 422)["error"]["invalid"]
+      assert "$.factor" == error["entry"]
+    end
+
     test "disable", %{conn: conn, user: user, factor: factor} do
       conn = patch conn, user_authentication_factor_path(conn, :disable, user, factor.id)
       assert %{"id" => id} = json_response(conn, 200)["data"]
