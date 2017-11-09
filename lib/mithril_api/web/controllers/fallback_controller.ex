@@ -22,6 +22,16 @@ defmodule Mithril.Web.FallbackController do
     |> render(EView.Views.Error, :"404")
   end
 
+  def call(conn, {:error, {:conflict, reason}}) do
+    call(conn, {:conflict, reason})
+  end
+
+  def call(conn, {:conflict, reason}) do
+    conn
+    |> put_status(:conflict)
+    |> render(EView.Views.Error, :"409", %{message: reason})
+  end
+
   def call(conn, {:error, {:"422", error}}) do
     conn
     |> put_status(422)
