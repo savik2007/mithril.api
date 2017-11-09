@@ -32,6 +32,7 @@ defmodule MithrilWeb.Router do
       delete "/tokens", TokenController, :delete_by_user
       delete "/apps", AppController, :delete_by_user
 
+      patch "/actions/disable2fa", UserController, :disable2fa
       patch "/actions/change_password", UserController, :change_password
     end
 

@@ -4,6 +4,7 @@ defmodule Mithril.Web.UserController do
   use Mithril.Web, :controller
 
   alias Mithril.UserAPI
+  alias Mithril.Authentication
   alias Mithril.UserAPI.User
   alias Scrivener.Page
 
@@ -33,6 +34,14 @@ defmodule Mithril.Web.UserController do
     user = UserAPI.get_user!(id)
 
     with {:ok, %User{} = user} <- UserAPI.update_user(user, user_params) do
+      render(conn, "show.json", user: user)
+    end
+  end
+
+  def disable2fa(conn, %{"user_id" => id}) do
+    user = UserAPI.get_user!(id)
+
+    with {:ok, %User{}} <- Authentication.disable_factor_by_user(user) do
       render(conn, "show.json", user: user)
     end
   end

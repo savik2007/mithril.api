@@ -1,7 +1,7 @@
 defmodule Mithril.Authentication do
   @doc false
 
-  import Ecto.{Query, Changeset}, warn: false
+  import Ecto.{Query, Changeset, DateTime}, warn: false
   alias Mithril.Repo
   alias Mithril.Authentication.Factors, as: FactorSchema
 
@@ -35,6 +35,18 @@ defmodule Mithril.Authentication do
     factor
     |> changeset(attrs)
     |> Repo.update()
+  end
+
+  def disable_factor_by_user(user) do
+    data = [is_active: false, updated_at: DateTime.utc_now]
+
+    FactorSchema
+    |> where(user_id: ^user.id)
+    |> Repo.update_all(set: data)
+    |> case do
+         {_, nil} -> {:ok, user}
+         _ -> {:error, {:"422", "cannot disable user authentication factors"}}
+       end
   end
 
   def changeset(%FactorSchema{} = client, attrs) do

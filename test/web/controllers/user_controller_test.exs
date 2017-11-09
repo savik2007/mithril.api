@@ -3,6 +3,7 @@ defmodule Mithril.Web.UserControllerTest do
 
   alias Mithril.UserAPI
   alias Mithril.UserAPI.User
+  alias Mithril.Authentication.Factors
 
   @create_attrs %{email: "some email", password: "some password", settings: %{}}
   @update_attrs %{email: "some updated email", password: "some updated password", settings: %{}}
@@ -97,6 +98,22 @@ defmodule Mithril.Web.UserControllerTest do
     assert response(conn, 204)
     assert_error_sent 404, fn ->
       get conn, user_path(conn, :show, user)
+    end
+  end
+
+  describe "2fa" do
+    setup %{conn: conn} do
+      user = insert(:user)
+      insert(:authentication_factor, user_id: user.id)
+      {:ok, conn: conn, user: user}
+    end
+
+    test "disable user 2fa", %{conn: conn, user: user} do
+      conn = patch conn, user_path(conn, :update, user) <> "/actions/disable2fa"
+      assert json_response(conn, 200)
+      assert [factor] = Repo.all(Factors)
+      assert user.id == factor.user_id
+      refute factor.is_active
     end
   end
 
