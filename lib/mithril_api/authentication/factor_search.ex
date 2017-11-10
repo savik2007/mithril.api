@@ -6,6 +6,7 @@ defmodule Mithril.Authentication.FactorSearch do
   @primary_key false
   schema "factor_search" do
     field :type, :string
+    field :user_id, Ecto.UUID
     field :is_active, :boolean
   end
 end

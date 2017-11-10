@@ -79,3 +79,8 @@ config :mithril_api, :token_lifetime, %{
   access: {:system, "AUTH_ACCESS_TOKEN_LIFETIME", 30 * 24 * 60 * 60},
   refresh: {:system, "AUTH_REFRESH_TOKEN_LIFETIME", 7 * 24 * 60 * 60}
 }
+
+# Configures employee request terminator
+config :mithril_api, Mithril.OTP.Terminator,
+  frequency: 24 * 60 * 60 * 1000,
+  utc_interval: {0, 4}
