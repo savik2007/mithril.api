@@ -41,7 +41,7 @@ defmodule Mithril.UserAPI do
     Multi.new
     |> Multi.insert(:user, user_changeset)
     |> Multi.run(:authentication_factors, fn %{user: user} ->
-         case Confex.get_env(:mithril_api, :user_2fa_enabled) do
+         case enabled_2fa?(attrs) do
            true -> Authentication.create_factor(%{type: Authentication.type(:sms), user_id: user.id})
            false -> {:ok, :not_enabled}
          end
@@ -51,6 +51,13 @@ defmodule Mithril.UserAPI do
          {:ok, %{user: user}} -> {:ok, user}
          {:error, _, err, _} -> {:error, err}
        end
+  end
+
+  defp enabled_2fa?(attrs) do
+    case Map.has_key?(attrs, "2fa_enable") do
+      true -> true
+      _ -> Confex.get_env(:mithril_api, :user_2fa_enabled)
+    end
   end
 
   def update_user(%User{} = user, attrs) do

@@ -72,11 +72,21 @@ defmodule Mithril.Authentication.CRUDTest do
       assert %Factor{} = Authentication.get_factor_by!(user_id: user.id)
     end
 
-    test "2fa not enabled" do
+    test "2fa not enabled in ENV" do
       System.put_env("USER_2FA_ENABLED", "false")
 
       assert {:ok, user} = UserAPI.create_user(%{"email" => "test@example.com", "password" => "p@S$w0rD"})
       assert_raise Ecto.NoResultsError, fn -> Authentication.get_factor_by!(user_id: user.id) end
+
+      System.put_env("USER_2FA_ENABLED", "true")
+    end
+
+    test "2fa not enabled in ENV but passed param 2fa_enable" do
+      System.put_env("USER_2FA_ENABLED", "false")
+
+      data = %{"email" => "test@example.com", "password" => "p@S$w0rD", "2fa_enable" => true}
+      assert {:ok, user} = UserAPI.create_user(data)
+      assert %Factor{} = Authentication.get_factor_by!(user_id: user.id)
 
       System.put_env("USER_2FA_ENABLED", "true")
     end
