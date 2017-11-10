@@ -37,6 +37,15 @@ defmodule Mithril.Web.AuthenticationFactorControllerTest do
       {:ok, conn: conn, user: user, factor: factor}
     end
 
+    test "factor is not active", %{conn: conn} do
+      %{id: id, user_id: user_id} = insert(:authentication_factor, is_active: false)
+
+      assert_raise Ecto.NoResultsError, fn ->
+        conn = patch conn, user_authentication_factor_path(conn, :update, user_id, id), %{factor: "+380901002030"}
+        json_response(conn, 404)
+      end
+    end
+
     test "reset factor", %{conn: conn, user: user, factor: factor} do
       conn = patch conn, user_authentication_factor_path(conn, :reset, user, factor.id)
       assert json_response(conn, 200)
