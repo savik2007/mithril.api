@@ -42,7 +42,7 @@ defmodule Mithril.Web.AuthenticationFactorController do
          {:ok, %Factor{}} <- Authentication.update_factor(factor, %{"is_active" => false}) do
       render(conn, "show.json", factor: factor)
     else
-      %Factor{is_active: false} -> {:error, {:conflict, "user already disabled"}}
+      %Factor{is_active: false} -> {:error, {:conflict, "user authentication factor already disabled"}}
       err -> err
     end
   end
@@ -52,7 +52,7 @@ defmodule Mithril.Web.AuthenticationFactorController do
          {:ok, %Factor{} = factor} <- Authentication.update_factor(factor, %{"is_active" => true}) do
       render(conn, "show.json", factor: factor)
     else
-      %Factor{is_active: true} -> {:error, {:conflict, "user already enabled"}}
+      %Factor{is_active: true} -> {:error, {:conflict, "user authentication factor already enabled"}}
       err -> err
     end
   end

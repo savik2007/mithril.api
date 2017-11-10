@@ -60,11 +60,11 @@ defmodule Mithril.Web.UserControllerTest do
     assert %{"id" => id} = json_response(conn, 201)["data"]
 
     conn = get conn, user_path(conn, :show, id)
-    assert json_response(conn, 200)["data"] == %{
-      "id" => id,
+    assert %{
+      "id" => ^id,
       "email" => "some email",
       "settings" => %{},
-    }
+    } = json_response(conn, 200)["data"]
   end
 
   test "does not create user and renders errors when data is invalid", %{conn: conn} do
@@ -78,11 +78,11 @@ defmodule Mithril.Web.UserControllerTest do
     assert %{"id" => ^id} = json_response(conn, 200)["data"]
 
     conn = get conn, user_path(conn, :show, id)
-    assert json_response(conn, 200)["data"] == %{
-      "id" => id,
+    assert %{
+      "id" => ^id,
       "email" => "some updated email",
       "settings" => %{},
-    }
+    } = json_response(conn, 200)["data"]
   end
 
   test "does not update chosen user and renders errors when data is invalid", %{conn: conn} do
@@ -97,6 +97,38 @@ defmodule Mithril.Web.UserControllerTest do
     assert response(conn, 204)
     assert_error_sent 404, fn ->
       get conn, user_path(conn, :show, user)
+    end
+  end
+
+  describe "block/unblock user" do
+    test "block user", %{conn: conn} do
+      user = insert(:user)
+      params = %{user: %{"block_reason" => "fraud"}}
+      conn = patch conn, user_path(conn, :update, user) <> "/actions/block", params
+
+      assert data = json_response(conn, 200)["data"]
+      assert "fraud" = data["block_reason"]
+      assert data["is_blocked"]
+    end
+
+    test "user already blocked", %{conn: conn} do
+      user = insert(:user, is_blocked: true)
+      conn = patch conn, user_path(conn, :update, user) <> "/actions/block"
+      assert json_response(conn, 409)
+    end
+
+    test "unblock user", %{conn: conn} do
+      user = insert(:user, is_blocked: true)
+      conn = patch conn, user_path(conn, :update, user) <> "/actions/unblock"
+
+      assert data = json_response(conn, 200)["data"]
+      refute data["is_blocked"]
+    end
+
+    test "user already unblocked", %{conn: conn} do
+      user = insert(:user)
+      conn = patch conn, user_path(conn, :update, user) <> "/actions/unblock"
+      assert json_response(conn, 409)
     end
   end
 

@@ -4,6 +4,8 @@ defmodule Mithril.Web.UserView do
   use Mithril.Web, :view
   alias Mithril.Web.UserView
 
+  @fields ~w(id email settings is_blocked block_reason inserted_at updated_at)a
+
   def render("index.json", %{users: users}) do
     render_many(users, UserView, "user.json")
   end
@@ -13,22 +15,18 @@ defmodule Mithril.Web.UserView do
   end
 
   def render("user.json", %{user: user}) do
-    %{id: user.id,
-      email: user.email,
-      settings: user.settings}
+    Map.take(user, @fields)
   end
 
   def render("urgent.json", %{user: user, urgent: true, expires_at: expires_at}) do
-    %{
-      id: user.id,
-      email: user.email,
-      settings: user.settings,
-      urgent: %{
-        roles: render_many(user.roles, Mithril.Web.RoleView, "show.json"),
-        token: %{
-          expires_at: expires_at
-        }
+    urgent = %{
+      roles: render_many(user.roles, Mithril.Web.RoleView, "show.json"),
+      token: %{
+        expires_at: expires_at
       }
     }
+    user
+    |> Map.take(@fields)
+    |> Map.put(:urgent, urgent)
   end
 end
