@@ -30,7 +30,7 @@ defmodule Mithril.Web.AuthenticationFactorController do
   end
 
   def update(conn, %{"id" => id, "user_id" => user_id} = attrs) do
-    factor = Authentication.get_factor_by!([id: id, user_id: user_id])
+    factor = Authentication.get_factor_by!([id: id, user_id: user_id, is_active: true])
 
     with {:ok, %Factor{} = factor} <- Authentication.update_factor(factor, attrs) do
       render(conn, "show.json", factor: factor)
@@ -58,7 +58,7 @@ defmodule Mithril.Web.AuthenticationFactorController do
   end
 
   def reset(conn, %{"id" => id, "user_id" => user_id}) do
-    factor = Authentication.get_factor_by!([id: id, user_id: user_id])
+    factor = Authentication.get_factor_by!([id: id, user_id: user_id, is_active: true])
 
     with {:ok, %Factor{}} <- Authentication.update_factor(factor, %{"factor" => nil}) do
       render(conn, "show.json", factor: factor)
