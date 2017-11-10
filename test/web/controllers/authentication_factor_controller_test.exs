@@ -5,7 +5,25 @@ defmodule Mithril.Web.AuthenticationFactorControllerTest do
   alias Mithril.Authentication.Factor
 
   describe "list user auth factor" do
+    setup %{conn: conn} do
+      user = insert(:user)
+      insert(:authentication_factor, user_id: user.id)
+      insert(:authentication_factor, user_id: user.id, type: "EMAIL")
+      insert(:authentication_factor, user_id: user.id, type: "PHONE")
+      {:ok, conn: conn, user: user}
+    end
 
+    test "success", %{conn: conn, user: user} do
+      conn = get conn, user_authentication_factor_path(conn, :index, user)
+      data = json_response(conn, 200)["data"]
+      assert 3 = length(data)
+    end
+
+    test "filter by type", %{conn: conn, user: user} do
+      conn = get conn, user_authentication_factor_path(conn, :index, user), %{"type" => Authentication.type(:sms)}
+      data = json_response(conn, 200)["data"]
+      assert 1 = length(data)
+    end
   end
 
   describe "create user auth factor" do
