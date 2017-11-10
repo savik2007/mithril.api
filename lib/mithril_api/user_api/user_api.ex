@@ -91,7 +91,7 @@ defmodule Mithril.UserAPI do
 
   defp user_changeset(%User{} = user, attrs) do
     user
-    |> cast(attrs, [:email, :password, :settings, :current_password])
+    |> cast(attrs, [:email, :password, :settings, :current_password, :is_blocked, :block_reason])
     |> validate_required([:email, :password])
     |> unique_constraint(:email)
     |> put_password()
