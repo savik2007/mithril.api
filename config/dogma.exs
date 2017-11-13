@@ -12,5 +12,6 @@ config :dogma,
     %Rule.TakenName{ enabled: false }, # TODO: https://github.com/lpil/dogma/issues/201
     %Rule.InfixOperatorPadding{ enabled: false },
     %Rule.FunctionArity{ max: 5 },
-    %Rule.ModuleDoc{ enabled: false }
+    %Rule.ModuleDoc{ enabled: false },
+    %Rule.ComparisonToBoolean{ enabled: false }
   ]

@@ -13,8 +13,8 @@ defmodule Mithril.UserAPI.User do
     field :block_reason, :string
 
     embeds_one :priv_settings, PrivSettings do
-      field :login_error_counter, :integer
-      field :otp_error_counter, :integer
+      field :login_error_counter, :integer, default: 0
+      field :otp_error_counter, :integer, default: 0
     end
 
     has_many :user_roles, Mithril.UserRoleAPI.UserRole

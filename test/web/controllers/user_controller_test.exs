@@ -4,7 +4,7 @@ defmodule Mithril.Web.UserControllerTest do
   alias Mithril.UserAPI
   alias Mithril.UserAPI.User
 
-  @create_attrs %{email: "some email", password: "some password", settings: %{}}
+  @create_attrs %{email: "some email", password: "some password", settings: %{}, "2fa_enable": true}
   @update_attrs %{email: "some updated email", password: "some updated password", settings: %{}}
   @invalid_attrs %{email: nil, password: nil, settings: nil}
 
