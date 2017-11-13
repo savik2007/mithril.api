@@ -52,10 +52,8 @@ defmodule Mithril.Web.UserController do
   end
 
   def block(conn, %{"user_id" => id} = user_params) do
-    data = %{"is_blocked" => true, "block_reason" => get_in(user_params, ["user", "block_reason"])}
-
     with %User{is_blocked: false} = user <- UserAPI.get_user!(id),
-         {:ok, %User{} = user} <- UserAPI.update_user(user, data)
+         {:ok, %User{} = user} <- UserAPI.block_user(user, get_in(user_params, ["user", "block_reason"]))
       do
       render(conn, "show.json", user: user)
     else

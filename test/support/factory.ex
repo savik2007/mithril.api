@@ -50,6 +50,10 @@ defmodule Mithril.Factory do
       email: sequence("mail@example.com-"),
       password: "some password",
       settings: %{},
+      priv_settings: %Mithril.UserAPI.User.PrivSettings{
+        login_error_counter: 0,
+        otp_error_counter: 0,
+      },
       is_blocked: false,
       block_reason: nil,
     }

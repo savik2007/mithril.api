@@ -1,9 +1,11 @@
 defmodule Mithril.Authorization.GrantType.PasswordTest do
   use Mithril.DataCase, async: true
 
+  alias Mithril.UserAPI
   alias Mithril.Authorization.GrantType.Password, as: PasswordGrantType
 
   test "creates password-granted access token" do
+    System.put_env("USER_2FA_ENABLED", "false")
     allowed_scope = "app:authorize legal_entity:read legal_entity:write"
     client_type = Mithril.Fixtures.create_client_type(%{scope: allowed_scope})
     client = Mithril.Fixtures.create_client(%{
@@ -19,7 +21,7 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
       "scope" => "legal_entity:read",
     })
 
-    assert token.name == "2fa_access_token"
+    assert token.name == "access_token"
     assert token.value
     assert token.expires_at
     assert token.user_id == user.id
@@ -27,6 +29,30 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
     assert token.details.grant_type == "password"
     assert token.details.redirect_uri == client.redirect_uri
     assert token.details.scope == "legal_entity:read"
+
+    System.put_env("USER_2FA_ENABLED", "true")
+  end
+
+  test "creates password-granted 2FA access token" do
+    allowed_scope = "app:authorize legal_entity:read legal_entity:write"
+    password = "somepa$$word"
+    user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt(password))
+    client_type = insert(:client_type, scope: allowed_scope)
+    client = insert(:client,
+      user_id: user.id,
+      client_type_id: client_type.id,
+      settings: %{"allowed_grant_types" => ["password"]}
+    )
+    insert(:authentication_factor, user_id: user.id)
+
+    {:ok, token} = PasswordGrantType.authorize(%{
+      "email" => user.email,
+      "password" => password,
+      "client_id" => client.id,
+      "scope" => "legal_entity:read",
+    })
+
+    assert token.name == "2fa_access_token"
   end
 
   test "it returns Incorrect password error" do
@@ -42,6 +68,22 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
 
     assert %{invalid_grant: "Identity, password combination is wrong."} = errors
     assert :unauthorized = code
+  end
+
+  test "user blocked when reached max login errors" do
+    client = Mithril.Fixtures.create_client(%{settings: %{"allowed_grant_types" => ["password"]}})
+    user   = Mithril.Fixtures.create_user(%{password: "somepa$$word"})
+    data = %{
+      "email" => user.email,
+      "password" => "incorrect_password",
+      "client_id" => client.id,
+      "scope" => "legal_entity:read",
+    }
+    for _ <- 1..4 do
+      assert {:error, _, _} = PasswordGrantType.authorize(data)
+    end
+
+    assert %{is_blocked: true} = UserAPI.get_user(user.id)
   end
 
   test "it returns User Not Found error" do
