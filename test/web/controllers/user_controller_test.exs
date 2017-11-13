@@ -49,6 +49,12 @@ defmodule Mithril.Web.UserControllerTest do
     assert length(json_response(conn, 200)["data"]) == 1
   end
 
+  test "finds users by id", %{conn: conn} do
+    user = fixture(:user, %{email: "1", password: "1", settings: %{}})
+    conn = get conn, user_path(conn, :index, %{id: user.id})
+    assert length(json_response(conn, 200)["data"]) == 1
+  end
+
   test "finds nothing by invalid email", %{conn: conn} do
     conn = post conn, user_path(conn, :create), user: @create_attrs
     conn = get conn, user_path(conn, :index, %{email: @create_attrs.email <> "111"})
