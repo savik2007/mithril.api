@@ -8,6 +8,7 @@ defmodule Mithril.UserAPI do
   alias Ecto.Multi
   alias Mithril.Repo
   alias Mithril.UserAPI.User
+  alias Mithril.UserAPI.User.PrivSettings
   alias Mithril.Authentication
 
   def list_users(params) do
@@ -33,24 +34,25 @@ defmodule Mithril.UserAPI do
 
   def get_full_user(user_id, client_id) do
     query = from u in User,
-      left_join: ur in assoc(u, :user_roles),
-      left_join: r in assoc(ur, :role),
-      preload: [roles: r],
-      where: ur.user_id == ^user_id,
-      where: ur.client_id == ^client_id
+                 left_join: ur in assoc(u, :user_roles),
+                 left_join: r in assoc(ur, :role),
+                 preload: [roles: r],
+                 where: ur.user_id == ^user_id,
+                 where: ur.client_id == ^client_id
 
     Repo.one(query)
   end
 
   def create_user(attrs \\ %{}) do
-    user_changeset = user_changeset(%User{}, attrs)
+    user = %User{priv_settings: %{login_error_counter: 0, otp_error_counter: 0}}
+    user_changeset = user_changeset(user, attrs)
     Multi.new
     |> Multi.insert(:user, user_changeset)
     |> Multi.run(:authentication_factors, fn %{user: user} ->
-         case enabled_2fa?(attrs) do
-           true -> Authentication.create_factor(%{type: Authentication.type(:sms), user_id: user.id})
-           false -> {:ok, :not_enabled}
-         end
+      case enabled_2fa?(attrs) do
+        true -> Authentication.create_factor(%{type: Authentication.type(:sms), user_id: user.id})
+        false -> {:ok, :not_enabled}
+      end
     end)
     |> Repo.transaction()
     |> case do
@@ -61,7 +63,7 @@ defmodule Mithril.UserAPI do
 
   defp enabled_2fa?(attrs) do
     case Map.has_key?(attrs, "2fa_enable") do
-      true -> true
+      true -> Map.get(attrs, "2fa_enable") == true
       _ -> Confex.get_env(:mithril_api, :user_2fa_enabled)
     end
   end
@@ -69,6 +71,19 @@ defmodule Mithril.UserAPI do
   def update_user(%User{} = user, attrs) do
     user
     |> user_changeset(attrs)
+    |> Repo.update()
+  end
+
+  def update_user_priv_settings(%User{} = user, priv_settings) do
+    user
+    |> cast(%{priv_settings: priv_settings}, [])
+    |> cast_embed(:priv_settings, with: &priv_settings_changeset/2)
+    |> Repo.update()
+  end
+
+  def block_user(%User{} = user, reason \\ nil) do
+    user
+    |> user_changeset(%{is_blocked: true, block_reason: reason})
     |> Repo.update()
   end
 
@@ -103,6 +118,10 @@ defmodule Mithril.UserAPI do
     |> put_password()
   end
 
+  defp priv_settings_changeset(%PrivSettings{} = priv_settings, attrs) do
+    cast(priv_settings, attrs, [:login_error_counter, :otp_error_counter])
+  end
+
   defp put_password(changeset) do
     if password = get_change(changeset, :password) do
       put_change(changeset, :password, get_password_hash(password))
@@ -131,7 +150,7 @@ defmodule Mithril.UserAPI do
           []
         false ->
           [{field2,
-           {"#{to_string(field1)} does not match password in field #{to_string(field2)}", [validation: :password]}}]
+            {"#{to_string(field1)} does not match password in field #{to_string(field2)}", [validation: :password]}}]
       end
     end
   end

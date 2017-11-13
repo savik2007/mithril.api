@@ -1,9 +1,13 @@
 defmodule Mithril.Authorization.GrantType.Password do
   @moduledoc false
   alias Mithril.Authorization.GrantType.Error, as: GrantTypeError
+  alias Mithril.UserAPI
+  alias Mithril.UserAPI.User
   alias Mithril.TokenAPI.Token
   alias Mithril.Authentication
   alias Mithril.Authentication.Factor
+
+  @login_error_max Confex.get_env(:mithril_api, :user_login_error_max)
 
   def authorize(%{"email" => email, "password" => password, "client_id" => client_id, "scope" => scope})
       when not (is_nil(email) or is_nil(password) or is_nil(client_id) or is_nil(scope))
@@ -40,6 +44,7 @@ defmodule Mithril.Authorization.GrantType.Password do
   defp create_token(client, user, password, scope) do
     {:ok, user}
     |> match_with_user_password(password)
+    |> check_login_error_counter(user)
     |> validate_token_scope(client.client_type.scope, scope)
     |> create_access_token(client, scope)
     |> deactivate_old_tokens()
@@ -87,5 +92,20 @@ defmodule Mithril.Authorization.GrantType.Password do
     else
       GrantTypeError.invalid_grant("Identity, password combination is wrong.")
     end
+  end
+
+  defp check_login_error_counter({:error, _, _} = err, %User{priv_settings: priv_settings} = user) do
+    login_error = priv_settings.login_error_counter + 1
+    case @login_error_max <= login_error do
+      true ->
+        UserAPI.block_user(user, "Passed invalid password more than USER_LOGIN_ERROR_MAX")
+      _ ->
+        data = priv_settings |> Map.from_struct() |> Map.put(:login_error_counter, login_error)
+        UserAPI.update_user_priv_settings(user, data)
+    end
+    err
+  end
+  defp check_login_error_counter({:ok, user}, _) do
+    {:ok, user}
   end
 end
