@@ -12,9 +12,15 @@ defmodule Mithril.UserAPI do
 
   def list_users(params) do
     User
+    |> filter_by_id(params)
     |> filter_by_email(params)
     |> Repo.paginate(params)
   end
+
+  defp filter_by_id(query, %{"id" => id}) do
+    where(query, [r], r.id == ^id)
+  end
+  defp filter_by_id(query, _), do: query
 
   defp filter_by_email(query, %{"email" => email}) when is_binary(email) do
     where(query, [r], r.email == ^email)
