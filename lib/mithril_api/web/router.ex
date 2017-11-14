@@ -36,13 +36,13 @@ defmodule MithrilWeb.Router do
       patch "/actions/block", UserController, :block
       patch "/actions/unblock", UserController, :unblock
 
-      resources "/authentication_factor", AuthenticationFactorController,
+      resources "/authentication_factors", AuthenticationFactorController,
         except: [:new, :edit, :delete], as: :authentication_factor
-      patch "/authentication_factor/:id/actions/reset", AuthenticationFactorController, :reset,
+      patch "/authentication_factors/:id/actions/reset", AuthenticationFactorController, :reset,
         as: :authentication_factor
-      patch "/authentication_factor/:id/actions/disable", AuthenticationFactorController, :disable,
+      patch "/authentication_factors/:id/actions/disable", AuthenticationFactorController, :disable,
         as: :authentication_factor
-      patch "/authentication_factor/:id/actions/enable", AuthenticationFactorController, :enable,
+      patch "/authentication_factors/:id/actions/enable", AuthenticationFactorController, :enable,
         as: :authentication_factor
     end
 
