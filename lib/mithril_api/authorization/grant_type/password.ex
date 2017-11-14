@@ -11,7 +11,7 @@ defmodule Mithril.Authorization.GrantType.Password do
 
   def authorize(%{"email" => email, "password" => password, "client_id" => client_id, "scope" => scope})
       when not (is_nil(email) or is_nil(password) or is_nil(client_id) or is_nil(scope))
-  do
+    do
     client = Mithril.ClientAPI.get_client_with_type(client_id)
 
     case allowed_to_login?(client) do
@@ -28,7 +28,7 @@ defmodule Mithril.Authorization.GrantType.Password do
   end
 
   defp allowed_to_login?(nil),
-    do: {:error, "Invalid client id."}
+       do: {:error, "Invalid client id."}
   defp allowed_to_login?(client) do
     allowed_grant_types = Map.get(client.settings, "allowed_grant_types", [])
 
@@ -40,7 +40,7 @@ defmodule Mithril.Authorization.GrantType.Password do
   end
 
   defp create_token(_, nil, _, _),
-    do: GrantTypeError.invalid_grant("Identity not found.")
+       do: GrantTypeError.invalid_grant("Identity not found.")
   defp create_token(client, user, password, scope) do
     {:ok, user}
     |> match_with_user_password(password)
@@ -100,7 +100,9 @@ defmodule Mithril.Authorization.GrantType.Password do
       true ->
         UserAPI.block_user(user, "Passed invalid password more than USER_LOGIN_ERROR_MAX")
       _ ->
-        data = priv_settings |> Map.from_struct() |> Map.put(:login_error_counter, login_error)
+        data = priv_settings
+               |> Map.from_struct()
+               |> Map.put(:login_error_counter, login_error)
         UserAPI.update_user_priv_settings(user, data)
     end
     err

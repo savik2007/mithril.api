@@ -7,10 +7,19 @@ defmodule Mithril.Authorization.Token do
   alias Mithril.Authorization.GrantType.Password
   alias Mithril.Authorization.GrantType.AuthorizationCode
   alias Mithril.Authorization.GrantType.RefreshToken
+  alias Mithril.Authorization.GrantType.AccessToken2FA
 
   # TODO: rename grant_type to response_type
   def authorize(%{"grant_type" => "password"} = params) do
     Password.authorize(params)
+  end
+
+  def authorize(%{"grant_type" => "authorize_2fa_access_token"} = params) do
+    AccessToken2FA.authorize(params)
+  end
+
+  def authorize(%{"grant_type" => "refresh_2fa_access_token"} = params) do
+    AccessToken2FA.refresh(params)
   end
 
   def authorize(%{"grant_type" => "authorization_code"} = params) do

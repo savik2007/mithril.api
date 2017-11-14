@@ -1,27 +1,24 @@
 defmodule Mithril.OAuth.TokenController do
   use Mithril.Web, :controller
 
+  alias Mithril.Authorization.Token
+
+  action_fallback Mithril.Web.FallbackController
+
   def create(conn, %{"token" => token_params}) do
-    case process(token_params) do
-      {:ok, token} ->
-        conn
-        |> put_status(:created)
-        |> render(Mithril.Web.TokenView, "show.json", token: token)
-      {:error, {http_status_code, errors}} ->
-        conn
-        |> put_status(http_status_code)
-        |> render(Mithril.Web.TokenView, http_status_code, errors: errors)
+    with {:ok, token} <- token_params
+                         |> put_token_value(conn)
+                         |> Token.authorize() do
+      conn
+      |> put_status(:created)
+      |> render(Mithril.Web.TokenView, "show.json", token: token)
     end
   end
 
-  defp process(params) do
-    case Mithril.Authorization.Token.authorize(params) do
-      {:error, errors, http_status_code} ->
-        {:error, {http_status_code, errors}}
-      {:error, changeset} ->
-        {:error, {:unprocessable_entity, changeset}}
-      {:ok, token} ->
-        {:ok, token}
+  defp put_token_value(token_params, conn) do
+    case get_req_header(conn, "authorization") do
+      ["Bearer " <> token | _] -> Map.put(token_params, "token_value", token)
+      _ -> token_params
     end
   end
 end

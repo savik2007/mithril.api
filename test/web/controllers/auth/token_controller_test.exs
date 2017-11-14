@@ -7,7 +7,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
   end
 
-  test "successfully issues new access_token using using password", %{conn: conn} do
+  test "successfully issues new access_token using password", %{conn: conn} do
     allowed_scope = "app:authorize legal_entity:read legal_entity:write"
     client_type = Mithril.Fixtures.create_client_type(%{scope: allowed_scope})
     client = Mithril.Fixtures.create_client(%{
