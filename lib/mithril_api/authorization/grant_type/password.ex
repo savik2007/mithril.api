@@ -1,11 +1,13 @@
 defmodule Mithril.Authorization.GrantType.Password do
   @moduledoc false
   alias Mithril.Authorization.GrantType.Error, as: GrantTypeError
+  alias Mithril.OTP.SMS
   alias Mithril.UserAPI
   alias Mithril.UserAPI.User
   alias Mithril.TokenAPI.Token
   alias Mithril.Authentication
   alias Mithril.Authentication.Factor
+  alias Mithril.Authorization.GrantType.AccessToken2FA
 
   @login_error_max Confex.get_env(:mithril_api, :user_login_error_max)
 
@@ -44,13 +46,13 @@ defmodule Mithril.Authorization.GrantType.Password do
   defp create_token(client, user, password, scope) do
     {:ok, user}
     |> match_with_user_password(password)
+    |> validate_user()
     |> check_login_error_counter(user)
     |> validate_token_scope(client.client_type.scope, scope)
     |> create_access_token(client, scope)
     |> deactivate_old_tokens()
   end
 
-  defp create_access_token({:error, err, code}, _, _), do: {:error, err, code}
   defp create_access_token({:ok, user}, client, scope) do
     data = %{
       user_id: user.id,
@@ -63,19 +65,21 @@ defmodule Mithril.Authorization.GrantType.Password do
     }
 
     case Authentication.get_factor_by([user_id: user.id, is_active: true]) do
-      %Factor{} -> Mithril.TokenAPI.create_2fa_access_token(data)
-      _ -> Mithril.TokenAPI.create_access_token(data)
+      %Factor{} = factor ->
+        Mithril.TokenAPI.create_2fa_access_token(data)
+        SMS.send_otp(factor)
+      _ ->
+        Mithril.TokenAPI.create_access_token(data)
     end
-
   end
+  defp create_access_token(err, _, _), do: err
 
   defp deactivate_old_tokens({:ok, %Token{} = token}) do
     Mithril.TokenAPI.deactivate_old_tokens(token)
     {:ok, token}
   end
-  defp deactivate_old_tokens({:error, _, _} = error), do: error
+  defp deactivate_old_tokens(err), do: err
 
-  defp validate_token_scope({:error, err, code}, _, _), do: {:error, err, code}
   defp validate_token_scope({:ok, user}, client_scope, required_scope) do
     allowed_scopes = String.split(client_scope, " ", trim: true)
     required_scopes = String.split(required_scope, " ", trim: true)
@@ -85,6 +89,7 @@ defmodule Mithril.Authorization.GrantType.Password do
       GrantTypeError.invalid_scope(allowed_scopes)
     end
   end
+  defp validate_token_scope(err, _, _), do: err
 
   defp match_with_user_password({:ok, user}, password) do
     if Comeonin.Bcrypt.checkpw(password, Map.get(user, :password, "")) do
@@ -94,7 +99,13 @@ defmodule Mithril.Authorization.GrantType.Password do
     end
   end
 
-  defp check_login_error_counter({:error, _, _} = err, %User{priv_settings: priv_settings} = user) do
+  defp validate_user({:ok, user}), do: AccessToken2FA.validate_user(user.id)
+  defp validate_user(err), do: err
+
+  defp check_login_error_counter({:ok, user}, _) do
+    {:ok, user}
+  end
+  defp check_login_error_counter(err, %User{priv_settings: priv_settings} = user) do
     login_error = priv_settings.login_error_counter + 1
     case @login_error_max <= login_error do
       true ->
@@ -107,7 +118,5 @@ defmodule Mithril.Authorization.GrantType.Password do
     end
     err
   end
-  defp check_login_error_counter({:ok, user}, _) do
-    {:ok, user}
-  end
+
 end

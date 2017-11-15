@@ -59,15 +59,15 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
     end
   end
 
-  defp validate_user(user_id) do
+  def validate_user(user_id) do
     case UserAPI.get_user(user_id) do
       %User{is_blocked: false} = user -> {:ok, user}
-      %User{is_blocked: true} -> {:error, {:access_denied, "User blocked"}}
-      _ -> {:error, {:access_denied, "User not found"}}
+      %User{is_blocked: true} -> {:error, {:access_denied, "User blocked."}}
+      _ -> {:error, {:access_denied, "User not found."}}
     end
   end
-  defp get_auth_factor_by_user_id(user_id) do
 
+  defp get_auth_factor_by_user_id(user_id) do
     case Authentication.get_factor_by([user_id: user_id, is_active: true]) do
       %Factor{} = factor -> factor
       _ -> {:error, %{conflict: "Not found authentication factor for user."}}

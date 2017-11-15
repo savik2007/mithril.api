@@ -51,13 +51,6 @@ defmodule Mithril.Web.UserController do
     end
   end
 
-  def send_otp(conn, %{"user_id" => id}) do
-    user = UserAPI.get_user!(id)
-    with {:ok, %User{} = user} <- UserAPI.send_otp(user) do
-      render(conn, "show.json", user: user)
-    end
-  end
-
   def block(conn, %{"user_id" => id} = user_params) do
     with %User{is_blocked: false} = user <- UserAPI.get_user!(id),
          {:ok, %User{} = user} <- UserAPI.block_user(user, get_in(user_params, ["user", "block_reason"]))
