@@ -63,12 +63,6 @@ defmodule Mithril.Web.FallbackController do
     |> render(EView.Views.Error, :"400", %{message: error})
   end
 
-  def call(conn, {:error, http_status_code, errors}) do
-    conn
-    |> put_status(http_status_code)
-    |> render(Mithril.Web.TokenView, http_status_code, %{errors: errors})
-  end
-
   # ToDo: reemove this shit
   def call(conn, {:error, errors, http_status_code}) do
     conn

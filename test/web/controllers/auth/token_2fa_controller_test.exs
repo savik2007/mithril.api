@@ -52,7 +52,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
     assert token["details"]["client_id"] == client.id
     assert token["details"]["grant_type"] == "password"
     assert token["details"]["redirect_uri"] == client.redirect_uri
-    assert token["details"]["scope"] == "app:authorize"
+    assert token["details"]["scope"] == "legal_entity:read"
   end
 
   test "invalid token", %{conn: conn, otp: otp} do
@@ -62,7 +62,9 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
         "otp": otp
       }
     }
-    conn = conn |> put_req_header("authorization", "Bearer a") |> post("/oauth/tokens", Poison.encode!(request_payload))
+    conn = conn
+           |> put_req_header("authorization", "Bearer a")
+           |> post("/oauth/tokens", Poison.encode!(request_payload))
     result = json_response(conn, 401)["error"]
     assert "Invalid token" == result["message"]
   end
@@ -74,7 +76,9 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
         "otp": otp
       }
     }
-    conn = conn |> delete_req_header("authorization") |> post("/oauth/tokens", Poison.encode!(request_payload))
+    conn = conn
+           |> delete_req_header("authorization")
+           |> post("/oauth/tokens", Poison.encode!(request_payload))
     result = json_response(conn, 401)["error"]
     assert "Authorization header required." == result["message"]
   end
