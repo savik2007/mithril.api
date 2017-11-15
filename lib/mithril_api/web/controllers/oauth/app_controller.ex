@@ -1,32 +1,25 @@
 defmodule Mithril.OAuth.AppController do
   use Mithril.Web, :controller
 
+  alias Mithril.Web.TokenView
+  alias Mithril.Authorization.App
+
+  action_fallback Mithril.Web.FallbackController
+
   def authorize(conn, %{"app" => app_params}) do
-    [user_id | _] = Plug.Conn.get_req_header(conn, "x-consumer-id")
-    api_key = conn |> Plug.Conn.get_req_header("api-key") |> List.first()
+    user_id = conn
+              |> Plug.Conn.get_req_header("x-consumer-id")
+              |> List.first()
+    api_key = conn
+              |> Plug.Conn.get_req_header("api-key")
+              |> List.first()
     params = Map.merge(app_params, %{"user_id" => user_id, "api_key" => api_key})
 
-    case process(params) do
-      {:ok, %{"token" => token}} ->
-        conn
-        |> put_status(:created)
-        |> put_resp_header("location", generate_location(token))
-        |> render(Mithril.Web.TokenView, "show.json", token: token)
-      {:error, {http_status_code, errors}} ->
-        conn
-        |> put_status(http_status_code)
-        |> render(Mithril.Web.TokenView, http_status_code, %{errors: errors})
-    end
-  end
-
-  defp process(params) do
-    case Mithril.Authorization.App.grant(params) do
-      {:error, http_status_code, errors} ->
-        {:error, {http_status_code, errors}}
-      {:error, changeset} ->
-        {:error, {:unprocessable_entity, changeset}}
-      res ->
-        {:ok, res}
+    with %{"token" => token} <- App.grant(params) do
+      conn
+      |> put_status(:created)
+      |> put_resp_header("location", generate_location(token))
+      |> render(TokenView, "show.json", token: token)
     end
   end
 
@@ -34,7 +27,7 @@ defmodule Mithril.OAuth.AppController do
     redirect_uri = URI.parse(token.details.redirect_uri)
 
     new_redirect_uri =
-      Map.update! redirect_uri, :query, fn(query) ->
+      Map.update! redirect_uri, :query, fn (query) ->
         query =
           if query, do: URI.decode_query(query), else: %{}
 
