@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "definitions": {
+    "phone_number": {
+      "type": "string",
+      "pattern": "^\\+38[0-9]{10}$"
+    }
+  },
+  "type": "object",
+  "properties": {
+    "factor": {
+      "$ref": "#/definitions/phone_number"
+    },
+    "type": {
+      "type": "string",
+      "description": "Authentication factor type."
+    }
+  },
+  "required": [
+    "factor",
+    "type"
+  ],
+  "additionalProperties": false
+}
