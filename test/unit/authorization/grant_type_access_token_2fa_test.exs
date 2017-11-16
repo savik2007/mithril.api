@@ -16,7 +16,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
     insert(:authentication_factor, user_id: user.id)
     %{value: value} = insert(:token, user_id: user.id, name: "2fa_access_token")
 
-    {:ok, token} = AccessToken2FA.authorize(%{
+    {:ok, %{token: token}} = AccessToken2FA.authorize(%{
       "otp" => "123",
       "token_value" => value,
     })

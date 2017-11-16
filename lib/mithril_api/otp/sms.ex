@@ -10,8 +10,10 @@ defmodule Mithril.OTP.SMS do
   def process_request_options(options), do: Keyword.merge(config()[:hackney_options], options)
 
   def send(phone_number, body, type, headers \\ []) do
-    "/sms/send"
-    |> post!(Poison.encode!(%{phone_number: phone_number, body: body, type: type}), headers)
-    |> ResponseDecoder.check_response()
+    {:ok, :ok}
+    # ToDo: send sms
+#    "/sms/send"
+#    |> post!(Poison.encode!(%{phone_number: phone_number, body: body, type: type}), headers)
+#    |> ResponseDecoder.check_response()
   end
 end

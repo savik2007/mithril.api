@@ -1,4 +1,4 @@
-defmodule Mithril.OTP do
+defmodule Mithril.OTP.API do
   @moduledoc false
 
   alias Mithril.OTP
@@ -22,8 +22,8 @@ defmodule Mithril.OTP do
     {:error, :factor_not_set}
   end
 
-  defp send_otp_by_factor(%OTPSchema{code: code}, %Factor{value: value, type: @type_sms} = factor) do
-    case SMS.send(value, code, "2FA") do
+  defp send_otp_by_factor({:ok, %OTPSchema{code: code}}, %Factor{factor: factor, type: @type_sms}) do
+    case SMS.send(factor, generate_message(code), "2FA") do
       {:ok, _} ->
         :ok
       err ->
@@ -38,5 +38,10 @@ defmodule Mithril.OTP do
 
   defp generate_key(%Token{} = token, value) do
     token.id <> "===" <> value
+  end
+
+  defp generate_message(code) do
+    # ToDo: write code
+    code
   end
 end

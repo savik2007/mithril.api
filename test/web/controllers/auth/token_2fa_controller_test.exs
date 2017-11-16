@@ -5,22 +5,21 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
   alias Mithril.Authorization.GrantType.Password, as: PasswordGrantType
 
   setup %{conn: conn} do
-    allowed_scope = "app:authorize legal_entity:read legal_entity:write"
-    client_type = Mithril.Fixtures.create_client_type(%{scope: allowed_scope})
-    client = Mithril.Fixtures.create_client(
-      %{
-        settings: %{
-          "allowed_grant_types" => ["password"]
-        },
-        client_type_id: client_type.id
-      }
+    allowed_scope = "app:authorize legal_entity:read"
+    password = "somepa$$word"
+    user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt(password))
+    client_type = insert(:client_type, scope: allowed_scope)
+    client = insert(:client,
+      user_id: user.id,
+      client_type_id: client_type.id,
+      settings: %{"allowed_grant_types" => ["password"]}
     )
-    user = Mithril.Fixtures.create_user(%{password: "somepa$$word"})
+    insert(:authentication_factor, user_id: user.id)
 
-    {:ok, token} = PasswordGrantType.authorize(
+    {:ok, %{token: token}} = PasswordGrantType.authorize(
       %{
         "email" => user.email,
-        "password" => "somepa$$word",
+        "password" => password,
         "client_id" => client.id,
         "scope" => "legal_entity:read",
       }
@@ -43,7 +42,13 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       }
     }
     conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
-    token = json_response(conn, 201)["data"]
+    resp = json_response(conn, 201)
+
+    assert Map.has_key?(resp, "urgent")
+    assert Map.has_key?(resp["urgent"], "next_step")
+    assert "REQUEST_APPS" = resp["urgent"]["next_step"]
+
+    token = resp["data"]
 
     assert token["name"] == "access_token"
     assert token["value"]
