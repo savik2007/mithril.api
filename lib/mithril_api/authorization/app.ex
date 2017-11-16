@@ -17,7 +17,6 @@ defmodule Mithril.Authorization.App do
     |> find_client()
     |> check_client_is_blocked()
     |> find_user()
-    |> validate_access_type()
     |> validate_redirect_uri()
     |> validate_client_scope()
     |> validate_user_scope()
@@ -44,45 +43,7 @@ defmodule Mithril.Authorization.App do
     end
   end
 
-  defp validate_access_type({:error, errors, status}), do: {:error, errors, status}
-  defp validate_access_type(%{"client" => client} = params) do
-    case Map.get(client.priv_settings, "access_type") do
-      nil -> {:error, %{invalid_client: "Client settings must contain access_type."}, :unprocessable_entity}
-
-      # Clients such as NHS Admin, MIS
-      @direct -> params
-
-      # Clients such as MSP, PHARMACY
-      @broker ->
-        params
-        |> validate_api_key()
-        |> fetch_client_by_secret()
-        |> validate_broker_priv_settings()
-        |> validate_broker_scope(params)
-    end
-  end
-
-  defp validate_api_key(%{"api_key" => api_key}) when is_binary(api_key), do: api_key
-  defp validate_api_key(_), do: {:error, %{api_key: "API-KEY header required."}, :unprocessable_entity}
-
-  defp fetch_client_by_secret({:error, errors, status}), do: {:error, errors, status}
-  defp fetch_client_by_secret(api_key) do
-    case ClientAPI.get_client_by([secret: api_key]) do
-      %ClientAPI.Client{} = client -> client
-      _ ->
-        {:error, %{api_key: "API-KEY header is invalid."}, :unprocessable_entity}
-    end
-  end
-
-  defp validate_broker_priv_settings({:error, errors, status}), do: {:error, errors, status}
-  defp validate_broker_priv_settings(%ClientAPI.Client{priv_settings: %{"broker_scope" => _}} = broker) do
-    broker
-  end
-  defp validate_broker_priv_settings(_) do
-    {:error, %{broker_settings: "Incorrect broker settings."}, :unprocessable_entity}
-  end
-
-  defp validate_redirect_uri({:error, errors, status}), do: {:error, errors, status}
+  defp validate_redirect_uri({:error, status, errors}), do: {:error, status, errors}
   defp validate_redirect_uri(%{"client" => client, "redirect_uri" => redirect_uri} = params) do
     if String.starts_with?(redirect_uri, client.redirect_uri) do
       params
