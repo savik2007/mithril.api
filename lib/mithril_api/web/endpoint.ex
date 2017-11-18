@@ -12,7 +12,7 @@ defmodule Mithril.Web.Endpoint do
 
   plug Plug.RequestId
   plug EView.Plugs.Idempotency
-  plug Plug.Logger
+  plug Plug.LoggerJSON, level: Logger.level
 
   plug EView
 

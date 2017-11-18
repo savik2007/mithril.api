@@ -41,7 +41,8 @@ config :mithril_api, Mithril.Repo,
   username: {:system, "DB_USER", "postgres"},
   password: {:system, "DB_PASSWORD", "postgres"},
   hostname: {:system, "DB_HOST", "localhost"},
-  port: {:system, :integer, "DB_PORT", 5432}
+  port: {:system, :integer, "DB_PORT", 5432},
+  loggers: [{Ecto.LoggerJSON, :log, [:info]}]
 
 config :mithril_api, :generators,
   migration: false,
@@ -55,15 +56,7 @@ config :mithril_api, Mithril.Web.Endpoint,
   render_errors: [view: EView.Views.PhoenixError, accepts: ~w(json)]
 
 # Configures Elixir's Logger
-config :logger, :console,
-  format: "$time $metadata[$level] $message\n",
-  metadata: [:request_id]
-
-# Configure JSON Logger back-end
-config :logger_json, :backend,
-  load_from_system_env: true,
-  json_encoder: Poison,
-  metadata: :all
+config :logger, :console, format: "$message\n", level: :info
 
 # It is also possible to import configuration files, relative to this
 # directory. For example, you can emulate configuration per environment
