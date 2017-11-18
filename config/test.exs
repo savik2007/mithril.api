@@ -21,5 +21,9 @@ config :bcrypt_elixir, :log_rounds, 4
 
 # Run acceptance test in concurrent mode
 config :mithril_api,
-  otp_ttl: 1,
   sql_sandbox: true
+
+config :mithril_api, :"2fa",
+  otp_ttl: 1,
+  user_2fa_enabled?: {:system, :boolean, "USER_2FA_ENABLED", true},
+  sms_enabled?: {:system, :boolean, "USER_2FA_ENABLED", false}

@@ -51,7 +51,7 @@ defmodule Mithril.Mixfile do
      {:ecto, "~> 2.1"},
      {:postgrex, "~> 0.13.2"},
      {:cowboy, "~> 1.1"},
-     {:httpoison, "~> 0.12.0"},
+     {:httpoison, "~> 0.13.0"},
      {:poison, "~> 3.1"},
      {:phoenix, "~> 1.3.0-rc"},
      {:logger_json, "~> 0.5.0"},

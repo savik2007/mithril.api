@@ -4,9 +4,6 @@ defmodule Mithril.Authorization.App do
   alias Mithril.ClientAPI
   alias Mithril.ClientAPI.Client
 
-  @direct ClientAPI.access_type(:direct)
-  @broker ClientAPI.access_type(:broker)
-
   # NOTE: Mark password token as used.
   #
   # On every approval a new token is created.
@@ -74,18 +71,6 @@ defmodule Mithril.Authorization.App do
     else
       message = "User requested scope that is not allowed by role based access policies."
       {:error, %{invalid_client: message}, :unprocessable_entity}
-    end
-  end
-
-  defp validate_broker_scope({:error, errors, status}, _), do: {:error, errors, status}
-  defp validate_broker_scope(broker, %{"scope" => scope} = params) do
-    allowed_scopes = String.split(broker.priv_settings["broker_scope"], " ", trim: true)
-    requested_scopes = String.split(scope, " ", trim: true)
-    if Mithril.Utils.List.subset?(allowed_scopes, requested_scopes) do
-      params
-    else
-      message = "Scope is not allowed by broker."
-      {:error, %{scope: message}, :unprocessable_entity}
     end
   end
 

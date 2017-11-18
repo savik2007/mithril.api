@@ -18,19 +18,11 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
          user <- UserAPI.get_user(token_2fa.user_id),
          {:ok, user} <- validate_user(user),
          %Factor{} = factor <- get_auth_factor_by_user_id(user.id),
-         :ok <- verify_otp(factor, params["otp"]),
+         :ok <- verify_otp(factor, token_2fa, params["otp"]),
          {:ok, token} <- create_access_token(token_2fa),
          {_, nil} <- Mithril.TokenAPI.deactivate_old_tokens(token)
       do
-      {
-        :ok,
-        %{
-          token: token,
-          urgent: %{
-            next_step: "REQUEST_APPS"
-          }
-        }
-      }
+      {:ok, %{token: token, urgent: %{next_step: "REQUEST_APPS"}}}
     end
   end
 
@@ -39,7 +31,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   end
 
   defp changeset(attrs) do
-    types = %{otp: :string}
+    types = %{otp: :integer}
 
     {%{}, types}
     |> cast(attrs, Map.keys(types))
@@ -77,9 +69,11 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
     end
   end
 
-  defp verify_otp(%Factor{} = factor, otp) do
-    # ToDo: write a code - OTP.verify()
-    :ok
+  defp verify_otp(factor, token, otp) do
+    case Authentication.verify_otp(factor, token, otp) do
+      {_, _, :verified} -> :ok
+      _ -> {:error, {:access_denied, "Invalid OTP code"}}
+    end
   end
 
   defp create_access_token(%Token{} = token) do

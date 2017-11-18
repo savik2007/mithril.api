@@ -1,15 +1,13 @@
 defmodule Mithril.Authorization.GrantType.Password do
   @moduledoc false
   alias Mithril.Authorization.GrantType.Error, as: GrantTypeError
-  alias Mithril.OTP.API, as: OTPAPI
   alias Mithril.UserAPI
   alias Mithril.UserAPI.User
-  alias Mithril.TokenAPI.Token
   alias Mithril.Authentication
   alias Mithril.Authentication.Factor
   alias Mithril.Authorization.GrantType.AccessToken2FA
 
-  @login_error_max Confex.get_env(:mithril_api, :user_login_error_max)
+  @login_error_max Confex.get_env(:mithril_api, :"2fa")[:user_login_error_max]
 
   def authorize(%{"email" => email, "password" => password, "client_id" => client_id, "scope" => scope})
       when not (is_nil(email) or is_nil(password) or is_nil(client_id) or is_nil(scope))
@@ -109,6 +107,6 @@ defmodule Mithril.Authorization.GrantType.Password do
     }
   end
 
-  defp maybe_send_otp(%Factor{} = factor, token), do: OTPAPI.send_otp(factor, token)
+  defp maybe_send_otp(%Factor{} = factor, token), do: Authentication.send_otp(factor, token)
   defp maybe_send_otp(_, _), do: {:ok, :request_app}
 end

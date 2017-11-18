@@ -64,7 +64,7 @@ defmodule Mithril.UserAPI do
   defp enabled_2fa?(attrs) do
     case Map.has_key?(attrs, "2fa_enable") do
       true -> Map.get(attrs, "2fa_enable") == true
-      _ -> Confex.get_env(:mithril_api, :user_2fa_enabled)
+      _ -> Confex.get_env(:mithril_api, :"2fa")[:user_2fa_enabled?]
     end
   end
 

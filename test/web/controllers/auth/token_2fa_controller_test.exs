@@ -1,6 +1,7 @@
 defmodule Mithril.OAuth.Token2FAControllerTest do
   use Mithril.Web.ConnCase
 
+  alias Mithril.OTP
   alias Mithril.TokenAPI.Token
   alias Mithril.Authorization.GrantType.Password, as: PasswordGrantType
 
@@ -29,7 +30,12 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       |> put_req_header("accept", "application/json")
       |> put_req_header("authorization", "Bearer #{token.value}")
 
-    {:ok, conn: conn, token: token, otp: "123", user: user, client: client}
+    otp =
+      OTP.list_otps
+      |> List.first
+      |> Map.get(:code)
+
+    {:ok, conn: conn, token: token, otp: otp, user: user, client: client}
   end
 
   test "successfully issues new access_token using 2fa_access_token",

@@ -5,9 +5,15 @@ defmodule Mithril.Authentication do
 
   import Ecto.{Query, Changeset, DateTime}, warn: false
 
+  alias Mithril.OTP
+  alias Mithril.OTP.SMS
+  alias Mithril.OTP.Schema, as: OTPSchema
   alias Mithril.Repo
+  alias Mithril.TokenAPI.Token
   alias Mithril.Authentication.Factor
   alias Mithril.Authentication.FactorSearch
+
+  require Logger
 
   @fields_required ~w(
     type
@@ -20,8 +26,49 @@ defmodule Mithril.Authentication do
   )a
 
   @type_sms "SMS"
+  @sms_enabled? Confex.get_env(:mithril_api, :"2fa")[:sms_enabled?]
 
   def type(:sms), do: @type_sms
+
+  def send_otp(%Factor{factor: value} = factor, %Token{} = token) when is_binary(value) do
+    otp =
+      token
+      |> generate_key(value)
+      |> OTP.initialize_otp()
+
+    case @sms_enabled? do
+      true -> send_otp_by_factor(otp, factor)
+      false -> :ok
+    end
+  end
+  def send_otp(%Factor{factor: value}, _token) when is_nil(value) do
+    {:error, :factor_not_set}
+  end
+
+  defp send_otp_by_factor({:ok, %OTPSchema{code: code}}, %Factor{factor: factor, type: @type_sms}) do
+    case SMS.send(factor, generate_message(code), "2FA") do
+      {:ok, _} ->
+        :ok
+      err ->
+        Logger.error("Cannot send 2FA SMS with error: #{inspect(err)}")
+        {:error, :sms_not_sent}
+    end
+  end
+
+  def verify_otp(%Factor{factor: value}, %Token{} = token, otp) do
+    token
+    |> generate_key(value)
+    |> OTP.verify(otp)
+  end
+
+  defp generate_key(%Token{} = token, value) do
+    token.id <> "===" <> value
+  end
+
+  defp generate_message(code) do
+    # ToDo: write code
+    code
+  end
 
   def get_factor!(id),
       do: Factor

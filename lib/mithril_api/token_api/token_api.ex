@@ -178,7 +178,7 @@ defmodule Mithril.TokenAPI do
     {:ok, Map.put(token, :details, details)}
   end
 
-  def deactivate_old_tokens(%Token{id: id, user_id: user_id, name: name, details: details}) do
+  def deactivate_old_tokens(%Token{id: id, user_id: user_id, name: name}) do
     now = :os.system_time(:seconds)
     Token
     |> where([t], t.id != ^id)
