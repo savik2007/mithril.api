@@ -8,6 +8,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   alias Mithril.TokenAPI.Token
   alias Mithril.Authentication
   alias Mithril.Authentication.Factor
+  alias Mithril.Authorization.GrantType.Password
 
   @otp_error_max Confex.get_env(:mithril_api, :user_otp_error_max)
 
@@ -22,12 +23,21 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
          {:ok, token} <- create_access_token(token_2fa),
          {_, nil} <- Mithril.TokenAPI.deactivate_old_tokens(token)
       do
-      {:ok, %{token: token, urgent: %{next_step: "REQUEST_APPS"}}}
+      {:ok, %{token: token, urgent: %{next_step: Password.next_step(:request_apps)}}}
     end
   end
 
   def refresh(params) do
-    :ok
+    with :ok <- validate_authorization_header(params),
+         {:ok, token_2fa} <- validate_token(params["token_value"]),
+         user <- UserAPI.get_user(token_2fa.user_id),
+         {:ok, user} <- validate_user(user),
+         %Factor{} <- get_auth_factor_by_user_id(user.id),
+         {:ok, token} <- create_2fa_access_token(token_2fa),
+         {_, nil} <- Mithril.TokenAPI.deactivate_old_tokens(token)
+      do
+      {:ok, %{token: token, urgent: %{next_step: Password.next_step(:request_otp)}}}
+    end
   end
 
   defp changeset(attrs) do
@@ -77,12 +87,17 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   end
 
   defp create_access_token(%Token{} = token) do
-    Mithril.TokenAPI.create_access_token(
-      %{
-        user_id: token.user_id,
-        details: token.details
-      }
-    )
+    Mithril.TokenAPI.create_access_token(%{
+      user_id: token.user_id,
+      details: token.details
+    })
+  end
+
+  defp create_2fa_access_token(%Token{} = token) do
+    Mithril.TokenAPI.create_2fa_access_token(%{
+      user_id: token.user_id,
+      details: token.details
+    })
   end
 
   defp check_otp_error_counter({:error, _, _} = err, %User{priv_settings: priv_settings} = user) do

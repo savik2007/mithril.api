@@ -9,6 +9,14 @@ defmodule Mithril.Authorization.GrantType.Password do
 
   @login_error_max Confex.get_env(:mithril_api, :"2fa")[:user_login_error_max]
 
+  @request_otp "REQUEST_OTP"
+  @request_apps "REQUEST_APPS"
+  @request_factor "REQUEST_FACTOR"
+  @resend_otp "RESEND_OTP"
+
+  def next_step(:request_otp), do: @request_otp
+  def next_step(:request_apps), do: @request_apps
+
   def authorize(%{"email" => email, "password" => password, "client_id" => client_id, "scope" => scope})
       when not (is_nil(email) or is_nil(password) or is_nil(client_id) or is_nil(scope))
     do
@@ -51,10 +59,10 @@ defmodule Mithril.Authorization.GrantType.Password do
          {_, nil} <- Mithril.TokenAPI.deactivate_old_tokens(token)
       do
       next_step = case maybe_send_otp(factor, token) do
-        :ok -> "REQUEST_OTP"
-        {:ok, :request_app} -> "REQUEST_APPS"
-        {:error, :factor_not_set} -> "REQUEST_FACTOR"
-        {:error, :sms_not_sent} -> "RESEND_OTP"
+        :ok -> @request_otp
+        {:ok, :request_app} -> @request_apps
+        {:error, :factor_not_set} -> @request_factor
+        {:error, :sms_not_sent} -> @resend_otp
       end
       {:ok, %{token: token, urgent: %{next_step: next_step}}}
     end

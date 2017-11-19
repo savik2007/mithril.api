@@ -24,12 +24,45 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
     {:ok, %{token: token}}
   end
 
-  test "invalid OTP type", %{token: token} do
-    data = %{
-      "token_value" => token.value,
-      "grant_type" => "authorize_2fa_access_token",
-      "otp" => "invalid type"
-    }
-    assert %Ecto.Changeset{valid?: false} = AccessToken2FA.authorize(data)
+  describe "authorize" do
+    test "invalid OTP type", %{token: token} do
+      data = %{
+        "token_value" => token.value,
+        "grant_type" => "authorize_2fa_access_token",
+        "otp" => "invalid type"
+      }
+      assert %Ecto.Changeset{valid?: false} = AccessToken2FA.authorize(data)
+    end
+
+    test "user blocked" do
+
+    end
+
+    test "authentication factor not found for user" do
+
+    end
+
+    test "reached max OTP error" do
+
+    end
   end
+
+  describe "refresh" do
+    test "success" do
+      # check that token deleted
+    end
+
+    test "user blocked" do
+
+    end
+
+    test "authentication factor not found for user" do
+
+    end
+
+    test "invalid token type" do
+
+    end
+  end
+
 end
