@@ -7,20 +7,46 @@ defmodule Mithril.OAuth.TokenControllerTest do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
   end
 
-  test "successfully issues new access_token using using password", %{conn: conn} do
-    allowed_scope = "app:authorize legal_entity:read legal_entity:write"
-    client_type = Mithril.Fixtures.create_client_type(%{scope: allowed_scope})
-    client = Mithril.Fixtures.create_client(%{
-      settings: %{"allowed_grant_types" => ["password"]},
-      client_type_id: client_type.id
-    })
-    user = Mithril.Fixtures.create_user(%{password: "secret_password"})
+  test "user is blocked", %{conn: conn} do
+    password = "somepa$$word"
+    user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt(password), is_blocked: true)
+    client_type = insert(:client_type, scope: "app:authorize")
+    client = insert(:client,
+      user_id: user.id,
+      client_type_id: client_type.id,
+      settings: %{"allowed_grant_types" => ["password"]}
+    )
 
     request_payload = %{
       "token": %{
         "grant_type": "password",
         "email": user.email,
-        "password": "secret_password",
+        "password": password,
+        "client_id": client.id,
+        "scope": "app:authorize"
+      }
+    }
+    conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
+    assert "User blocked." == json_response(conn, 401)["error"]["message"]
+  end
+
+  test "successfully issues new access_token using password. Next step: send OTP", %{conn: conn} do
+    allowed_scope = "app:authorize legal_entity:read legal_entity:write"
+    password = "secret_password"
+    user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt(password))
+    client_type = insert(:client_type, scope: allowed_scope)
+    client = insert(:client,
+      user_id: user.id,
+      client_type_id: client_type.id,
+      settings: %{"allowed_grant_types" => ["password"]}
+    )
+    insert(:authentication_factor, user_id: user.id)
+
+    request_payload = %{
+      "token": %{
+        "grant_type": "password",
+        "email": user.email,
+        "password": password,
         "client_id": client.id,
         "scope": "app:authorize"
       }
@@ -28,8 +54,12 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
     conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
 
-    token = json_response(conn, 201)["data"]
+    resp = json_response(conn, 201)
+    assert Map.has_key?(resp, "urgent")
+    assert Map.has_key?(resp["urgent"], "next_step")
+    assert "REQUEST_OTP" = resp["urgent"]["next_step"]
 
+    token = resp["data"]
     assert token["name"] == "2fa_access_token"
     assert token["value"]
     assert token["expires_at"]

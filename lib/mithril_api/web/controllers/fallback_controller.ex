@@ -11,6 +11,12 @@ defmodule Mithril.Web.FallbackController do
     |> render(Error, :"401")
   end
 
+  def call(conn, {:error, {:access_denied, reason}}) do
+    conn
+    |> put_status(:unauthorized)
+    |> render(EView.Views.Error, :"401", %{message: reason})
+  end
+
   def call(conn, {:error, :not_found}) do
     conn
     |> put_status(:not_found)
@@ -57,9 +63,10 @@ defmodule Mithril.Web.FallbackController do
     |> render(EView.Views.Error, :"400", %{message: error})
   end
 
-  def call(conn, {:error, http_status_code, errors}) do
+  # ToDo: remove this shit
+  def call(conn, {:error, errors, http_status_code}) do
     conn
     |> put_status(http_status_code)
-    |> render(Mithril.Web.TokenView, http_status_code, %{errors: errors})
+    |> render(Mithril.Web.TokenView, http_status_code, errors: errors)
   end
 end

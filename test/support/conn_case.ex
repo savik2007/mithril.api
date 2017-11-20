@@ -18,6 +18,7 @@ defmodule Mithril.Web.ConnCase do
     quote do
       # Import conveniences for testing with connections
       use Phoenix.ConnTest
+      import Mithril.Web.ConnCase
       import MithrilWeb.Router.Helpers
       import Ecto
       import Ecto.Changeset
@@ -42,5 +43,18 @@ defmodule Mithril.Web.ConnCase do
       |> Plug.Conn.put_req_header("content-type", "application/json")
 
     {:ok, conn: conn}
+  end
+
+  def start_microservices(module) do
+    {:ok, port} = :gen_tcp.listen(0, [])
+    {:ok, port_string} = :inet.port(port)
+    :erlang.port_close(port)
+    ref = make_ref()
+    {:ok, _pid} = Plug.Adapters.Cowboy.http module, [], port: port_string, ref: ref # TODO: only 1 worker here
+    {:ok, port_string, ref}
+  end
+
+  def stop_microservices(ref) do
+    Plug.Adapters.Cowboy.shutdown(ref)
   end
 end

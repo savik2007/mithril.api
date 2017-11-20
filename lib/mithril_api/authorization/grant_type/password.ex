@@ -3,15 +3,23 @@ defmodule Mithril.Authorization.GrantType.Password do
   alias Mithril.Authorization.GrantType.Error, as: GrantTypeError
   alias Mithril.UserAPI
   alias Mithril.UserAPI.User
-  alias Mithril.TokenAPI.Token
   alias Mithril.Authentication
   alias Mithril.Authentication.Factor
+  alias Mithril.Authorization.GrantType.AccessToken2FA
 
-  @login_error_max Confex.get_env(:mithril_api, :user_login_error_max)
+  @login_error_max Confex.get_env(:mithril_api, :"2fa")[:user_login_error_max]
+
+  @request_otp "REQUEST_OTP"
+  @request_apps "REQUEST_APPS"
+  @request_factor "REQUEST_FACTOR"
+  @resend_otp "RESEND_OTP"
+
+  def next_step(:request_otp), do: @request_otp
+  def next_step(:request_apps), do: @request_apps
 
   def authorize(%{"email" => email, "password" => password, "client_id" => client_id, "scope" => scope})
       when not (is_nil(email) or is_nil(password) or is_nil(client_id) or is_nil(scope))
-  do
+    do
     client = Mithril.ClientAPI.get_client_with_type(client_id)
 
     case allowed_to_login?(client) do
@@ -28,7 +36,7 @@ defmodule Mithril.Authorization.GrantType.Password do
   end
 
   defp allowed_to_login?(nil),
-    do: {:error, "Invalid client id."}
+       do: {:error, "Invalid client id."}
   defp allowed_to_login?(client) do
     allowed_grant_types = Map.get(client.settings, "allowed_grant_types", [])
 
@@ -40,19 +48,63 @@ defmodule Mithril.Authorization.GrantType.Password do
   end
 
   defp create_token(_, nil, _, _),
-    do: GrantTypeError.invalid_grant("Identity not found.")
+       do: GrantTypeError.invalid_grant("Identity not found.")
   defp create_token(client, user, password, scope) do
-    {:ok, user}
-    |> match_with_user_password(password)
-    |> check_login_error_counter(user)
-    |> validate_token_scope(client.client_type.scope, scope)
-    |> create_access_token(client, scope)
-    |> deactivate_old_tokens()
+    with {:ok, user} <- match_with_user_password(user, password),
+         {:ok, user} <- AccessToken2FA.validate_user(user),
+         :ok <- validate_token_scope(client.client_type.scope, scope),
+         factor <- Authentication.get_factor_by([user_id: user.id, is_active: true]),
+         token_data <- prepare_token_data(user, client, scope),
+         {:ok, token} <- create_access_token(factor, token_data),
+         {_, nil} <- Mithril.TokenAPI.deactivate_old_tokens(token)
+      do
+      next_step = case maybe_send_otp(factor, token) do
+        :ok -> @request_otp
+        {:ok, :request_app} -> @request_apps
+        {:error, :factor_not_set} -> @request_factor
+        {:error, :sms_not_sent} -> @resend_otp
+      end
+      {:ok, %{token: token, urgent: %{next_step: next_step}}}
+    end
   end
 
-  defp create_access_token({:error, err, code}, _, _), do: {:error, err, code}
-  defp create_access_token({:ok, user}, client, scope) do
-    data = %{
+  defp match_with_user_password(user, password) do
+    if Comeonin.Bcrypt.checkpw(password, Map.get(user, :password, "")) do
+      {:ok, user}
+    else
+      increase_login_error_counter_or_block_user(user)
+      GrantTypeError.invalid_grant("Identity, password combination is wrong.")
+    end
+  end
+
+  defp increase_login_error_counter_or_block_user(%User{priv_settings: priv_settings} = user) do
+    login_error = priv_settings.login_error_counter + 1
+    case @login_error_max <= login_error do
+      true ->
+        UserAPI.block_user(user, "Passed invalid password more than USER_LOGIN_ERROR_MAX")
+      _ ->
+        data = priv_settings
+               |> Map.from_struct()
+               |> Map.put(:login_error_counter, login_error)
+        UserAPI.update_user_priv_settings(user, data)
+    end
+  end
+
+  defp validate_token_scope(client_scope, required_scope) do
+    allowed_scopes = String.split(client_scope, " ", trim: true)
+    required_scopes = String.split(required_scope, " ", trim: true)
+    if Mithril.Utils.List.subset?(allowed_scopes, required_scopes) do
+      :ok
+    else
+      GrantTypeError.invalid_scope(allowed_scopes)
+    end
+  end
+
+  defp create_access_token(%Factor{}, data), do: Mithril.TokenAPI.create_2fa_access_token(data)
+  defp create_access_token(_, data), do: Mithril.TokenAPI.create_access_token(data)
+
+  defp prepare_token_data(user, client, scope) do
+    %{
       user_id: user.id,
       details: %{
         grant_type: "password",
@@ -61,51 +113,8 @@ defmodule Mithril.Authorization.GrantType.Password do
         redirect_uri: client.redirect_uri
       }
     }
-
-    case Authentication.get_factor_by([user_id: user.id, is_active: true]) do
-      %Factor{} -> Mithril.TokenAPI.create_2fa_access_token(data)
-      _ -> Mithril.TokenAPI.create_access_token(data)
-    end
-
   end
 
-  defp deactivate_old_tokens({:ok, %Token{} = token}) do
-    Mithril.TokenAPI.deactivate_old_tokens(token)
-    {:ok, token}
-  end
-  defp deactivate_old_tokens({:error, _, _} = error), do: error
-
-  defp validate_token_scope({:error, err, code}, _, _), do: {:error, err, code}
-  defp validate_token_scope({:ok, user}, client_scope, required_scope) do
-    allowed_scopes = String.split(client_scope, " ", trim: true)
-    required_scopes = String.split(required_scope, " ", trim: true)
-    if Mithril.Utils.List.subset?(allowed_scopes, required_scopes) do
-      {:ok, user}
-    else
-      GrantTypeError.invalid_scope(allowed_scopes)
-    end
-  end
-
-  defp match_with_user_password({:ok, user}, password) do
-    if Comeonin.Bcrypt.checkpw(password, Map.get(user, :password, "")) do
-      {:ok, user}
-    else
-      GrantTypeError.invalid_grant("Identity, password combination is wrong.")
-    end
-  end
-
-  defp check_login_error_counter({:error, _, _} = err, %User{priv_settings: priv_settings} = user) do
-    login_error = priv_settings.login_error_counter + 1
-    case @login_error_max <= login_error do
-      true ->
-        UserAPI.block_user(user, "Passed invalid password more than USER_LOGIN_ERROR_MAX")
-      _ ->
-        data = priv_settings |> Map.from_struct() |> Map.put(:login_error_counter, login_error)
-        UserAPI.update_user_priv_settings(user, data)
-    end
-    err
-  end
-  defp check_login_error_counter({:ok, user}, _) do
-    {:ok, user}
-  end
+  defp maybe_send_otp(%Factor{} = factor, token), do: Authentication.send_otp(factor, token)
+  defp maybe_send_otp(_, _), do: {:ok, :request_app}
 end

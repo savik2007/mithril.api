@@ -18,9 +18,10 @@ defmodule Mithril.OTP do
   @required_fields ~w(key code code_expired_at status)a
   @optional_fields ~w(attempts_count)a
 
-  @otp_ttl Confex.get_env(:mithril_api, :otp_ttl)
-  @otp_length Confex.get_env(:mithril_api, :otp_length)
-  @otp_max_attempts Confex.get_env(:mithril_api, :otp_max_attempts)
+  @otp_config Confex.get_env(:mithril_api, :"2fa")
+  @otp_ttl @otp_config[:otp_ttl]
+  @otp_length @otp_config[:otp_length]
+  @otp_max_attempts @otp_config[:otp_max_attempts]
 
   @doc """
   Returns the list of otps.

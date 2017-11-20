@@ -14,7 +14,7 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
     })
     user = Mithril.Fixtures.create_user(%{password: "somepa$$word"})
 
-    {:ok, token} = PasswordGrantType.authorize(%{
+    {:ok,  %{token: token}} = PasswordGrantType.authorize(%{
       "email" => user.email,
       "password" => "somepa$$word",
       "client_id" => client.id,
@@ -45,7 +45,7 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
     )
     insert(:authentication_factor, user_id: user.id)
 
-    {:ok, token} = PasswordGrantType.authorize(%{
+    {:ok, %{token: token}} = PasswordGrantType.authorize(%{
       "email" => user.email,
       "password" => password,
       "client_id" => client.id,

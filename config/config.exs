@@ -26,13 +26,7 @@ use Mix.Config
 
 config :mithril_api,
   ecto_repos: [Mithril.Repo],
-  namespace: Mithril,
-  user_2fa_enabled: {:system, :boolean, "USER_2FA_ENABLED", true},
-  user_login_error_max: {:system, :integer, "USER_LOGIN_ERROR_MAX", 3},
-  user_otp_error_max: {:system, :integer, "USER_OTP_ERROR_MAX", 3},
-  otp_ttl: {:system, :integer, "OTP_LIFETIME", 300}, # seconds
-  otp_length: {:system, :integer, "OTP_LENGTH", 6},
-  otp_max_attempts: {:system, :integer, "OTP_MAX_ATTEMPTS", 3}
+  namespace: Mithril
 
 # Configure your database
 config :mithril_api, Mithril.Repo,
@@ -49,6 +43,15 @@ config :mithril_api, :generators,
   binary_id: true,
   sample_binary_id: "11111111-1111-1111-1111-111111111111"
 
+config :mithril_api, :"2fa",
+  user_2fa_enabled?: {:system, :boolean, "USER_2FA_ENABLED", true},
+  sms_enabled?: {:system, :boolean, "USER_2FA_ENABLED", true},
+  user_login_error_max: {:system, :integer, "USER_LOGIN_ERROR_MAX", 3},
+  user_otp_error_max: {:system, :integer, "USER_OTP_ERROR_MAX", 3},
+  otp_ttl: {:system, :integer, "OTP_LIFETIME", 300}, # seconds
+  otp_length: {:system, :integer, "OTP_LENGTH", 6},
+  otp_max_attempts: {:system, :integer, "OTP_MAX_ATTEMPTS", 3}
+
 # Configures the endpoint
 config :mithril_api, Mithril.Web.Endpoint,
   url: [host: "localhost"],
@@ -57,15 +60,6 @@ config :mithril_api, Mithril.Web.Endpoint,
 
 # Configures Elixir's Logger
 config :logger, :console, format: "$message\n", level: :info
-
-# It is also possible to import configuration files, relative to this
-# directory. For example, you can emulate configuration per environment
-# by uncommenting the line below and defining dev.exs, test.exs and such.
-# Configuration from the imported file will override the ones defined
-# here (which is why it is important to import them last).
-#
-
-import_config "#{Mix.env}.exs"
 
 config :mithril_api, :token_lifetime, %{
   code: {:system, "AUTH_CODE_GRANT_LIFETIME", 5 * 60},
@@ -77,3 +71,14 @@ config :mithril_api, :token_lifetime, %{
 config :mithril_api, Mithril.OTP.Terminator,
   frequency: 24 * 60 * 60 * 1000,
   utc_interval: {0, 4}
+
+# Configures OTP Verification API
+config :mithril_api, Mithril.OTP.SMS,
+  endpoint: {:system, "OTP_ENDPOINT"},
+  hackney_options: [
+    connect_timeout: {:system, :integer, "OTP_REQUEST_TIMEOUT", 30_000},
+    recv_timeout: {:system, :integer, "OTP_REQUEST_TIMEOUT", 30_000},
+    timeout: {:system, :integer, "OTP_REQUEST_TIMEOUT", 30_000}
+  ]
+
+import_config "#{Mix.env}.exs"
