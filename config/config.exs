@@ -45,7 +45,7 @@ config :mithril_api, :generators,
 
 config :mithril_api, :"2fa",
   user_2fa_enabled?: {:system, :boolean, "USER_2FA_ENABLED", true},
-  sms_enabled?: {:system, :boolean, "USER_2FA_ENABLED", true},
+  sms_enabled?: {:system, :boolean, "SMS_ENABLED", true},
   user_login_error_max: {:system, :integer, "USER_LOGIN_ERROR_MAX", 3},
   user_otp_error_max: {:system, :integer, "USER_OTP_ERROR_MAX", 3},
   otp_ttl: {:system, :integer, "OTP_LIFETIME", 300}, # seconds
