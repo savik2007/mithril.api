@@ -150,5 +150,17 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       assert token["details"]["request_authentication_factor"] == "+380881002030"
       assert token["details"]["request_authentication_factor_type"] == "SMS"
     end
+
+    test "invalid type", %{conn: conn} do
+      conn = post conn, oauth2_token_path(conn, :init_factor), %{type: 123, factor: "+380881002030"}
+      assert err = hd(json_response(conn, 422)["error"]["invalid"])
+      assert "$.type" == err["entry"]
+    end
+
+    test "invalid factor", %{conn: conn} do
+      conn = post conn, oauth2_token_path(conn, :init_factor), %{type: "SMS", factor: "Skywalker"}
+      assert err = hd(json_response(conn, 422)["error"]["invalid"])
+      assert "$.factor" == err["entry"]
+    end
   end
 end

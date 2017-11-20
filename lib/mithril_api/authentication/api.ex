@@ -132,7 +132,10 @@ defmodule Mithril.Authentication do
     validate_change changeset, :factor, fn :factor, factor ->
       changeset
       |> fetch_field(:type)
-      |> elem(1)
+      |> case do
+           :error -> :error
+           {_, value} -> value
+         end
       |> validate_factor_format(factor)
     end
   end
