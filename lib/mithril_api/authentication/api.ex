@@ -69,9 +69,10 @@ defmodule Mithril.Authentication do
     token.id <> "===" <> value
   end
 
+  defp generate_message(code) when is_integer(code), do: Integer.to_string(code)
   defp generate_message(code) do
-    # ToDo: write code
-    to_string(code)
+    # ToDo: write a code
+    code
   end
 
   def get_factor!(id),
