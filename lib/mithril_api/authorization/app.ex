@@ -1,7 +1,6 @@
 defmodule Mithril.Authorization.App do
   @moduledoc false
 
-  alias Mithril.ClientAPI
   alias Mithril.ClientAPI.Client
 
   # NOTE: Mark password token as used.

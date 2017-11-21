@@ -21,6 +21,9 @@ defmodule Mithril.TokenAPI do
   @access_token_2fa "2fa_access_token"
   @authorization_code "authorization_code"
 
+  @type_field "request_authentication_factor_type"
+  @factor_field "request_authentication_factor"
+
   def list_tokens(params) do
     %TokenSearch{}
     |> token_changeset(params)
@@ -85,9 +88,22 @@ defmodule Mithril.TokenAPI do
          :ok <- validate_token_type(token, factor),
          token_data <- prepare_token_data(token, attrs),
          {:ok, token_2fa} <- create_2fa_access_token(token_data),
-         Authentication.send_otp(factor, token_2fa)
+         Authentication.send_otp(%Factor{factor: attrs["factor"], type: Authentication.type(:sms)}, token_2fa)
       do
       {:ok, token_2fa}
+    end
+  end
+
+  def approve_factor(attrs) do
+    with :ok <- AccessToken2FA.validate_authorization_header(attrs),
+         {:ok, token} <- validate_token(attrs["token_value"]),
+         :ok <- validate_approve_token(token),
+         where_factor <- prepare_factor_where_clause(token),
+         %Factor{} = factor <- Authentication.get_factor_by!(where_factor),
+         :ok <- AccessToken2FA.verify_otp(token.details[@factor_field], token, attrs["otp"]),
+         {:ok, updated_factor} <- Authentication.update_factor(factor, %{"factor" => token.details[@factor_field]})
+      do
+      {:ok, updated_factor.user}
     end
   end
 
@@ -102,6 +118,9 @@ defmodule Mithril.TokenAPI do
     end
   end
 
+  defp validate_approve_token(%Token{details: %{@factor_field => _, @type_field => _}}), do: :ok
+  defp validate_approve_token(_), do: {:error, {:access_denied, "Invalid token type. Init factor at first"}}
+
   defp validate_token_type(%Token{name: @access_token_2fa}, %Factor{factor: val}) when (is_nil(val) or "" == val) do
     :ok
   end
@@ -110,6 +129,10 @@ defmodule Mithril.TokenAPI do
   end
   defp validate_token_type(_, _) do
     {:error, {:access_denied, "Invalid token type"}}
+  end
+
+  defp prepare_factor_where_clause(%Token{user_id: user_id, details: %{@type_field => type}}) do
+    [user_id: user_id, is_active: true, type: type]
   end
 
   defp prepare_factor_where_clause(%Token{} = token, %{"type" => type}) do
