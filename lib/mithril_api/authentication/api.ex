@@ -71,7 +71,7 @@ defmodule Mithril.Authentication do
 
   defp generate_message(code) do
     # ToDo: write code
-    code
+    to_string(code)
   end
 
   def get_factor!(id),
