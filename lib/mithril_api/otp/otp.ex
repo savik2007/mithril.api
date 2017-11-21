@@ -197,7 +197,7 @@ defmodule Mithril.OTP do
 
   @spec generate_otp_code(number_length :: pos_integer()) :: pos_integer()
   defp generate_otp_code(number_length) do
-    1..number_length - 1
+    1..number_length
     |> Enum.map(fn _ -> :rand.uniform(9) end)
     |> Enum.join()
     |> String.to_integer()
