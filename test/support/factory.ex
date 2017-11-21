@@ -16,7 +16,7 @@ defmodule Mithril.Factory do
       user_id: user.id,
       expires_at: 2000000000,
       name: sequence("authorization_code-"),
-      value: "some_short_lived_code"
+      value: sequence("some_short_lived_code-")
     }
   end
 

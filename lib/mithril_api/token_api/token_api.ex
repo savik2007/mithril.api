@@ -16,6 +16,11 @@ defmodule Mithril.TokenAPI do
   @direct ClientAPI.access_type(:direct)
   @broker ClientAPI.access_type(:broker)
 
+  @refresh_token "refresh_token"
+  @access_token "access_token"
+  @access_token_2fa "2fa_access_token"
+  @authorization_code "authorization_code"
+
   def list_tokens(params) do
     %TokenSearch{}
     |> token_changeset(params)
@@ -67,7 +72,7 @@ defmodule Mithril.TokenAPI do
 
   def create_2fa_access_token(attrs \\ %{}) do
     %Token{}
-    |> access_token_2fa_changeset(put_in(attrs, [:details, :"2fa?"], true))
+    |> access_token_2fa_changeset(attrs)
     |> Repo.insert()
   end
 
@@ -97,13 +102,10 @@ defmodule Mithril.TokenAPI do
     end
   end
 
-  defp validate_token_type(%Token{details: %{"2fa?": true}}, %Factor{factor: val}) when (is_nil(val) or "" == val) do
+  defp validate_token_type(%Token{name: @access_token_2fa}, %Factor{factor: val}) when (is_nil(val) or "" == val) do
     :ok
   end
-  defp validate_token_type(%Token{details: %{"2fa?": true}}, %Factor{factor: val}) when byte_size(val) > 0 do
-    {:error, {:access_denied, "Invalid token type"}}
-  end
-  defp validate_token_type(%Token{}, %Factor{factor: val}) when byte_size(val) > 0 do
+  defp validate_token_type(%Token{name: @access_token}, %Factor{factor: val}) when byte_size(val) > 0 do
     :ok
   end
   defp validate_token_type(_, _) do
@@ -282,19 +284,19 @@ defmodule Mithril.TokenAPI do
   end
 
   defp refresh_token_changeset(%Token{} = token, attrs) do
-    token_changeset(token, attrs, :refresh, "refresh_token")
+    token_changeset(token, attrs, :refresh, @refresh_token)
   end
 
   defp access_token_changeset(%Token{} = token, attrs) do
-    token_changeset(token, attrs, :access, "access_token")
+    token_changeset(token, attrs, :access, @access_token)
   end
 
   defp access_token_2fa_changeset(%Token{} = token, attrs) do
-    token_changeset(token, attrs, :access, "2fa_access_token")
+    token_changeset(token, attrs, :access, @access_token_2fa)
   end
 
   defp authorization_code_changeset(%Token{} = token, attrs) do
-    token_changeset(token, attrs, :code, "authorization_code")
+    token_changeset(token, attrs, :code, @authorization_code)
   end
 
   defp get_token_lifetime,
