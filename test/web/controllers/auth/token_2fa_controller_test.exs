@@ -222,6 +222,37 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
     end
   end
 
+  describe "approve factor" do
+    setup %{conn: conn, user: user, client: client} do
+      insert(:authentication_factor, user_id: user.id, factor: nil)
+      token = authorize(user.email, client.id)
+
+      conn1 = put_req_header(conn, "authorization", "Bearer #{token.value}")
+      conn2 = post conn1, oauth2_token_path(conn1, :init_factor), %{type: "SMS", factor: "+380885002030"}
+      token = json_response(conn2, 201)["data"]
+
+      otp =
+        OTP.list_otps
+        |> List.first
+        |> Map.get(:code)
+
+      conn = put_req_header(conn, "authorization", "Bearer #{token["value"]}")
+
+      %{conn: conn, user: user, otp: otp}
+    end
+
+    test "success", %{conn: conn, user: user, otp: otp} do
+      conn = post conn, oauth2_token_path(conn, :approve_factor), %{otp: otp}
+      data = json_response(conn, 200)["data"]
+      assert data["id"] == user.id
+    end
+
+    test "invalid OTP", %{conn: conn} do
+      conn = post conn, oauth2_token_path(conn, :approve_factor), %{otp: 100200}
+      assert "Invalid OTP code" == json_response(conn, 401)["error"]["message"]
+    end
+  end
+
   defp authorize(email, client_id, password \\ @password) do
     {:ok, %{token: token}} = PasswordGrantType.authorize(%{
       "email" => email,

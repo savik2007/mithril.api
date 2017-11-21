@@ -79,7 +79,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
     end
   end
 
-  defp verify_otp(factor, token, otp) do
+  def verify_otp(factor, token, otp) do
     case Authentication.verify_otp(factor, token, otp) do
       {_, _, :verified} -> :ok
       _ -> {:error, {:access_denied, "Invalid OTP code"}}
