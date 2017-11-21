@@ -48,10 +48,10 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
     |> validate_required(Map.keys(types))
   end
 
-  defp validate_authorization_header(%{"token_value" => token_value}) when is_binary(token_value) do
+  def validate_authorization_header(%{"token_value" => token_value}) when is_binary(token_value) do
     :ok
   end
-  defp validate_authorization_header(_) do
+  def validate_authorization_header(_) do
     {:error, {:access_denied, "Authorization header required."}}
   end
 

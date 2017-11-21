@@ -114,7 +114,6 @@ defmodule Mithril.Authentication do
     |> cast(attrs, @fields_required ++ @fields_optional)
     |> validate_required(@fields_required)
     |> validate_inclusion(:type, [@type_sms])
-    |> validate_factor_reseted()
     |> validate_factor_format()
     |> unique_constraint(:user_id, name: "authentication_factors_user_id_type_index")
     |> assoc_constraint(:user)
@@ -129,11 +128,14 @@ defmodule Mithril.Authentication do
     end
   end
 
-  defp validate_factor_format(changeset) do
+  def validate_factor_format(changeset) do
     validate_change changeset, :factor, fn :factor, factor ->
       changeset
       |> fetch_field(:type)
-      |> elem(1)
+      |> case do
+           :error -> :error
+           {_, value} -> value
+         end
       |> validate_factor_format(factor)
     end
   end

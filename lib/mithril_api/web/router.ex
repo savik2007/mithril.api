@@ -25,7 +25,8 @@ defmodule MithrilWeb.Router do
     pipe_through :api
 
     post "/apps/authorize", OAuth.AppController, :authorize
-    post "/tokens",         OAuth.TokenController, :create
+    post "/tokens", OAuth.TokenController, :create
+    post "/tokens/actions/init_factor", OAuth.TokenController, :init_factor
   end
 
   scope "/admin", Mithril.Web do
@@ -42,13 +43,13 @@ defmodule MithrilWeb.Router do
       patch "/actions/unblock", UserController, :unblock
 
       resources "/authentication_factors", AuthenticationFactorController,
-        except: [:new, :edit, :delete], as: :authentication_factor
+                except: [:new, :update, :edit, :delete], as: :authentication_factor
       patch "/authentication_factors/:id/actions/reset", AuthenticationFactorController, :reset,
-        as: :authentication_factor
+            as: :authentication_factor
       patch "/authentication_factors/:id/actions/disable", AuthenticationFactorController, :disable,
-        as: :authentication_factor
+            as: :authentication_factor
       patch "/authentication_factors/:id/actions/enable", AuthenticationFactorController, :enable,
-        as: :authentication_factor
+            as: :authentication_factor
     end
 
     get "/user_roles", UserRoleController, :index, as: :user_roles

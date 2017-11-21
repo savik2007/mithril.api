@@ -9,9 +9,17 @@ defmodule Mithril.TokenAPI do
   alias Mithril.TokenAPI.Token
   alias Mithril.ClientAPI.Client
   alias Mithril.TokenAPI.TokenSearch
+  alias Mithril.Authentication
+  alias Mithril.Authentication.Factor
+  alias Mithril.Authorization.GrantType.AccessToken2FA
 
   @direct ClientAPI.access_type(:direct)
   @broker ClientAPI.access_type(:broker)
+
+  @refresh_token "refresh_token"
+  @access_token "access_token"
+  @access_token_2fa "2fa_access_token"
+  @authorization_code "authorization_code"
 
   def list_tokens(params) do
     %TokenSearch{}
@@ -27,8 +35,8 @@ defmodule Mithril.TokenAPI do
 
     details_params = %{client_id: client_id}
     from e in entity,
-      where: ^params,
-      where: fragment("? @> ?", e.details, ^details_params)
+         where: ^params,
+         where: fragment("? @> ?", e.details, ^details_params)
   end
   def get_search_query(entity, changes), do: super(entity, changes)
 
@@ -68,6 +76,57 @@ defmodule Mithril.TokenAPI do
     |> Repo.insert()
   end
 
+  def init_factor(attrs) do
+    with :ok <- AccessToken2FA.validate_authorization_header(attrs),
+         {:ok, token} <- validate_token(attrs["token_value"]),
+         %Ecto.Changeset{valid?: true} <- factor_changeset(attrs),
+         where_factor <- prepare_factor_where_clause(token, attrs),
+         %Factor{} = factor <- Authentication.get_factor_by!(where_factor),
+         :ok <- validate_token_type(token, factor),
+         token_data <- prepare_token_data(token, attrs),
+         {:ok, token_2fa} <- create_2fa_access_token(token_data),
+         Authentication.send_otp(factor, token_2fa)
+      do
+      {:ok, token_2fa}
+    end
+  end
+
+  defp validate_token(token_value) do
+    with %Token{} = token <- get_token_by([value: token_value]),
+         false <- expired?(token)
+      do
+      {:ok, token}
+    else
+      true -> {:error, {:access_denied, "Token expired"}}
+      nil -> {:error, {:access_denied, "Invalid token"}}
+    end
+  end
+
+  defp validate_token_type(%Token{name: @access_token_2fa}, %Factor{factor: val}) when (is_nil(val) or "" == val) do
+    :ok
+  end
+  defp validate_token_type(%Token{name: @access_token}, %Factor{factor: val}) when byte_size(val) > 0 do
+    :ok
+  end
+  defp validate_token_type(_, _) do
+    {:error, {:access_denied, "Invalid token type"}}
+  end
+
+  defp prepare_factor_where_clause(%Token{} = token, %{"type" => type}) do
+    [user_id: token.user_id, is_active: true, type: type]
+  end
+
+  defp prepare_token_data(%Token{} = token, attrs) do
+    %{user_id: token.user_id, details: token.details}
+    %{
+      user_id: token.user_id,
+      details: Map.merge(token.details, %{
+        request_authentication_factor: attrs["factor"],
+        request_authentication_factor_type: attrs["type"],
+      })
+    }
+  end
+
   def update_token(%Token{} = token, attrs) do
     token
     |> token_changeset(attrs)
@@ -104,8 +163,8 @@ defmodule Mithril.TokenAPI do
 
     with false <- expired?(token),
          _app <- Mithril.AppAPI.approval(token.user_id, token.details["client_id"]) do
-           # if token is authorization_code or password - make sure was not used previously
-        {:ok, token}
+      # if token is authorization_code or password - make sure was not used previously
+      {:ok, token}
     else
       _ ->
         message = "Token expired or client approval was revoked."
@@ -190,6 +249,16 @@ defmodule Mithril.TokenAPI do
 
   @uuid_regex ~r|[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}|
 
+  defp factor_changeset(attrs) do
+    types = %{type: :string, factor: :string}
+
+    {%{}, types}
+    |> cast(attrs, Map.keys(types))
+    |> validate_required(Map.keys(types))
+    |> validate_inclusion(:type, [Authentication.type(:sms)])
+    |> Authentication.validate_factor_format()
+  end
+
   defp token_changeset(%Token{} = token, attrs) do
     token
     |> cast(attrs, [:name, :user_id, :value, :expires_at, :details])
@@ -215,23 +284,23 @@ defmodule Mithril.TokenAPI do
   end
 
   defp refresh_token_changeset(%Token{} = token, attrs) do
-    token_changeset(token, attrs, :refresh, "refresh_token")
+    token_changeset(token, attrs, :refresh, @refresh_token)
   end
 
   defp access_token_changeset(%Token{} = token, attrs) do
-    token_changeset(token, attrs, :access, "access_token")
+    token_changeset(token, attrs, :access, @access_token)
   end
 
   defp access_token_2fa_changeset(%Token{} = token, attrs) do
-    token_changeset(token, attrs, :access, "2fa_access_token")
+    token_changeset(token, attrs, :access, @access_token_2fa)
   end
 
   defp authorization_code_changeset(%Token{} = token, attrs) do
-    token_changeset(token, attrs, :code, "authorization_code")
+    token_changeset(token, attrs, :code, @authorization_code)
   end
 
   defp get_token_lifetime,
-    do: Confex.fetch_env!(:mithril_api, :token_lifetime)
+       do: Confex.fetch_env!(:mithril_api, :token_lifetime)
 
   defp check_client_is_blocked(%Client{is_blocked: false}), do: :ok
   defp check_client_is_blocked(_) do
