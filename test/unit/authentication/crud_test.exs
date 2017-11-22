@@ -28,20 +28,19 @@ defmodule Mithril.Authentication.CRUDTest do
       assert {:ok, %Factor{}} = Authentication.create_factor(data)
     end
 
-    test "invalid factor value", %{user: user} do
+    test "cannot create factor with value", %{user: user} do
       data = %{
         "user_id" => user.id,
         "type" => Authentication.type(:sms),
-        "factor" => "invalid"
+        "factor" => "+380881002030"
       }
-      assert {:error, %Changeset{valid?: false, errors: [factor: _]}} = Authentication.create_factor(data)
+      assert  {:ok, %Factor{factor: nil}} = Authentication.create_factor(data)
     end
 
-    test "invalid type and factor", %{user: user} do
+    test "invalid type", %{user: user} do
       data = %{
         "user_id" => user.id,
         "type" => "INVALID",
-        "factor" => "invalid"
       }
       assert {:error, %Changeset{valid?: false, errors: [type: _]}} = Authentication.create_factor(data)
     end

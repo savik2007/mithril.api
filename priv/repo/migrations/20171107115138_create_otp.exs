@@ -8,6 +8,7 @@ defmodule Mithril.Repo.Migrations.CreateOTP do
       add :code, :integer, null: false
       add :code_expired_at, :utc_datetime, null: false
       add :status, :string, null: false
+      add :active, :boolean, default: true
       add :attempts_count, :integer, default: 0
       timestamps(updated_at: false, type: :utc_datetime)
     end
