@@ -164,12 +164,8 @@ defmodule Mithril.UserAPI do
         :error ->
           []
         false ->
-          [
-            {
-              field2,
-              {"#{to_string(field1)} does not match password in field #{to_string(field2)}", [validation: :password]}
-            }
-          ]
+          [{field2,
+            {"#{to_string(field1)} does not match password in field #{to_string(field2)}", [validation: :password]}}]
       end
     end
   end
