@@ -18,11 +18,6 @@ defmodule Mithril.OTP do
   @required_fields ~w(key code code_expired_at status)a
   @optional_fields ~w(attempts_count)a
 
-  @otp_config Confex.get_env(:mithril_api, :"2fa")
-  @otp_ttl @otp_config[:otp_ttl]
-  @otp_length @otp_config[:otp_length]
-  @otp_max_attempts @otp_config[:otp_max_attempts]
-
   @doc """
   Returns the list of otps.
 
@@ -104,9 +99,10 @@ defmodule Mithril.OTP do
 
   @spec initialize_attrs(key :: String.t) :: %{}
   defp initialize_attrs(key) do
+    otp_length = Confex.get_env(:mithril_api, :"2fa")[:otp_length]
     %{
       "key" => key,
-      "code" => generate_otp_code(@otp_length),
+      "code" => generate_otp_code(otp_length),
       "status" => @status_new,
       "code_expired_at" => get_code_expiration_time(),
     }
@@ -137,7 +133,7 @@ defmodule Mithril.OTP do
 
   @spec verify_max_attemps(otp :: OTPSchema.t) :: atom()
   defp verify_max_attemps(%OTPSchema{attempts_count: attempts_count}) do
-    if attempts_count < @otp_max_attempts,
+    if attempts_count < Confex.get_env(:mithril_api, :"2fa")[:otp_max_attempts],
        do: :ok,
        else: :reached_max_attempts
   end
@@ -209,7 +205,7 @@ defmodule Mithril.OTP do
 
   @spec get_code_expiration_time :: String.t
   defp get_code_expiration_time, do:
-    DateTime.to_iso8601(Timex.shift(Timex.now, seconds: @otp_ttl))
+    DateTime.to_iso8601(Timex.shift(Timex.now, seconds: Confex.get_env(:mithril_api, :"2fa")[:otp_ttl]))
 
   @spec deactivate_otps(key :: String.t) :: {integer, nil | [term]} | no_return
   defp deactivate_otps(key) do
