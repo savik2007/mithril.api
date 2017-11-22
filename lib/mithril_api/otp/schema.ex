@@ -9,6 +9,7 @@ defmodule Mithril.OTP.Schema do
     field :code, :integer
     field :code_expired_at, :utc_datetime
     field :status, :string
+    field :active, :boolean
     field :attempts_count, :integer, default: 0
     timestamps(type: :utc_datetime, updated_at: false)
   end

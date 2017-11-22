@@ -97,8 +97,8 @@ defmodule Mithril.Authentication do
   end
 
   def create_factor(attrs) do
-    %Factor{}
-    |> changeset(attrs)
+    attrs
+    |> create_changeset()
     |> Repo.insert()
     |> preload_references()
   end
@@ -110,27 +110,22 @@ defmodule Mithril.Authentication do
     |> preload_references()
   end
 
+  def create_changeset(attrs) do
+    changeset(%Factor{}, attrs, @fields_required)
+  end
+
   def changeset(%FactorSearch{} = factor, attrs) do
     cast(factor, attrs, FactorSearch.__schema__(:fields))
   end
 
-  def changeset(%Factor{} = client, attrs) do
+  def changeset(%Factor{} = client, attrs, cast_fields \\ @fields_required ++ @fields_optional) do
     client
-    |> cast(attrs, @fields_required ++ @fields_optional)
+    |> cast(attrs, cast_fields)
     |> validate_required(@fields_required)
     |> validate_inclusion(:type, [@type_sms])
     |> validate_factor_format()
     |> unique_constraint(:user_id, name: "authentication_factors_user_id_type_index")
     |> assoc_constraint(:user)
-  end
-
-  defp validate_factor_reseted(%Ecto.Changeset{data: %Factor{factor: factor}} = changeset) do
-    validate_change changeset, :factor, fn :factor, _ ->
-      case factor do
-          nil -> []
-          _ -> [factor: "factor alredy set and cannot be updated"]
-      end
-    end
   end
 
   def validate_factor_format(changeset) do

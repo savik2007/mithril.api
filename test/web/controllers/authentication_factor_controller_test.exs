@@ -21,8 +21,23 @@ defmodule Mithril.Web.AuthenticationFactorControllerTest do
 
     test "filter by type", %{conn: conn, user: user} do
       conn = get conn, user_authentication_factor_path(conn, :index, user), %{"type" => Authentication.type(:sms)}
+      assert [%{"factor" => factor}] = json_response(conn, 200)["data"]
+      assert String.match?(factor, ~r/\+\d{5}\*{5}\d{2}/), "factor `#{factor}` not masked"
+    end
+  end
+
+  describe "get factor by id" do
+    setup %{conn: conn} do
+      user = insert(:user)
+      factor = insert(:authentication_factor, user_id: user.id, factor: "+380881002030")
+      {:ok, conn: conn, user: user, factor: factor}
+    end
+
+    test "success", %{conn: conn, factor: factor, user: user} do
+      conn = get conn, user_authentication_factor_path(conn, :show, user.id, factor.id)
       data = json_response(conn, 200)["data"]
-      assert 1 = length(data)
+      assert "+38088*****30" == data["factor"]
+      assert factor.id == data["id"]
     end
   end
 
@@ -34,6 +49,7 @@ defmodule Mithril.Web.AuthenticationFactorControllerTest do
 
     test "success", %{conn: conn, user: user} do
       create_attrs = %{
+        "factor" => "+380229008070",
         "user_id" => user.id,
         "type" => Authentication.type(:sms)
       }
@@ -56,8 +72,16 @@ defmodule Mithril.Web.AuthenticationFactorControllerTest do
     end
 
     test "reset factor", %{conn: conn, user: user, factor: factor} do
+      conn = get conn, user_authentication_factor_path(conn, :show, user.id, factor.id)
+      factor_value = json_response(conn, 200)["data"]["factor"]
+      assert String.match?(factor_value, ~r/\+\d{5}\*{5}\d{2}/), "factor `#{factor_value}` not masked"
+
       conn = patch conn, user_authentication_factor_path(conn, :reset, user, factor.id)
-      assert json_response(conn, 200)
+      data = json_response(conn, 200)["data"]
+
+      assert user.id == data["user_id"]
+      refute data["factor"]
+      assert data["is_active"]
 
       conn = get conn, user_authentication_factor_path(conn, :show, user.id, factor.id)
       data = json_response(conn, 200)["data"]
@@ -69,7 +93,7 @@ defmodule Mithril.Web.AuthenticationFactorControllerTest do
 
     test "disable", %{conn: conn, user: user, factor: factor} do
       conn = patch conn, user_authentication_factor_path(conn, :disable, user, factor.id)
-      assert %{"id" => id} = json_response(conn, 200)["data"]
+      assert %{"id" => id, "is_active" => false} = json_response(conn, 200)["data"]
 
       conn = get conn, user_authentication_factor_path(conn, :show, user.id, id)
       data = json_response(conn, 200)["data"]

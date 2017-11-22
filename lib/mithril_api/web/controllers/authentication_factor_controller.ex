@@ -29,17 +29,9 @@ defmodule Mithril.Web.AuthenticationFactorController do
     end
   end
 
-  def update(conn, %{"id" => id, "user_id" => user_id} = attrs) do
-    factor = Authentication.get_factor_by!([id: id, user_id: user_id, is_active: true])
-
-    with {:ok, %Factor{} = factor} <- Authentication.update_factor(factor, attrs) do
-      render(conn, "show.json", factor: factor)
-    end
-  end
-
   def disable(conn, %{"id" => id, "user_id" => user_id}) do
     with %Factor{is_active: true} = factor <- Authentication.get_factor_by!([id: id, user_id: user_id]),
-         {:ok, %Factor{}} <- Authentication.update_factor(factor, %{"is_active" => false}) do
+         {:ok, %Factor{} = factor} <- Authentication.update_factor(factor, %{"is_active" => false}) do
       render(conn, "show.json", factor: factor)
     else
       %Factor{is_active: false} -> {:error, {:conflict, "user authentication factor already disabled"}}
@@ -60,7 +52,7 @@ defmodule Mithril.Web.AuthenticationFactorController do
   def reset(conn, %{"id" => id, "user_id" => user_id}) do
     factor = Authentication.get_factor_by!([id: id, user_id: user_id, is_active: true])
 
-    with {:ok, %Factor{}} <- Authentication.update_factor(factor, %{"factor" => nil}) do
+    with {:ok, %Factor{} = factor} <- Authentication.update_factor(factor, %{"factor" => nil}) do
       render(conn, "show.json", factor: factor)
     end
   end

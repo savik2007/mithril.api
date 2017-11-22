@@ -90,6 +90,16 @@ defmodule Mithril.UserAPITest do
     assert String.length(user.password) == 60
     assert user.settings == %{}
     assert user.priv_settings == %Mithril.UserAPI.User.PrivSettings{
+             login_error_counter: 0,
+             otp_error_counter: 0
+           }
+  end
+
+  test "update_user_priv_settings/2 with valid data updates the user.priv_settings" do
+    user = fixture(:user)
+    assert {:ok, user} = UserAPI.update_user_priv_settings(user, @update_attrs.priv_settings)
+    assert %User{} = user
+    assert user.priv_settings == %Mithril.UserAPI.User.PrivSettings{
              login_error_counter: 2,
              otp_error_counter: 5
            }

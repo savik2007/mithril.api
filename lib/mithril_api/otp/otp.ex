@@ -152,7 +152,7 @@ defmodule Mithril.OTP do
   @spec otp_completed(otp :: OTPSchema.t) :: tuple()
   defp otp_completed(%OTPSchema{} = otp) do
     otp
-    |> update_otp(%{status: @status_verified, attempts_count: otp.attempts_count + 1})
+    |> update_otp(%{status: @status_verified, active: false, attempts_count: otp.attempts_count + 1})
     |> Tuple.append(:verified)
   end
 
@@ -160,7 +160,7 @@ defmodule Mithril.OTP do
   defp otp_does_not_completed(%OTPSchema{} = otp, error) do
     attrs = case error do
       :invalid_code -> %{attempts_count: otp.attempts_count + 1}
-      _ -> %{status: @status_unverified}
+      _ -> %{status: @status_unverified, active: false}
     end
 
     otp
@@ -213,14 +213,16 @@ defmodule Mithril.OTP do
 
     OTPSchema
     |> where(key: ^key)
+    |> where(active: true)
     |> Repo.update_all(set: data)
   end
 
   @spec cancel_expired_otps() :: {integer, nil | [term]} | no_return
   def cancel_expired_otps do
-    data = [status: @status_expired]
+    data = [status: @status_expired, active: false]
 
     OTPSchema
+    |> where(active: true)
     |> where([o], o.code_expired_at < ^Timex.now)
     |> Repo.update_all(set: data)
   end
