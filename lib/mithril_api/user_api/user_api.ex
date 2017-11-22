@@ -2,31 +2,33 @@ defmodule Mithril.UserAPI do
   @moduledoc """
   The boundary for the UserAPI system.
   """
+  use Mithril.Search
 
   import Ecto.{Query, Changeset}, warn: false
 
   alias Ecto.Multi
   alias Mithril.Repo
-  alias Mithril.UserAPI.User
+  alias Mithril.UserAPI.{User, UserSearch}
   alias Mithril.UserAPI.User.PrivSettings
   alias Mithril.Authentication
 
   def list_users(params) do
-    User
-    |> filter_by_id(params)
-    |> filter_by_email(params)
-    |> Repo.paginate(params)
+    %UserSearch{}
+    |> user_changeset(params)
+    |> search(params, User)
   end
 
-  defp filter_by_id(query, %{"id" => id}) do
-    where(query, [r], r.id == ^id)
-  end
-  defp filter_by_id(query, _), do: query
+  def get_search_query(entity, %{ids: _} = changes) do
+    changes =
+      changes
+      |> Map.put(:id, changes.ids)
+      |> Map.delete(:ids)
 
-  defp filter_by_email(query, %{"email" => email}) when is_binary(email) do
-    where(query, [r], r.email == ^email)
+    super(entity, changes)
   end
-  defp filter_by_email(query, _), do: query
+  def get_search_query(entity, changes) do
+    super(entity, changes)
+  end
 
   def get_user(id), do: Repo.get(User, id)
   def get_user!(id), do: Repo.get!(User, id)
@@ -36,7 +38,9 @@ defmodule Mithril.UserAPI do
     query = from u in User,
                  left_join: ur in assoc(u, :user_roles),
                  left_join: r in assoc(ur, :role),
-                 preload: [roles: r],
+                 preload: [
+                   roles: r
+                 ],
                  where: ur.user_id == ^user_id,
                  where: ur.client_id == ^client_id
 
@@ -44,16 +48,24 @@ defmodule Mithril.UserAPI do
   end
 
   def create_user(attrs \\ %{}) do
-    user = %User{priv_settings: %{login_error_counter: 0, otp_error_counter: 0}}
+    user = %User{
+      priv_settings: %{
+        login_error_counter: 0,
+        otp_error_counter: 0
+      }
+    }
     user_changeset = user_changeset(user, attrs)
     Multi.new
     |> Multi.insert(:user, user_changeset)
-    |> Multi.run(:authentication_factors, fn %{user: user} ->
-      case enabled_2fa?(attrs) do
-        true -> Authentication.create_factor(%{type: Authentication.type(:sms), user_id: user.id})
-        false -> {:ok, :not_enabled}
-      end
-    end)
+    |> Multi.run(
+         :authentication_factors,
+         fn %{user: user} ->
+           case enabled_2fa?(attrs) do
+             true -> Authentication.create_factor(%{type: Authentication.type(:sms), user_id: user.id})
+             false -> {:ok, :not_enabled}
+           end
+         end
+       )
     |> Repo.transaction()
     |> case do
          {:ok, %{user: user}} -> {:ok, user}
@@ -116,6 +128,9 @@ defmodule Mithril.UserAPI do
     |> validate_required([:email, :password])
     |> unique_constraint(:email)
     |> put_password()
+  end
+  defp user_changeset(%UserSearch{} = user_role, attrs) do
+    cast(user_role, attrs, UserSearch.__schema__(:fields))
   end
 
   defp priv_settings_changeset(%PrivSettings{} = priv_settings, attrs) do

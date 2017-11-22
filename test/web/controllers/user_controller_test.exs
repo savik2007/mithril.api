@@ -55,6 +55,20 @@ defmodule Mithril.Web.UserControllerTest do
     assert length(json_response(conn, 200)["data"]) == 1
   end
 
+  test "finds users by ids and is_blocked", %{conn: conn} do
+    %{id: id1} = fixture(:user, %{email: "1", password: "1", settings: %{}, is_blocked: true})
+    %{id: id2} = fixture(:user, %{email: "2", password: "2", settings: %{}, is_blocked: true})
+    %{id: id3} = fixture(:user, %{email: "3", password: "3", settings: %{}})
+    fixture(:user, %{email: "4", password: "4", settings: %{}})
+
+    conn = get conn, user_path(conn, :index, %{ids: Enum.join([id1, id2, id3], ","), is_blocked: true})
+    data = json_response(conn, 200)["data"]
+    assert 2 == length(data)
+    Enum.each(data, fn %{"id" => id} ->
+      assert id in [id1, id2]
+    end)
+  end
+
   test "finds nothing by invalid email", %{conn: conn} do
     conn = post conn, user_path(conn, :create), user: @create_attrs
     conn = get conn, user_path(conn, :index, %{email: @create_attrs.email <> "111"})
