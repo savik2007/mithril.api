@@ -30,7 +30,7 @@ defmodule Mithril.Authentication do
 
   def type(:sms), do: @type_sms
 
-  def send_otp(%Factor{factor: value} = factor, %Token{} = token) when is_binary(value) do
+  def send_otp(%Factor{factor: value} = factor, %Token{} = token) when is_binary(value) and byte_size(value) > 0 do
     otp =
       token
       |> generate_key(value)
@@ -41,7 +41,7 @@ defmodule Mithril.Authentication do
       false -> :ok
     end
   end
-  def send_otp(%Factor{factor: value}, _token) when is_nil(value) do
+  def send_otp(%Factor{}, _token) do
     {:error, :factor_not_set}
   end
 
