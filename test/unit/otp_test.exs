@@ -46,7 +46,7 @@ defmodule Mithril.OTPTest do
 
     test "OTP expired", %{otp: otp} do
       :timer.sleep(1000)
-      assert {:ok, %OTPSchema{status: "UNVERIFIED"}, :expired} = OTP.verify(otp.key, otp.code)
+      assert {:ok, %OTPSchema{status: "EXPIRED"}, :expired} = OTP.verify(otp.key, otp.code)
     end
 
     test "alredy verified", %{otp: otp} do

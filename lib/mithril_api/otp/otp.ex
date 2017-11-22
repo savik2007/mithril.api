@@ -120,7 +120,7 @@ defmodule Mithril.OTP do
          :ok <- verify_max_attemps(otp),
          :ok <- verify_code(otp, code)
 
-    do
+      do
       otp_completed(otp)
 
     else
@@ -160,6 +160,7 @@ defmodule Mithril.OTP do
   defp otp_does_not_completed(%OTPSchema{} = otp, error) do
     attrs = case error do
       :invalid_code -> %{attempts_count: otp.attempts_count + 1}
+      :expired -> %{status: @status_expired, active: false}
       _ -> %{status: @status_unverified, active: false}
     end
 
@@ -192,7 +193,10 @@ defmodule Mithril.OTP do
     otp
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> validate_inclusion(:status, [@status_new, @status_verified, @status_unverified, @status_completed])
+    |> validate_inclusion(
+         :status,
+         [@status_new, @status_verified, @status_unverified, @status_completed, @status_expired]
+       )
   end
 
   @spec generate_otp_code(number_length :: pos_integer()) :: pos_integer()
