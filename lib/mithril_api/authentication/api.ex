@@ -26,7 +26,6 @@ defmodule Mithril.Authentication do
   )a
 
   @type_sms "SMS"
-  @sms_enabled? Confex.get_env(:mithril_api, :"2fa")[:sms_enabled?]
 
   def type(:sms), do: @type_sms
 
@@ -36,7 +35,7 @@ defmodule Mithril.Authentication do
       |> generate_key(value)
       |> OTP.initialize_otp()
 
-    case @sms_enabled? do
+    case Confex.get_env(:mithril_api, :"2fa")[:sms_enabled?] do
       true -> send_otp_by_factor(otp, factor)
       false -> :ok
     end

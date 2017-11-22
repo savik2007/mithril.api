@@ -8,8 +8,11 @@ defmodule Mithril.OTPTest do
 
   describe "create otp" do
     test "success" do
+      System.put_env("OTP_LENGTH", "4")
       key = "+380301112233"
-      assert {:ok, %OTPSchema{key: ^key}} = OTP.initialize_otp(key)
+      assert {:ok, %OTPSchema{key: ^key, code: code}} = OTP.initialize_otp(key)
+      assert 4 == code |> Integer.digits |> length
+      System.put_env("OTP_LENGTH", "6")
     end
   end
 
