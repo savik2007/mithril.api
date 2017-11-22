@@ -12,7 +12,7 @@ defmodule Mithril.UserAPI.User do
     field :is_blocked, :boolean, default: false
     field :block_reason, :string
 
-    embeds_one :priv_settings, PrivSettings do
+    embeds_one :priv_settings, PrivSettings, primary_key: false, on_replace: :update do
       field :login_error_counter, :integer, default: 0
       field :otp_error_counter, :integer, default: 0
     end
