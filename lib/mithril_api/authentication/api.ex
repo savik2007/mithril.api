@@ -57,7 +57,6 @@ defmodule Mithril.Authentication do
   def verify_otp(%Factor{factor: value}, %Token{} = token, otp) when is_binary(value) do
     verify_otp(value, token, otp)
   end
-
   def verify_otp(value, %Token{} = token, otp) when is_binary(value) and byte_size(value) > 1 do
     token
     |> generate_key(value)

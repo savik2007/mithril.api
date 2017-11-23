@@ -84,10 +84,17 @@ defmodule Mithril.Factory do
   end
 
   def otp_factory do
+    expires =
+      :seconds
+      |> :os.system_time()
+      |> Kernel.+(30)
+      |> DateTime.from_unix!()
+      |> DateTime.to_string()
+
     %Mithril.OTP.Schema{
       key: sequence("some-key-"),
       code: 1234,
-      code_expired_at: DateTime.utc_now() |> DateTime.to_string(),
+      code_expired_at: expires,
       status: "NEW",
       active: true,
       attempts_count: 0

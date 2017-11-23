@@ -264,10 +264,17 @@ defmodule Mithril.TokenAPI do
     now = :os.system_time(:seconds)
     Token
     |> where([t], t.id != ^id)
-    |> where([t], t.name == ^name and t.user_id == ^user_id)
+    |> where([t], t.user_id == ^user_id)
+    |> deactivate_old_tokens_where_name_clause(name)
     |> where([t], t.expires_at >= ^now)
     |> where([t], fragment("?->>'grant_type' = 'password'", t.details))
     |> Repo.update_all(set: [expires_at: now])
+  end
+  defp deactivate_old_tokens_where_name_clause(query, name) when name in [@access_token, @access_token_2fa] do
+    where(query, [t], t.name in [@access_token, @access_token_2fa])
+  end
+  defp deactivate_old_tokens_where_name_clause(query, name) do
+    where(query, [t], t.name == ^name)
   end
 
   @uuid_regex ~r|[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}|
