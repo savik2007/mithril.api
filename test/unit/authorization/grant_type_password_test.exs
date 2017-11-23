@@ -155,4 +155,63 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
     assert %{invalid_request: ^message} = errors
     assert :bad_request = code
   end
+
+  describe "authorize login errors" do
+    setup do
+      user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("somepa$$word"))
+      client_type = insert(:client_type, scope: "app:authorize, legal_entity:read")
+      client = insert(:client,
+        user_id: user.id,
+        client_type_id: client_type.id,
+        settings: %{"allowed_grant_types" => ["password"]}
+      )
+      %{user: user, client: client}
+    end
+
+    test "user blocked when reached max failed logins", %{user: user, client: client} do
+      user_login_error_max = Confex.get_env(:mithril_api, :"2fa")[:user_login_error_max]
+      data = %{
+        "email" => user.email,
+        "password" => "invalid",
+        "client_id" => client.id,
+        "scope" => "legal_entity:read",
+      }
+      for _ <- 1..(user_login_error_max - 1) do
+        assert {:error, _, :unauthorized} = PasswordGrantType.authorize(data)
+      end
+      # user have last attempt for success login
+      refute UserAPI.get_user!(user.id).is_blocked
+
+      assert {:error, _, :unauthorized} = PasswordGrantType.authorize(data)
+      # now user blocked
+      db_user = UserAPI.get_user!(user.id)
+      assert db_user.is_blocked
+      assert user_login_error_max == db_user.priv_settings.login_error_counter
+
+      assert {:error, {:access_denied, "User blocked."}} =
+               data
+               |> Map.put("password", "somepa$$word")
+               |> PasswordGrantType.authorize()
+    end
+
+    test "user login error counter refreshed after success login", %{user: user, client: client} do
+      data = %{
+        "email" => user.email,
+        "password" => "invalid",
+        "client_id" => client.id,
+        "scope" => "legal_entity:read",
+      }
+      for _ <- 1..2 do
+        assert {:error, _, :unauthorized} = PasswordGrantType.authorize(data)
+      end
+      assert {:ok, _} =
+               data
+               |> Map.put("password", "somepa$$word")
+               |> PasswordGrantType.authorize()
+
+      db_user = UserAPI.get_user!(user.id)
+      refute db_user.is_blocked
+      assert 0 == db_user.priv_settings.login_error_counter
+    end
+  end
 end

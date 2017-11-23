@@ -1,6 +1,7 @@
 defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
   use Mithril.DataCase, async: false
 
+  alias Mithril.UserAPI
   alias Mithril.TokenAPI
   alias Mithril.Authorization.GrantType.AccessToken2FA
 
@@ -61,16 +62,57 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
       assert :os.system_time(:seconds) >= TokenAPI.get_token!(token_2fa.id).expires_at
     end
 
-    test "user blocked" do
-
-    end
-
     test "authentication factor not found for user" do
 
     end
 
-    test "reached max OTP error" do
+    test "reached max OTP error", %{token: token_2fa, user: user, otp: otp} do
+      user_otp_error_max = Confex.get_env(:mithril_api, :"2fa")[:user_otp_error_max]
+      data = %{
+        "token_value" => token_2fa.value,
+        "grant_type" => "authorize_2fa_access_token",
+        "otp" => 9999
+      }
+      for _ <- 1..(user_otp_error_max - 1) do
+        assert {:error, {:access_denied, "Invalid OTP code"}} = AccessToken2FA.authorize(data)
+      end
+      # user have last attempt for success login
+      refute UserAPI.get_user!(user.id).is_blocked
 
+      assert {:error, {:access_denied, "Invalid OTP code"}} = AccessToken2FA.authorize(data)
+      # now user blocked
+      db_user = UserAPI.get_user!(user.id)
+      assert db_user.is_blocked
+      assert user_otp_error_max == db_user.priv_settings.otp_error_counter
+
+      # check that User is blocked
+      assert {:error, {:access_denied, "User blocked."}} =
+               data
+               |> Map.put("otp", otp.code)
+               |> AccessToken2FA.authorize()
+    end
+
+    test "OTP error counter refreshed after success login", %{token: token_2fa, user: user, otp: otp} do
+      data = %{
+        "token_value" => token_2fa.value,
+        "grant_type" => "authorize_2fa_access_token",
+        "otp" => 9999
+      }
+      for _ <- 1..2 do
+        assert {:error, {:access_denied, "Invalid OTP code"}} = AccessToken2FA.authorize(data)
+      end
+      db_user = UserAPI.get_user!(user.id)
+      refute db_user.is_blocked
+      assert 2 == db_user.priv_settings.otp_error_counter
+
+      assert {:ok, _} =
+               data
+               |> Map.put("otp", otp.code)
+               |> AccessToken2FA.authorize()
+
+      db_user = UserAPI.get_user!(user.id)
+      refute db_user.is_blocked
+      assert 0 == db_user.priv_settings.otp_error_counter
     end
   end
 
