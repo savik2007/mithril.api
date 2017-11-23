@@ -21,7 +21,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
          %Factor{} = factor <- get_auth_factor_by_user_id(user.id),
          :ok <- verify_otp(factor, token_2fa, params["otp"]),
          {:ok, token} <- create_access_token(token_2fa),
-         {_, nil} <- Mithril.TokenAPI.deactivate_old_tokens(token)
+         {_, nil} <- TokenAPI.deactivate_old_tokens(token)
       do
       {:ok, %{token: token, urgent: %{next_step: Password.next_step(:request_apps)}}}
     end
@@ -34,7 +34,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
          {:ok, user} <- validate_user(user),
          %Factor{} <- get_auth_factor_by_user_id(user.id),
          {:ok, token} <- create_2fa_access_token(token_2fa),
-         {_, nil} <- Mithril.TokenAPI.deactivate_old_tokens(token)
+         {_, nil} <- TokenAPI.deactivate_old_tokens(token)
       do
       {:ok, %{token: token, urgent: %{next_step: Password.next_step(:request_otp)}}}
     end
