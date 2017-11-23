@@ -10,8 +10,6 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   alias Mithril.Authentication.Factor
   alias Mithril.Authorization.GrantType.Password
 
-  @otp_error_max Confex.get_env(:mithril_api, :user_otp_error_max)
-
   def authorize(params) do
     with %Ecto.Changeset{valid?: true} <- changeset(params),
          :ok <- validate_authorization_header(params),
@@ -19,7 +17,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
          user <- UserAPI.get_user(token_2fa.user_id),
          {:ok, user} <- validate_user(user),
          %Factor{} = factor <- get_auth_factor_by_user_id(user.id),
-         :ok <- verify_otp(factor, token_2fa, params["otp"]),
+         :ok <- verify_otp(factor, token_2fa, params["otp"], user),
          {:ok, token} <- create_access_token(token_2fa),
          {_, nil} <- TokenAPI.deactivate_old_tokens(token)
       do
@@ -79,10 +77,14 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
     end
   end
 
-  def verify_otp(factor, token, otp) do
+  def verify_otp(factor, token, otp, user) do
     case Authentication.verify_otp(factor, token, otp) do
-      {_, _, :verified} -> :ok
-      _ -> {:error, {:access_denied, "Invalid OTP code"}}
+      {_, _, :verified} ->
+        set_otp_error_counter(user, 0)
+        :ok
+      _ ->
+        increase_otp_error_counter_or_block_user(user)
+        {:error, {:access_denied, "Invalid OTP code"}}
     end
   end
 
@@ -100,20 +102,18 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
     })
   end
 
-  defp check_otp_error_counter({:error, _, _} = err, %User{priv_settings: priv_settings} = user) do
+  defp increase_otp_error_counter_or_block_user(%User{priv_settings: priv_settings} = user) do
+    otp_error_max = Confex.get_env(:mithril_api, :"2fa")[:user_otp_error_max]
     otp_error = priv_settings.otp_error_counter + 1
-    case @otp_error_max <= otp_error do
-      true ->
+    set_otp_error_counter(user, otp_error)
+    if otp_error_max <= otp_error do
         UserAPI.block_user(user, "Passed invalid password more than USER_OTP_ERROR_MAX")
-      _ ->
-        data = priv_settings
-               |> Map.from_struct()
-               |> Map.put(:otp_error_counter, otp_error)
-        UserAPI.update_user_priv_settings(user, data)
     end
-    err
   end
-  defp check_otp_error_counter({:ok, user}, _) do
-    {:ok, user}
+  defp set_otp_error_counter(%User{priv_settings: priv_settings} = user, counter) do
+    data = priv_settings
+           |> Map.from_struct()
+           |> Map.put(:otp_error_counter, counter)
+    UserAPI.update_user_priv_settings(user, data)
   end
 end

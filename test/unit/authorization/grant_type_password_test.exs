@@ -183,7 +183,6 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
       refute UserAPI.get_user!(user.id).is_blocked
 
       assert {:error, _, :unauthorized} = PasswordGrantType.authorize(data)
-
       # now user blocked
       db_user = UserAPI.get_user!(user.id)
       assert db_user.is_blocked

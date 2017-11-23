@@ -5,6 +5,7 @@ defmodule Mithril.TokenAPI do
   import Ecto.{Query, Changeset}, warn: false
 
   alias Mithril.Repo
+  alias Mithril.UserAPI
   alias Mithril.ClientAPI
   alias Mithril.TokenAPI.Token
   alias Mithril.ClientAPI.Client
@@ -82,6 +83,8 @@ defmodule Mithril.TokenAPI do
   def init_factor(attrs) do
     with :ok <- AccessToken2FA.validate_authorization_header(attrs),
          {:ok, token} <- validate_token(attrs["token_value"]),
+         user <- UserAPI.get_user(token.user_id),
+         {:ok, _} <- AccessToken2FA.validate_user(user),
          %Ecto.Changeset{valid?: true} <- factor_changeset(attrs),
          where_factor <- prepare_factor_where_clause(token, attrs),
          %Factor{} = factor <- Authentication.get_factor_by!(where_factor),
@@ -98,9 +101,11 @@ defmodule Mithril.TokenAPI do
     with :ok <- AccessToken2FA.validate_authorization_header(attrs),
          {:ok, token} <- validate_token(attrs["token_value"]),
          :ok <- validate_approve_token(token),
+         user <- UserAPI.get_user(token.user_id),
+         {:ok, user} <- AccessToken2FA.validate_user(user),
          where_factor <- prepare_factor_where_clause(token),
          %Factor{} = factor <- Authentication.get_factor_by!(where_factor),
-         :ok <- AccessToken2FA.verify_otp(token.details[@factor_field], token, attrs["otp"]),
+         :ok <- AccessToken2FA.verify_otp(token.details[@factor_field], token, attrs["otp"], user),
          {:ok, updated_factor} <- Authentication.update_factor(factor, %{"factor" => token.details[@factor_field]})
       do
       {:ok, updated_factor.user}
