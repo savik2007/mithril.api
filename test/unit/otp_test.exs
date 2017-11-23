@@ -57,4 +57,27 @@ defmodule Mithril.OTPTest do
       assert_raise Ecto.NoResultsError, fn -> OTP.verify(otp.key, otp.code) end
     end
   end
+
+  test "cancel_expired_otps" do
+    expired_time = 1464096368 |> DateTime.from_unix!() |> DateTime.to_string()
+    insert(:otp, status: "CANCELED", active: false, code_expired_at: expired_time)
+    %{id: expired_id1} = insert(:otp, code_expired_at: expired_time)
+    %{id: expired_id2} = insert(:otp, code_expired_at: expired_time)
+
+    key = "otp-key"
+    {:ok, otp} = OTP.initialize_otp(key)
+    {:ok, otp, :verified} = OTP.verify(key, otp.code)
+
+    OTP.update_otp(otp, %{code_expired_at: expired_time})
+
+    OTP.cancel_expired_otps()
+    otps =
+      OTPSchema
+      |> where([status: "EXPIRED"])
+      |> Repo.all()
+
+    Enum.each(otps, fn %{id: id} ->
+      assert id in [expired_id1, expired_id2]
+    end)
+  end
 end

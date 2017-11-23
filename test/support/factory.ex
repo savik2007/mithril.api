@@ -82,4 +82,15 @@ defmodule Mithril.Factory do
       user_id: insert(:user).id,
     }
   end
+
+  def otp_factory do
+    %Mithril.OTP.Schema{
+      key: sequence("some-key-"),
+      code: 1234,
+      code_expired_at: DateTime.utc_now() |> DateTime.to_string(),
+      status: "NEW",
+      active: true,
+      attempts_count: 0
+    }
+  end
 end
