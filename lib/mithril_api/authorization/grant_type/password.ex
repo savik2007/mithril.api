@@ -7,8 +7,6 @@ defmodule Mithril.Authorization.GrantType.Password do
   alias Mithril.Authentication.Factor
   alias Mithril.Authorization.GrantType.AccessToken2FA
 
-  @login_error_max Confex.get_env(:mithril_api, :"2fa")[:user_login_error_max]
-
   @request_otp "REQUEST_OTP"
   @request_apps "REQUEST_APPS"
   @request_factor "REQUEST_FACTOR"
@@ -79,14 +77,15 @@ defmodule Mithril.Authorization.GrantType.Password do
 
   defp increase_login_error_counter_or_block_user(%User{priv_settings: priv_settings} = user) do
     login_error = priv_settings.login_error_counter + 1
-    case @login_error_max <= login_error do
-      true ->
+    login_error_max = Confex.get_env(:mithril_api, :"2fa")[:user_login_error_max]
+
+    data = priv_settings
+           |> Map.from_struct()
+           |> Map.put(:login_error_counter, login_error)
+    UserAPI.update_user_priv_settings(user, data)
+
+    if login_error_max <= login_error do
         UserAPI.block_user(user, "Passed invalid password more than USER_LOGIN_ERROR_MAX")
-      _ ->
-        data = priv_settings
-               |> Map.from_struct()
-               |> Map.put(:login_error_counter, login_error)
-        UserAPI.update_user_priv_settings(user, data)
     end
   end
 
