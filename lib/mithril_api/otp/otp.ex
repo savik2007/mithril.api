@@ -16,7 +16,7 @@ defmodule Mithril.OTP do
   @status_completed "COMPLETED"
 
   @required_fields ~w(key code code_expired_at status)a
-  @optional_fields ~w(attempts_count)a
+  @optional_fields ~w(attempts_count active)a
 
   @doc """
   Returns the list of otps.
