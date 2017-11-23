@@ -4,27 +4,24 @@ defmodule Mithril.OAuth.TokenController do
   alias Mithril.Authorization.Token
   alias Mithril.TokenAPI
   alias Mithril.Web.TokenView
-  alias Mithril.Web.UserView
 
   action_fallback Mithril.Web.FallbackController
 
   def init_factor(conn, attrs) do
-    with {:ok, token} <- attrs
+    with {:ok, resp} <- attrs
                          |> put_token_value(conn)
                          |> TokenAPI.init_factor() do
-      conn
-      |> put_status(:created)
-      |> render(TokenView, "show.json", token: token)
+      send_response(conn, resp)
     end
   end
 
   def approve_factor(conn, attrs) do
-    with {:ok, user} <- attrs
+    with {:ok, token} <- attrs
                          |> put_token_value(conn)
                          |> TokenAPI.approve_factor() do
       conn
-      |> put_status(200)
-      |> render(UserView, "show.json", user: user)
+      |> put_status(:created)
+      |> render(TokenView, "show.json", token: token)
     end
   end
 
