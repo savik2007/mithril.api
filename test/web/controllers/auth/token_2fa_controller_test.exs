@@ -243,8 +243,14 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
 
     test "success", %{conn: conn, user: user, otp: otp} do
       conn = post conn, oauth2_token_path(conn, :approve_factor), %{otp: otp}
-      data = json_response(conn, 200)["data"]
-      assert data["id"] == user.id
+      token = json_response(conn, 201)["data"]
+
+      assert token["name"] == "access_token"
+      assert token["user_id"] == user.id
+      assert token["details"]["grant_type"] == "password"
+      assert token["details"]["scope"] == "legal_entity:read"
+      refute Map.has_key?(token["details"], "request_authentication_factor")
+      refute Map.has_key?(token["details"], "request_authentication_factor_type")
     end
 
     test "invalid OTP", %{conn: conn} do

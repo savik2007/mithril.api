@@ -25,6 +25,9 @@ defmodule Mithril.TokenAPI do
   @type_field "request_authentication_factor_type"
   @factor_field "request_authentication_factor"
 
+  @approve_factor "APPROVE_FACTOR"
+  @init_factor "INIT_FACTOR"
+
   def list_tokens(params) do
     %TokenSearch{}
     |> token_changeset(params)
@@ -89,11 +92,18 @@ defmodule Mithril.TokenAPI do
          where_factor <- prepare_factor_where_clause(token, attrs),
          %Factor{} = factor <- Authentication.get_factor_by!(where_factor),
          :ok <- validate_token_type(token, factor),
-         token_data <- prepare_token_data(token, attrs),
+         token_data <- prepare_2fa_token_data(token, attrs),
          {:ok, token_2fa} <- create_2fa_access_token(token_data),
-         Authentication.send_otp(%Factor{factor: attrs["factor"], type: Authentication.type(:sms)}, token_2fa)
+         {_, nil} <- deactivate_old_tokens(token)
       do
-      {:ok, token_2fa}
+
+      factor = %Factor{factor: attrs["factor"], type: Authentication.type(:sms)}
+      next_step =
+        case Authentication.send_otp(factor, token_2fa) do
+          :ok -> @approve_factor
+          {:error, :sms_not_sent} -> @init_factor
+        end
+      {:ok, %{token: token_2fa, urgent: %{next_step: next_step}}}
     end
   end
 
@@ -106,9 +116,12 @@ defmodule Mithril.TokenAPI do
          where_factor <- prepare_factor_where_clause(token),
          %Factor{} = factor <- Authentication.get_factor_by!(where_factor),
          :ok <- AccessToken2FA.verify_otp(token.details[@factor_field], token, attrs["otp"], user),
-         {:ok, updated_factor} <- Authentication.update_factor(factor, %{"factor" => token.details[@factor_field]})
+         {:ok, updated_factor} <- Authentication.update_factor(factor, %{"factor" => token.details[@factor_field]}),
+         token_data <- prepare_token_data(token),
+         {:ok, token_2fa} <- create_access_token(token_data),
+         {_, nil} <- deactivate_old_tokens(token)
       do
-      {:ok, updated_factor.user}
+      {:ok, token_2fa}
     end
   end
 
@@ -144,8 +157,11 @@ defmodule Mithril.TokenAPI do
     [user_id: token.user_id, is_active: true, type: type]
   end
 
-  defp prepare_token_data(%Token{} = token, attrs) do
-    %{user_id: token.user_id, details: token.details}
+  defp prepare_token_data(%Token{details: details} = token) do
+    details = Map.drop(details, ["request_authentication_factor", "request_authentication_factor_type"])
+    %{user_id: token.user_id, details: details}
+  end
+  defp prepare_2fa_token_data(%Token{} = token, attrs) do
     %{
       user_id: token.user_id,
       details: Map.merge(token.details, %{
