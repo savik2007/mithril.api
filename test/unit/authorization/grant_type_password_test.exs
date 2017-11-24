@@ -6,6 +6,7 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
 
   test "creates password-granted access token" do
     System.put_env("USER_2FA_ENABLED", "false")
+
     allowed_scope = "app:authorize legal_entity:read legal_entity:write"
     client_type = Mithril.Fixtures.create_client_type(%{scope: allowed_scope})
     client = Mithril.Fixtures.create_client(%{

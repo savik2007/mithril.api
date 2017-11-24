@@ -21,6 +21,20 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
     {:ok, conn: conn, user: user, client: client}
   end
 
+  test "authorize - authorize_2fa_access_token when factor not set", %{conn: conn, user: user, client: client} do
+    insert(:authentication_factor, user_id: user.id, factor: nil)
+    token = authorize(user.email, client.id)
+    conn = put_req_header(conn, "authorization", "Bearer #{token.value}")
+    request_payload = %{
+      "token": %{
+        "grant_type": "authorize_2fa_access_token",
+        "otp": 1234
+      }
+    }
+    conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
+    json_response(conn, 409)
+  end
+
   describe "authorize" do
     setup %{conn: conn, user: user, client: client} do
       insert(:authentication_factor, user_id: user.id)

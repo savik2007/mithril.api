@@ -62,6 +62,9 @@ defmodule Mithril.Authentication do
     |> generate_key(value)
     |> OTP.verify(otp)
   end
+  def verify_otp(_value, _token, _otp) do
+    {:error, :factor_not_set}
+  end
 
   defp generate_key(%Token{} = token, value) do
     token.id <> "===" <> value

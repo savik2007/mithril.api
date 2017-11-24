@@ -17,6 +17,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
          user <- UserAPI.get_user(token_2fa.user_id),
          {:ok, user} <- validate_user(user),
          %Factor{} = factor <- get_auth_factor_by_user_id(user.id),
+         :ok <- check_factor_value(factor),
          :ok <- verify_otp(factor, token_2fa, params["otp"], user),
          {:ok, token} <- create_access_token(token_2fa),
          {_, nil} <- TokenAPI.deactivate_old_tokens(token)
@@ -73,8 +74,13 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
     case Authentication.get_factor_by([user_id: user_id, is_active: true]) do
       %Factor{} = factor -> factor
       _ -> {:error, %{conflict: "Not found authentication factor for user."}}
-
     end
+  end
+  defp check_factor_value(%Factor{factor: factor}) when is_binary(factor) and byte_size(factor) > 0 do
+    :ok
+  end
+  defp check_factor_value(_) do
+    {:error, {:conflict, "Factor not set"}}
   end
 
   def verify_otp(factor, token, otp, user) do
