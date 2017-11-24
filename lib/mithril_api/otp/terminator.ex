@@ -19,13 +19,7 @@ defmodule Mithril.OTP.Terminator do
   # Server API
 
   def init(_) do
-    now = DateTime.to_time(DateTime.utc_now)
-    {from, _to} = @config[:utc_interval]
-    ms = if validate_time(now.hour, @config[:utc_interval]),
-      do: @config[:frequency],
-      else: abs(from - now.hour) * 60 * 60 * 1000
-
-    {:ok, schedule_next_run(ms)}
+    {:ok, schedule_next_run(@config[:frequency])}
   end
 
   def handle_cast({:terminate, ms}, _) do

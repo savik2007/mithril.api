@@ -69,8 +69,7 @@ config :mithril_api, :token_lifetime, %{
 
 # Configures employee request terminator
 config :mithril_api, Mithril.OTP.Terminator,
-  frequency: 24 * 60 * 60 * 1000,
-  utc_interval: {0, 4}
+  frequency: 60 * 60 * 1000 # every hour
 
 # Configures OTP Verification API
 config :mithril_api, Mithril.OTP.SMS,
