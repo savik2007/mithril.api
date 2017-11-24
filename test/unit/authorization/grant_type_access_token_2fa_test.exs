@@ -117,19 +117,11 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
   end
 
   describe "refresh" do
-    test "success" do
-      # check that token deleted
-    end
-
     test "user blocked" do
 
     end
 
     test "authentication factor not found for user" do
-
-    end
-
-    test "invalid token type" do
 
     end
   end

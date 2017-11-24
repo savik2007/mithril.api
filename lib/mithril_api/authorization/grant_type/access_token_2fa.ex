@@ -31,7 +31,8 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
          {:ok, token_2fa} <- validate_token(params["token_value"]),
          user <- UserAPI.get_user(token_2fa.user_id),
          {:ok, user} <- validate_user(user),
-         %Factor{} <- get_auth_factor_by_user_id(user.id),
+         %Factor{} = factor <- get_auth_factor_by_user_id(user.id),
+         :ok <- check_factor_value(factor),
          {:ok, token} <- create_2fa_access_token(token_2fa),
          {_, nil} <- TokenAPI.deactivate_old_tokens(token)
       do
@@ -113,7 +114,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
     otp_error = priv_settings.otp_error_counter + 1
     set_otp_error_counter(user, otp_error)
     if otp_error_max <= otp_error do
-        UserAPI.block_user(user, "Passed invalid password more than USER_OTP_ERROR_MAX")
+        UserAPI.block_user(user, "Passed invalid OTP more than USER_OTP_ERROR_MAX")
     end
   end
   defp set_otp_error_counter(%User{priv_settings: priv_settings} = user, counter) do

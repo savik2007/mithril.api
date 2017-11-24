@@ -273,6 +273,72 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
     end
   end
 
+  describe "refresh" do
+    setup %{conn: conn, user: user, client: client} do
+      insert(:authentication_factor, user_id: user.id)
+      details = %{
+        scope: "app:authorize",
+        client_id: client.id,
+        grant_type: "password",
+        redirect_uri: "http://localhost",
+      }
+      token = insert(:token, user_id: user.id, name: "2fa_access_token", details: details)
+      conn = put_req_header(conn, "authorization", "Bearer #{token.value}")
+
+      {:ok, conn: conn, token: token, user: user, client: client}
+    end
+
+    test "successfully refresh 2fa_access_token", %{conn: conn, client: client, user: user} do
+      request_payload = %{
+        "token": %{
+          "grant_type": "refresh_2fa_access_token",
+        }
+      }
+      conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
+      resp = json_response(conn, 201)
+
+      assert Map.has_key?(resp, "urgent")
+      assert Map.has_key?(resp["urgent"], "next_step")
+      assert "REQUEST_OTP" = resp["urgent"]["next_step"]
+
+      token = resp["data"]
+
+      assert token["name"] == "2fa_access_token"
+      assert token["value"]
+      assert token["expires_at"]
+      assert token["user_id"] == user.id
+      assert token["details"]["client_id"] == client.id
+      assert token["details"]["grant_type"] == "password"
+      assert token["details"]["redirect_uri"] == client.redirect_uri
+      assert token["details"]["scope"] == "app:authorize"
+    end
+
+    test "invalid token type", %{conn: conn, user: user} do
+      token = insert(:token, user_id: user.id, name: "access_token")
+      conn = put_req_header(conn, "authorization", "Bearer #{token.value}")
+      request_payload = %{
+        "token": %{
+          "grant_type": "refresh_2fa_access_token",
+        }
+      }
+      conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
+      assert "Invalid token type" == json_response(conn, 401)["error"]["message"]
+    end
+  end
+
+  test "refresh - refresh_2fa_access_token when factor not set", %{conn: conn, user: user, client: client} do
+    insert(:authentication_factor, user_id: user.id, factor: nil)
+    token = authorize(user.email, client.id)
+    conn = put_req_header(conn, "authorization", "Bearer #{token.value}")
+    request_payload = %{
+      "token": %{
+        "grant_type": "refresh_2fa_access_token",
+      }
+    }
+    conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
+    json_response(conn, 409)
+  end
+
   defp authorize(email, client_id, password \\ @password) do
     {:ok, %{token: token}} = PasswordGrantType.authorize(%{
       "email" => email,
