@@ -116,7 +116,7 @@ defmodule Mithril.TokenAPI do
          where_factor <- prepare_factor_where_clause(token),
          %Factor{} = factor <- Authentication.get_factor_by!(where_factor),
          :ok <- AccessToken2FA.verify_otp(token.details[@factor_field], token, attrs["otp"], user),
-         {:ok, updated_factor} <- Authentication.update_factor(factor, %{"factor" => token.details[@factor_field]}),
+         {:ok, _} <- Authentication.update_factor(factor, %{"factor" => token.details[@factor_field]}),
          token_data <- prepare_token_data(token),
          {:ok, token_2fa} <- create_access_token(token_data),
          {_, nil} <- deactivate_old_tokens(token)
