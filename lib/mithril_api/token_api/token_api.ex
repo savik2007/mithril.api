@@ -94,7 +94,7 @@ defmodule Mithril.TokenAPI do
          :ok <- validate_token_type(token, factor),
          token_data <- prepare_2fa_token_data(token, attrs),
          {:ok, token_2fa} <- create_2fa_access_token(token_data),
-         {_, nil} <- deactivate_old_tokens(token)
+         {_, nil} <- deactivate_old_tokens(token_2fa)
       do
 
       factor = %Factor{factor: attrs["factor"], type: Authentication.type(:sms)}
@@ -119,7 +119,7 @@ defmodule Mithril.TokenAPI do
          {:ok, _} <- Authentication.update_factor(factor, %{"factor" => token.details[@factor_field]}),
          token_data <- prepare_token_data(token),
          {:ok, token_2fa} <- create_access_token(token_data),
-         {_, nil} <- deactivate_old_tokens(token)
+         {_, nil} <- deactivate_old_tokens(token_2fa)
       do
       {:ok, token_2fa}
     end
@@ -235,7 +235,7 @@ defmodule Mithril.TokenAPI do
   end
 
   def expired?(%Token{} = token) do
-    token.expires_at < :os.system_time(:seconds)
+    token.expires_at <= :os.system_time(:seconds)
   end
 
   defp put_broker_scopes(token, client, api_key) do

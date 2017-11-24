@@ -170,8 +170,8 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
     end
 
     test "success create token for changing factor", %{conn: conn, client: client, user: user} do
-      conn = post conn, oauth2_token_path(conn, :init_factor), %{type: "SMS", factor: "+380881002030"}
-      token = json_response(conn, 201)["data"]
+      conn1 = post conn, oauth2_token_path(conn, :init_factor), %{type: "SMS", factor: "+380881002030"}
+      token = json_response(conn1, 201)["data"]
 
       assert token["name"] == "2fa_access_token"
       assert token["value"]
@@ -183,6 +183,10 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       assert token["details"]["scope"] == "legal_entity:read"
       assert token["details"]["request_authentication_factor"] == "+380881002030"
       assert token["details"]["request_authentication_factor_type"] == "SMS"
+
+      # token expired
+      conn2 = post conn, oauth2_token_path(conn, :init_factor), %{type: "SMS", factor: "+380881002030"}
+      assert "Token expired" = json_response(conn2, 401)["error"]["message"]
     end
 
     test "invalid type", %{conn: conn} do
