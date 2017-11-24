@@ -43,8 +43,11 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
       assert %Ecto.Changeset{valid?: false} = AccessToken2FA.authorize(data)
     end
 
-    test "other access token deactivated when 2fa access token authorized", %{token: token_2fa, user: user, otp: otp} do
-      access_token = insert(:token, user_id: user.id, name: "access_token")
+    test "other access token deactivated when 2fa access token authorized",
+         %{token: token_2fa, user: user, otp: otp} do
+      details = %{"client_id" => token_2fa.details["client_id"]}
+      access_token = insert(:token, user_id: user.id, name: "access_token", details: details)
+
       # token is not expired before authorize
       refute :os.system_time(:seconds) >= access_token.expires_at
       refute :os.system_time(:seconds) >= token_2fa.expires_at

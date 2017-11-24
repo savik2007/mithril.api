@@ -109,10 +109,10 @@ defmodule Mithril.Authorization.GrantType.Password do
     %{
       user_id: user.id,
       details: %{
-        grant_type: "password",
-        client_id: client.id,
-        scope: scope,
-        redirect_uri: client.redirect_uri
+        "grant_type" => "password",
+        "client_id" => client.id,
+        "scope" => scope,
+        "redirect_uri" => client.redirect_uri
       }
     }
   end

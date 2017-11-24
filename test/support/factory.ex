@@ -8,10 +8,10 @@ defmodule Mithril.Factory do
     client = insert(:client)
     %Mithril.TokenAPI.Token{
       details: %{
-        scope: "app:authorize",
-        client_id: client.id,
-        grant_type: "password",
-        redirect_uri: "http://localhost",
+        "scope" => "app:authorize",
+        "client_id" => client.id,
+        "grant_type" => "password",
+        "redirect_uri" => "http://localhost",
       },
       user_id: user.id,
       expires_at: 2000000000,
