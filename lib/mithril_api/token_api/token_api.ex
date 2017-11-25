@@ -7,6 +7,7 @@ defmodule Mithril.TokenAPI do
   alias Mithril.Repo
   alias Mithril.UserAPI
   alias Mithril.ClientAPI
+  alias Mithril.UserAPI.User
   alias Mithril.TokenAPI.Token
   alias Mithril.ClientAPI.Client
   alias Mithril.TokenAPI.TokenSearch
@@ -281,14 +282,22 @@ defmodule Mithril.TokenAPI do
     {:ok, Map.put(token, :details, details)}
   end
 
-  def deactivate_old_tokens(%Token{id: id, user_id: user_id, name: name}) do
+  def deactivate_tokens_by_user(%User{id: id}) do
+    now = :os.system_time(:seconds)
+    Token
+    |> where([t], t.user_id == ^id)
+    |> where([t], t.expires_at >= ^now)
+    |> Repo.update_all(set: [expires_at: now])
+  end
+
+  def deactivate_old_tokens(%Token{id: id, user_id: user_id, name: name, details: details}) do
     now = :os.system_time(:seconds)
     Token
     |> where([t], t.id != ^id)
     |> where([t], t.user_id == ^user_id)
     |> deactivate_old_tokens_where_name_clause(name)
     |> where([t], t.expires_at >= ^now)
-    |> where([t], fragment("?->>'grant_type' = 'password'", t.details))
+    |> where([t], fragment("?->>'client_id' = ?", t.details, ^details["client_id"]))
     |> Repo.update_all(set: [expires_at: now])
   end
   defp deactivate_old_tokens_where_name_clause(query, name) when name in [@access_token, @access_token_2fa] do

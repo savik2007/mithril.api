@@ -4,6 +4,7 @@ defmodule Mithril.TokenAPITest do
   alias Mithril.TokenAPI
   alias Mithril.TokenAPI.Token
   alias Scrivener.Page
+  alias Ecto.UUID
 
   @create_attrs %{
     details: %{},
@@ -35,12 +36,12 @@ defmodule Mithril.TokenAPITest do
   test "list_tokens/1 returns all tokens" do
     token = fixture(:token)
     assert TokenAPI.list_tokens(%{}) == %Page{
-      entries: [token],
-      page_number: 1,
-      page_size: 50,
-      total_entries: 1,
-      total_pages: 1
-    }
+             entries: [token],
+             page_number: 1,
+             page_size: 50,
+             total_entries: 1,
+             total_pages: 1
+           }
   end
 
   test "get_token! returns the token with given id" do
@@ -87,6 +88,67 @@ defmodule Mithril.TokenAPITest do
   test "change_token/1 returns a token changeset" do
     token = fixture(:token)
     assert %Ecto.Changeset{} = TokenAPI.change_token(token)
+  end
+
+  describe "deactivate tokens" do
+    setup do
+      %{id: user_id1} = user1 = insert(:user)
+      %{id: user_id2} = insert(:user)
+      cid1 = UUID.generate()
+      cid2 = UUID.generate()
+      cid3 = UUID.generate()
+      details = %{
+        "scope" => "app:authorize",
+        "grant_type" => "password",
+        "redirect_uri" => "http://localhost",
+      }
+      token1 = insert(:token, user_id: user_id1, name: "access_token", details: Map.put(details, "client_id", cid1))
+      token2 = insert(:token, user_id: user_id1, name: "2fa_access_token", details: Map.put(details, "client_id", cid1))
+      token3 = insert(:token, user_id: user_id1, name: "access_token", details: Map.put(details, "client_id", cid2))
+      token4 = insert(:token, user_id: user_id2, name: "access_token", details: Map.put(details, "client_id", cid3))
+
+      %{user: user1, token1: token1, token2: token2, token3: token3, token4: token4}
+    end
+
+    test "every tokens by user", %{user: user, token1: token1, token2: token2, token3: token3, token4: token4} do
+      assert {3, nil} = TokenAPI.deactivate_tokens_by_user(user)
+
+      assert token1.id
+             |> TokenAPI.get_token!()
+             |> TokenAPI.expired?()
+      assert token2.id
+             |> TokenAPI.get_token!()
+             |> TokenAPI.expired?()
+      assert token3.id
+             |> TokenAPI.get_token!()
+             |> TokenAPI.expired?()
+      # token for different user
+      refute token4.id
+             |> TokenAPI.get_token!()
+             |> TokenAPI.expired?()
+    end
+
+    test "by user and client", %{token1: token1, token2: token2, token3: token3, token4: token4} do
+      assert {1, nil} = TokenAPI.deactivate_old_tokens(token1)
+
+      # current token not expired
+      refute token1.id
+             |> TokenAPI.get_token!()
+             |> TokenAPI.expired?()
+      # old user token expired
+      assert token2.id
+             |> TokenAPI.get_token!()
+             |> TokenAPI.expired?()
+      # different client
+      refute token3.id
+             |> TokenAPI.get_token!()
+             |> TokenAPI.expired?()
+      # different user
+      refute token4.id
+             |> TokenAPI.get_token!()
+             |> TokenAPI.expired?()
+    end
+
   end
 
   test "user_id is validated" do
