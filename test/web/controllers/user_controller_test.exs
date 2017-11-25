@@ -1,6 +1,8 @@
 defmodule Mithril.Web.UserControllerTest do
   use Mithril.Web.ConnCase
 
+  alias Ecto.UUID
+  alias Mithril.TokenAPI
   alias Mithril.UserAPI
   alias Mithril.UserAPI.User
 
@@ -121,14 +123,23 @@ defmodule Mithril.Web.UserControllerTest do
   end
 
   describe "block/unblock user" do
-    test "block user", %{conn: conn} do
+    test "block user. All user tokens deactivated", %{conn: conn} do
       user = insert(:user)
+      token1 = insert(:token, user_id: user.id, details: %{"client_id" => UUID.generate()})
+      token2 = insert(:token, user_id: user.id, details: %{"client_id" => UUID.generate()})
+
+      refute TokenAPI.expired?(token1)
+      refute TokenAPI.expired?(token2)
+
       params = %{user: %{"block_reason" => "fraud"}}
       conn = patch conn, user_path(conn, :update, user) <> "/actions/block", params
 
       assert data = json_response(conn, 200)["data"]
       assert "fraud" = data["block_reason"]
       assert data["is_blocked"]
+
+      assert token1.id |> TokenAPI.get_token!() |> TokenAPI.expired?()
+      assert token2.id |> TokenAPI.get_token!() |> TokenAPI.expired?()
     end
 
     test "user already blocked", %{conn: conn} do

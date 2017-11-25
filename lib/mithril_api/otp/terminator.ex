@@ -28,8 +28,6 @@ defmodule Mithril.OTP.Terminator do
     {:noreply, schedule_next_run(ms)}
   end
 
-  defp validate_time(hour, {from, to}), do: hour >= from && hour <= to
-
   defp schedule_next_run(ms) do
     unless Application.get_env(:mithril_api, :env) == :test do
       Process.send_after(self(), terminate_msg(ms), ms)
