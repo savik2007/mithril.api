@@ -220,10 +220,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
 
       assert token["name"] == "2fa_access_token"
       assert token["user_id"] == user.id
-      assert token["details"]["grant_type"] == "password"
-      assert token["details"]["scope"] == "app:authorize"
-      assert token["details"]["request_authentication_factor"] == "+380885002030"
-      assert token["details"]["request_authentication_factor_type"] == "SMS"
+      refute Map.has_key?(token, "details")
     end
 
     test "invalid token type: requires 2fa access token", %{conn: conn, user: user} do
