@@ -12,6 +12,10 @@ elixir:
   - 1.5.2
 otp_release:
   - 20.0.4
+addons:
+  apt:
+    packages:
+      - docker-ce
 notifications:
   slack:
     rooms:
