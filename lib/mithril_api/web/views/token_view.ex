@@ -4,6 +4,8 @@ defmodule Mithril.Web.TokenView do
   use Mithril.Web, :view
   alias Mithril.Web.TokenView
 
+  @fields ~w(id name value expires_at user_id details)a
+
   def render("index.json", %{tokens: tokens}) do
     render_many(tokens, TokenView, "token.json")
   end
@@ -13,12 +15,11 @@ defmodule Mithril.Web.TokenView do
   end
 
   def render("token.json", %{token: token}) do
-    %{id: token.id,
-      name: token.name,
-      value: token.value,
-      expires_at: token.expires_at,
-      user_id: token.user_id,
-      details: token.details}
+    Map.take(token, @fields)
+  end
+
+  def render("token-without-details.json", %{token: token}) do
+    Map.take(token, List.delete(@fields, :details))
   end
 
   def render("unprocessable_entity.json", %{errors: errors}) do
