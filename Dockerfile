@@ -1,60 +1,42 @@
-FROM edenlabllc/alpine-elixir
+FROM edenlabllc/elixir:1.5.2 as builder
 
-RUN apk add --no-cache --update --virtual .build-deps musl=1.1.18-r2 make g++
+ARG APP_NAME
+ARG APP_VERSION
 
-# Maintainers
-MAINTAINER Nebo#15 support@nebo15.com
+ADD . /app
 
-# Configure environment variables and other settings
-ENV MIX_ENV=prod \
-    APP_NAME=mithril_api \
-    APP_PORT=4000
+WORKDIR /app
 
-WORKDIR ${HOME}
+ENV MIX_ENV=prod
 
-# Install deps and compile project
-COPY . .
+RUN apk add musl-dev gcc
 
-RUN mix do deps.get, compile, release --verbose
+RUN mix do \
+      local.hex --force, \
+      local.rebar --force, \
+      deps.get, \
+      deps.compile, \
+      release
 
-RUN apk del --no-cache .build-deps
+FROM alpine:edge
 
-# Move release to /opt/$APP_NAME
-RUN \
-    mkdir -p $HOME/priv && \
-    mkdir -p /opt/$APP_NAME/log && \
-    mkdir -p /var/log && \
-    mkdir -p /opt/$APP_NAME/priv && \
-    mkdir -p /opt/$APP_NAME/hooks && \
-    mkdir -p /opt/$APP_NAME/uploads && \
-    cp -R $HOME/priv /opt/$APP_NAME/ && \
-    cp -R $HOME/bin/hooks /opt/$APP_NAME/ && \
-    APP_TARBALL=$(find $HOME/_build/$MIX_ENV/rel/$APP_NAME/releases -maxdepth 2 -name ${APP_NAME}.tar.gz) && \
-    cp $APP_TARBALL /opt/$APP_NAME/ && \
-    cd /opt/$APP_NAME && \
-    tar -xzf $APP_NAME.tar.gz && \
-    rm $APP_NAME.tar.gz && \
-    rm -rf /opt/app/* && \
-    chmod -R 777 $HOME && \
-    chmod -R 777 /opt/$APP_NAME && \
-    chmod -R 777 /var/log
+ARG APP_NAME
+ARG APP_VERSION
 
-# Change user to "default"
-USER default
+RUN apk add --no-cache \
+      ncurses-libs \
+      zlib \
+      ca-certificates \
+      openssl \
+      bash
 
-# Allow to read ENV vars for mix configs
-ENV REPLACE_OS_VARS=true
+WORKDIR /app
 
-# Exposes this port from the docker container to the host machine
-EXPOSE ${APP_PORT}
+COPY --from=builder /app/_build/prod/rel/${APP_NAME}/releases/${APP_VERSION}/${APP_NAME}.tar.gz /app
 
-# Change workdir to a released directory
-WORKDIR /opt
+RUN tar -xzf ${APP_NAME}.tar.gz; rm ${APP_NAME}.tar.gz
 
-# Pre-run hook that allows you to add initialization scripts.
-# All Docker hooks should be located in bin/hooks directory.
-RUN $APP_NAME/hooks/pre-run.sh
+ENV REPLACE_OS_VARS=true \
+    APP=${APP_NAME}
 
-# The command to run when this image starts up.
-# To run migrations on start set DB_MIGRATE=true env when starting container.
-CMD $APP_NAME/bin/$APP_NAME foreground
+CMD ./bin/${APP} foreground
