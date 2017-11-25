@@ -11,7 +11,7 @@ defmodule Mithril.OAuth.TokenController do
     with {:ok, resp} <- attrs
                          |> put_token_value(conn)
                          |> TokenAPI.init_factor() do
-      send_response(conn, resp)
+      send_response(conn, resp, "token-without-details.json")
     end
   end
 
@@ -29,7 +29,7 @@ defmodule Mithril.OAuth.TokenController do
     with {:ok, resp} <- token_params
                         |> put_token_value(conn)
                         |> Token.authorize() do
-      send_response(conn, resp)
+      send_response(conn, resp, "show.json")
     end
   end
 
@@ -40,15 +40,15 @@ defmodule Mithril.OAuth.TokenController do
     end
   end
 
-  defp send_response(conn, %{token: token, urgent: urgent}) do
+  defp send_response(conn, %{token: token, urgent: urgent}, view) do
     conn
     |> put_status(:created)
     |> assign(:urgent, urgent)
-    |> render(TokenView, "show.json", token: token)
+    |> render(TokenView, view, token: token)
   end
-  defp send_response(conn, token) do
+  defp send_response(conn, token, view) do
     conn
     |> put_status(:created)
-    |> render(TokenView, "show.json", token: token)
+    |> render(TokenView, view, token: token)
   end
 end
