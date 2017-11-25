@@ -99,6 +99,14 @@ defmodule Mithril.UserAPI do
     |> Repo.update()
   end
 
+  def unblock_user(%User{} = user) do
+    attrs = %{is_blocked: false, priv_settings: %{login_error_counter: 0, otp_error_counter: 0}}
+    user
+    |> cast(attrs, [:is_blocked])
+    |> cast_embed(:priv_settings, with: &priv_settings_changeset/2)
+    |> Repo.update()
+  end
+
   def delete_user(%User{} = user) do
     Repo.delete(user)
   end

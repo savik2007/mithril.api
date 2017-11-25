@@ -111,6 +111,15 @@ defmodule Mithril.UserAPITest do
     assert user == UserAPI.get_user!(user.id)
   end
 
+  test "unblock/1 and refresh error counters" do
+    user = insert(:user, priv_settings: %{login_error_counter: 2, otp_error_counter: 3})
+    assert %{priv_settings: %{login_error_counter: 2, otp_error_counter: 3}} = UserAPI.get_user!(user.id)
+    assert {:ok, %User{}} = UserAPI.unblock_user(user)
+    db_user = UserAPI.get_user!(user.id)
+    assert %{login_error_counter: 0, otp_error_counter: 0} = db_user.priv_settings
+    refute db_user.is_blocked
+  end
+
   test "delete_user/1 deletes the user" do
     user = fixture(:user)
     assert {:ok, %User{}} = UserAPI.delete_user(user)
