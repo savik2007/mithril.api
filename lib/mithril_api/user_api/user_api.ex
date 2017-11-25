@@ -8,6 +8,7 @@ defmodule Mithril.UserAPI do
 
   alias Ecto.Multi
   alias Mithril.Repo
+  alias Mithril.TokenAPI
   alias Mithril.UserAPI.{User, UserSearch}
   alias Mithril.UserAPI.User.PrivSettings
   alias Mithril.Authentication
@@ -97,6 +98,15 @@ defmodule Mithril.UserAPI do
     user
     |> user_changeset(%{is_blocked: true, block_reason: reason})
     |> Repo.update()
+    |> expire_user_tokens()
+  end
+
+  def expire_user_tokens({:ok, user} = resp) do
+    TokenAPI.deactivate_tokens_by_user(user)
+    resp
+  end
+  def expire_user_tokens(err) do
+    err
   end
 
   def delete_user(%User{} = user) do

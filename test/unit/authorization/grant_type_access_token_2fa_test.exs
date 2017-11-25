@@ -88,8 +88,8 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
       assert db_user.is_blocked
       assert user_otp_error_max == db_user.priv_settings.otp_error_counter
 
-      # check that User is blocked
-      assert {:error, {:access_denied, "User blocked."}} =
+      # check that User is blocked and his token expired
+      assert {:error, {:access_denied, "Token expired"}} =
                data
                |> Map.put("otp", otp.code)
                |> AccessToken2FA.authorize()
