@@ -150,9 +150,11 @@ defmodule Mithril.Web.UserControllerTest do
 
     test "unblock user", %{conn: conn} do
       user = insert(:user, is_blocked: true)
-      conn = patch conn, user_path(conn, :update, user) <> "/actions/unblock"
+      params = %{user: %{"block_reason" => "good boy"}}
+      conn = patch conn, user_path(conn, :update, user) <> "/actions/unblock", params
 
       assert data = json_response(conn, 200)["data"]
+      assert "good boy" = data["block_reason"]
       refute data["is_blocked"]
     end
 
