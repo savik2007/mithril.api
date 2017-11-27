@@ -60,7 +60,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   defp get_token(token_value) do
     case TokenAPI.get_token_by([value: token_value]) do
       %Token{} = token -> {:ok, token}
-      _ -> {:error, {:access_denied, "Invalid token"}}
+      _ -> {:error, {:access_denied, %{message: "Invalid token", type: "token_invalid"}}}
     end
   end
 
@@ -75,7 +75,8 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   end
 
   def validate_user(%User{is_blocked: false} = user), do: {:ok, user}
-  def validate_user(%User{is_blocked: true}), do: {:error, {:access_denied, "User blocked."}}
+  def validate_user(%User{is_blocked: true}),
+      do: {:error, {:access_denied, %{message: "User blocked.", type: "user_blocked"}}}
   def validate_user(_), do: {:error, {:access_denied, "User not found."}}
 
   defp get_auth_factor_by_user_id(user_id) do
@@ -96,11 +97,16 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
       {_, _, :verified} ->
         set_otp_error_counter(user, 0)
         :ok
-      _ ->
+      {_, _, err_type} ->
         increase_otp_error_counter_or_block_user(user)
-        {:error, {:access_denied, "Invalid OTP code"}}
+        {:error, {:access_denied, otp_error(err_type)}}
     end
   end
+  defp otp_error(:reached_max_attempts),
+       do: %{message: "Reached max OTP verify attempts", type: "otp_reached_max_attempts"}
+  defp otp_error(:invalid_code), do: %{message: "Invalid OTP code", type: "otp_invalid"}
+  defp otp_error(:expired), do: %{message: "OTP expired", type: "otp_expired"}
+  defp otp_error(_), do: %{message: "Invalid OTP code", type: "otp_invalid"}
 
   defp create_access_token(%Token{details: details} = token) do
     # changing 2FA token to access token creates token with "app:authorize" scope
@@ -122,7 +128,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
     otp_error = priv_settings.otp_error_counter + 1
     set_otp_error_counter(user, otp_error)
     if otp_error_max <= otp_error do
-        UserAPI.block_user(user, "Passed invalid OTP more than USER_OTP_ERROR_MAX")
+      UserAPI.block_user(user, "Passed invalid OTP more than USER_OTP_ERROR_MAX")
     end
   end
   defp set_otp_error_counter(%User{priv_settings: priv_settings} = user, counter) do

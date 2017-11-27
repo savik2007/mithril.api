@@ -189,7 +189,7 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
       assert db_user.is_blocked
       assert user_login_error_max == db_user.priv_settings.login_error_counter
 
-      assert {:error, {:access_denied, "User blocked."}} =
+      assert {:error, {:access_denied, %{type: "user_blocked"}}} =
                data
                |> Map.put("password", "somepa$$word")
                |> PasswordGrantType.authorize()

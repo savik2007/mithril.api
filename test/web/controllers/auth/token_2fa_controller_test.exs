@@ -265,7 +265,18 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
 
     test "invalid OTP", %{conn: conn} do
       conn = post conn, oauth2_token_path(conn, :approve_factor), %{otp: 100200}
-      assert "Invalid OTP code" == json_response(conn, 401)["error"]["message"]
+      json_response(conn, 401)
+      assert %{"message" => "Invalid OTP code", "type" => "otp_invalid"} == json_response(conn, 401)["error"]
+    end
+
+    test "OTP expired", %{conn: conn, otp: otp} do
+      [code: otp]
+      |> OTP.get_otp_by!()
+      |> OTP.update_otp(%{code_expired_at: "2010-11-27T12:40:13"})
+
+      conn = post conn, oauth2_token_path(conn, :approve_factor), %{otp: 100200}
+      json_response(conn, 401)
+      assert %{"message" => "OTP expired", "type" => "otp_expired"} == json_response(conn, 401)["error"]
     end
   end
 
