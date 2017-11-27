@@ -134,6 +134,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
         |> json_response(201)
       assert "REQUEST_OTP" == resp["urgent"]["next_step"]
       assert "2fa_access_token" == resp["data"]["name"]
+      assert "" == resp["data"]["details"]["scope"]
       otp_token_value = resp["data"]["value"]
 
       # OTP code will sent by third party. Let's get it from DB
@@ -159,6 +160,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
 
       assert "REQUEST_APPS" == resp["urgent"]["next_step"]
       assert "access_token" == resp["data"]["name"]
+      assert "app:authorize" == resp["data"]["details"]["scope"]
       assert resp["data"]["value"]
 
       # 3. Create approval.

@@ -30,7 +30,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
     assert "User blocked." == json_response(conn, 401)["error"]["message"]
   end
 
-  test "successfully issues new access_token using password. Next step: send OTP", %{conn: conn} do
+  test "successfully issues new 2FA access_token using password. Next step: send OTP", %{conn: conn} do
     allowed_scope = "app:authorize legal_entity:read legal_entity:write"
     password = "secret_password"
     user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt(password))
@@ -67,7 +67,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
     assert token["details"]["client_id"] == client.id
     assert token["details"]["grant_type"] == "password"
     assert token["details"]["redirect_uri"] == client.redirect_uri
-    assert token["details"]["scope"] == "app:authorize"
+    assert token["details"]["scope"] == ""
   end
 
   test "successfully issues new access_token using code_grant", %{conn: conn} do

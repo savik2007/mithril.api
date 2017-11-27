@@ -52,8 +52,7 @@ defmodule Mithril.Authorization.GrantType.Password do
          {:ok, user} <- AccessToken2FA.validate_user(user),
          :ok <- validate_token_scope(client.client_type.scope, scope),
          factor <- Authentication.get_factor_by([user_id: user.id, is_active: true]),
-         token_data <- prepare_token_data(user, client, scope),
-         {:ok, token} <- create_access_token(factor, token_data),
+         {:ok, token} <- create_access_token(factor, user, client, scope),
          {_, nil} <- Mithril.TokenAPI.deactivate_old_tokens(token)
       do
       next_step = case maybe_send_otp(factor, token) do
@@ -102,11 +101,20 @@ defmodule Mithril.Authorization.GrantType.Password do
     end
   end
 
-  defp create_access_token(%Factor{}, data), do: Mithril.TokenAPI.create_2fa_access_token(data)
-  defp create_access_token(_, data), do: Mithril.TokenAPI.create_access_token(data)
-
-  defp prepare_token_data(user, client, scope) do
-    %{
+  defp create_access_token(%Factor{}, %User{} = user, client, _scope) do
+    data = %{
+      user_id: user.id,
+      details: %{
+        "grant_type" => "password",
+        "client_id" => client.id,
+        "scope" => "", # 2FA access token requires no scopes
+        "redirect_uri" => client.redirect_uri
+      }
+    }
+    Mithril.TokenAPI.create_2fa_access_token(data)
+  end
+  defp create_access_token(_factor, %User{} = user, client, scope) do
+    data = %{
       user_id: user.id,
       details: %{
         "grant_type" => "password",
@@ -115,6 +123,7 @@ defmodule Mithril.Authorization.GrantType.Password do
         "redirect_uri" => client.redirect_uri
       }
     }
+    Mithril.TokenAPI.create_access_token(data)
   end
 
   defp maybe_send_otp(%Factor{} = factor, token), do: Authentication.send_otp(factor, token)
