@@ -89,7 +89,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
       assert user_otp_error_max == db_user.priv_settings.otp_error_counter
 
       # check that User is blocked and his token expired
-      assert {:error, {:access_denied, "Token expired"}} =
+      assert {:error, {:access_denied, "User blocked."}} =
                data
                |> Map.put("otp", otp.code)
                |> AccessToken2FA.authorize()
@@ -120,8 +120,11 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
   end
 
   describe "refresh" do
-    test "user blocked" do
-
+    test "user blocked", %{token: token_2fa, user: user} do
+      refute user.is_blocked
+      UserAPI.block_user(user)
+      # check that User is blocked and his token expired
+      assert {:error, {:access_denied, "User blocked."}} = AccessToken2FA.refresh(%{"token_value" => token_2fa.value})
     end
 
     test "authentication factor not found for user" do
