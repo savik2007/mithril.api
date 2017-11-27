@@ -15,6 +15,9 @@ defmodule Mithril.Authorization.GrantType.RefreshTokenTest do
 
     {:ok, refresh_token} = Mithril.Fixtures.create_refresh_token(client, user)
 
+    assert refresh_token.name == "refresh_token"
+    assert refresh_token.details.scope == ""
+
     {:ok, token} = RefreshTokenGrantType.authorize(%{
       "client_id" => client.id,
       "client_secret" => client.secret,
