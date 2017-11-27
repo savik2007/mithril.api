@@ -66,7 +66,7 @@ defmodule Mithril.Authentication do
     {:error, :factor_not_set}
   end
 
-  defp generate_key(%Token{} = token, value) do
+  def generate_key(%Token{} = token, value) do
     token.id <> "===" <> value
   end
 
