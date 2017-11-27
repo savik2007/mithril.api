@@ -95,17 +95,18 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
     end
   end
 
-  defp create_access_token(%Token{} = token) do
+  defp create_access_token(%Token{details: details} = token) do
+    # changing 2FA token to access token creates token with "app:authorize" scope
     Mithril.TokenAPI.create_access_token(%{
       user_id: token.user_id,
-      details: token.details
+      details: Map.put(details, "scope", "app:authorize")
     })
   end
 
-  defp create_2fa_access_token(%Token{} = token) do
+  defp create_2fa_access_token(%Token{details: details} = token) do
     Mithril.TokenAPI.create_2fa_access_token(%{
       user_id: token.user_id,
-      details: token.details
+      details: Map.put(details, "scope", "") # 2FA access token requires no scopes
     })
   end
 
