@@ -13,9 +13,10 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   def authorize(params) do
     with %Ecto.Changeset{valid?: true} <- changeset(params),
          :ok <- validate_authorization_header(params),
-         {:ok, token_2fa} <- validate_token(params["token_value"]),
-         user <- UserAPI.get_user(token_2fa.user_id),
+         {:ok, non_validated_token} <- get_token(params["token_value"]),
+         user <- UserAPI.get_user(non_validated_token.user_id),
          {:ok, user} <- validate_user(user),
+         {:ok, token_2fa} <- validate_token(non_validated_token),
          %Factor{} = factor <- get_auth_factor_by_user_id(user.id),
          :ok <- check_factor_value(factor),
          :ok <- verify_otp(factor, token_2fa, params["otp"], user),
@@ -28,9 +29,10 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
 
   def refresh(params) do
     with :ok <- validate_authorization_header(params),
-         {:ok, token_2fa} <- validate_token(params["token_value"]),
-         user <- UserAPI.get_user(token_2fa.user_id),
+         {:ok, non_validated_token} <- get_token(params["token_value"]),
+         user <- UserAPI.get_user(non_validated_token.user_id),
          {:ok, user} <- validate_user(user),
+         {:ok, token_2fa} <- validate_token(non_validated_token),
          %Factor{} = factor <- get_auth_factor_by_user_id(user.id),
          :ok <- check_factor_value(factor),
          {:ok, token} <- create_2fa_access_token(token_2fa),
@@ -55,16 +57,21 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
     {:error, {:access_denied, "Authorization header required."}}
   end
 
-  defp validate_token(token_value) do
-    with %Token{name: "2fa_access_token"} = token <- TokenAPI.get_token_by([value: token_value]),
-         false <- TokenAPI.expired?(token)
-      do
-      {:ok, token}
-    else
-      %Token{} -> {:error, {:access_denied, "Invalid token type"}}
-      true -> {:error, {:access_denied, "Token expired"}}
-      nil -> {:error, {:access_denied, "Invalid token"}}
+  defp get_token(token_value) do
+    case TokenAPI.get_token_by([value: token_value]) do
+      %Token{} = token -> {:ok, token}
+      _ -> {:error, {:access_denied, "Invalid token"}}
     end
+  end
+
+  defp validate_token(%Token{name: "2fa_access_token"} = token) do
+    case TokenAPI.expired?(token) do
+      true -> {:error, {:access_denied, "Token expired"}}
+      _ -> {:ok, token}
+    end
+  end
+  defp validate_token(%Token{}) do
+    {:error, {:access_denied, "Invalid token type"}}
   end
 
   def validate_user(%User{is_blocked: false} = user), do: {:ok, user}
