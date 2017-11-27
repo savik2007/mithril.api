@@ -228,6 +228,8 @@ defmodule Mithril.TokenAPI do
          _app <- Mithril.AppAPI.approval(token.user_id, token.details["client_id"]),
          client <- ClientAPI.get_client!(token.details["client_id"]),
          :ok <- check_client_is_blocked(client),
+         user <- UserAPI.get_user!(token.user_id),
+         :ok <- check_user_is_blocked(user),
          {:ok, token} <- put_broker_scopes(token, client, api_key) do
       {:ok, token}
     else
@@ -369,5 +371,10 @@ defmodule Mithril.TokenAPI do
   defp check_client_is_blocked(%Client{is_blocked: false}), do: :ok
   defp check_client_is_blocked(_) do
     {:error, %{invalid_client: "Authentication failed"}, :unauthorized}
+  end
+
+  defp check_user_is_blocked(%User{is_blocked: false}), do: :ok
+  defp check_user_is_blocked(_) do
+    {:error, %{invalid_user: "Authentication failed"}, :unauthorized}
   end
 end
