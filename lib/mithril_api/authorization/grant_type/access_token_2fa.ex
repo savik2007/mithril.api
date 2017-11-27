@@ -66,7 +66,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
 
   defp validate_token(%Token{name: "2fa_access_token"} = token) do
     case TokenAPI.expired?(token) do
-      true -> {:error, {:access_denied, "Token expired"}}
+      true -> {:error, {:access_denied, %{message: "Token expired", type: "token_expired"}}}
       _ -> {:ok, token}
     end
   end
