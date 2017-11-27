@@ -109,10 +109,10 @@ defmodule Mithril.UserAPI do
     err
   end
 
-  def unblock_user(%User{} = user) do
-    attrs = %{is_blocked: false, priv_settings: %{login_error_counter: 0, otp_error_counter: 0}}
+  def unblock_user(%User{} = user, reason \\ nil) do
+    attrs = %{is_blocked: false, block_reason: reason, priv_settings: %{login_error_counter: 0, otp_error_counter: 0}}
     user
-    |> cast(attrs, [:is_blocked])
+    |> cast(attrs, [:is_blocked, :block_reason])
     |> cast_embed(:priv_settings, with: &priv_settings_changeset/2)
     |> Repo.update()
   end
