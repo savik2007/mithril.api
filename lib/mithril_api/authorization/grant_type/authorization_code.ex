@@ -45,7 +45,7 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCode do
       details: %{
         grant_type: "authorization_code",
         client_id: token.details["client_id"],
-        scope: token.details["scope"]
+        scope: ""
       }
     })
 
