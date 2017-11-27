@@ -59,7 +59,10 @@ config :mithril_api, Mithril.Web.Endpoint,
   render_errors: [view: EView.Views.PhoenixError, accepts: ~w(json)]
 
 # Configures Elixir's Logger
-config :logger, :console, format: "$message\n", level: :info
+config :logger, :console,
+  format: "$message\n",
+  handle_otp_reports: true,
+  level: :info
 
 config :mithril_api, :token_lifetime, %{
   code: {:system, "AUTH_CODE_GRANT_LIFETIME", 5 * 60},

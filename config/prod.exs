@@ -43,11 +43,6 @@ config :mithril_api, Mithril.Web.Endpoint,
   debug_errors: false,
   code_reloader: false
 
-# Do not print debug messages in production
-# and handle all other reports by Elixir Logger with JSON back-end
-# SASL reports turned off because of their verbosity.
-config :logger, level: :error, handle_otp_reports: true
-
 # Do not log passwords, card data and tokens
 config :phoenix, :filter_parameters, ["password", "secret", "token", "password_confirmation", "card", "pan", "cvv"]
 
