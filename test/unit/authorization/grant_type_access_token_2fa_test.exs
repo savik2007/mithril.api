@@ -77,19 +77,19 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
         "otp" => 9999
       }
       for _ <- 1..(user_otp_error_max - 1) do
-        assert {:error, {:access_denied, "Invalid OTP code"}} = AccessToken2FA.authorize(data)
+        assert {:error, {:access_denied, %{type: "otp_invalid"}}} = AccessToken2FA.authorize(data)
       end
       # user have last attempt for success login
       refute UserAPI.get_user!(user.id).is_blocked
 
-      assert {:error, {:access_denied, "Invalid OTP code"}} = AccessToken2FA.authorize(data)
+      assert {:error, {:access_denied, %{type: "otp_invalid"}}} = AccessToken2FA.authorize(data)
       # now user blocked
       db_user = UserAPI.get_user!(user.id)
       assert db_user.is_blocked
       assert user_otp_error_max == db_user.priv_settings.otp_error_counter
 
       # check that User is blocked and his token expired
-      assert {:error, {:access_denied, "User blocked."}} =
+      assert {:error, {:access_denied,  %{message: "User blocked.", type: "user_blocked"}}} =
                data
                |> Map.put("otp", otp.code)
                |> AccessToken2FA.authorize()
@@ -102,7 +102,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
         "otp" => 9999
       }
       for _ <- 1..2 do
-        assert {:error, {:access_denied, "Invalid OTP code"}} = AccessToken2FA.authorize(data)
+        assert {:error, {:access_denied, %{message: "Invalid OTP code"}}} = AccessToken2FA.authorize(data)
       end
       db_user = UserAPI.get_user!(user.id)
       refute db_user.is_blocked
@@ -124,7 +124,8 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
       refute user.is_blocked
       UserAPI.block_user(user)
       # check that User is blocked and his token expired
-      assert {:error, {:access_denied, "User blocked."}} = AccessToken2FA.refresh(%{"token_value" => token_2fa.value})
+      assert {:error, {:access_denied, %{message: "User blocked."}}} =
+               AccessToken2FA.refresh(%{"token_value" => token_2fa.value})
     end
 
     test "authentication factor not found for user" do

@@ -11,6 +11,12 @@ defmodule Mithril.Web.FallbackController do
     |> render(Error, :"401")
   end
 
+  def call(conn, {:error, {:access_denied, reason}}) when is_map(reason) do
+    conn
+    |> put_status(:unauthorized)
+    |> render(EView.Views.Error, :"401", reason)
+  end
+
   def call(conn, {:error, {:access_denied, reason}}) do
     conn
     |> put_status(:unauthorized)

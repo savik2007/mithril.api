@@ -27,7 +27,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
       }
     }
     conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
-    assert "User blocked." == json_response(conn, 401)["error"]["message"]
+    assert %{"message" => "User blocked.", "type" => "user_blocked"} == json_response(conn, 401)["error"]
   end
 
   test "successfully issues new 2FA access_token using password. Next step: send OTP", %{conn: conn} do
