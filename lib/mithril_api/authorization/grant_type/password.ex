@@ -12,6 +12,7 @@ defmodule Mithril.Authorization.GrantType.Password do
   @request_factor "REQUEST_FACTOR"
   @resend_otp "RESEND_OTP"
 
+  def next_step(:resend_otp), do: @resend_otp
   def next_step(:request_otp), do: @request_otp
   def next_step(:request_apps), do: @request_apps
 

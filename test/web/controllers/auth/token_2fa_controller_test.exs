@@ -40,12 +40,8 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       insert(:authentication_factor, user_id: user.id)
       token = authorize(user.email, client.id)
       conn = put_req_header(conn, "authorization", "Bearer #{token.value}")
-      otp =
-        OTP.list_otps
-        |> List.first
-        |> Map.get(:code)
 
-      {:ok, conn: conn, token: token, otp: otp, user: user, client: client}
+      {:ok, conn: conn, token: token, otp: get_last_otp().code, user: user, client: client}
     end
 
     test "successfully issues new access_token using 2fa_access_token",
@@ -151,15 +147,11 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       insert(:authentication_factor, user_id: user.id)
       token = authorize(user.email, client.id)
       conn1 = put_req_header(conn, "authorization", "Bearer #{token.value}")
-      otp =
-        OTP.list_otps
-        |> List.first
-        |> Map.get(:code)
 
       request_payload = %{
         "token": %{
           "grant_type": "authorize_2fa_access_token",
-          "otp": otp
+          "otp": get_last_otp().code
         }
       }
       conn2 = post(conn1, "/oauth/tokens", Poison.encode!(request_payload))
@@ -241,14 +233,9 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       conn2 = post conn1, oauth2_token_path(conn1, :init_factor), %{type: "SMS", factor: "+380885002030"}
       token = json_response(conn2, 201)["data"]
 
-      otp =
-        OTP.list_otps
-        |> List.first
-        |> Map.get(:code)
-
       conn = put_req_header(conn, "authorization", "Bearer #{token["value"]}")
 
-      %{conn: conn, user: user, otp: otp}
+      %{conn: conn, user: user, otp: get_last_otp().code}
     end
 
     test "success", %{conn: conn, user: user, otp: otp} do
@@ -354,5 +341,9 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       "scope" => "legal_entity:read",
     })
     token
+  end
+
+  defp get_last_otp do
+    List.first(OTP.list_otps)
   end
 end

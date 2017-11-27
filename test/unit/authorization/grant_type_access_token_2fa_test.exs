@@ -1,8 +1,11 @@
 defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
   use Mithril.DataCase, async: false
 
+  alias Mithril.OTP
+  alias Mithril.OTP.Schema, as: OTPSchema
   alias Mithril.UserAPI
   alias Mithril.TokenAPI
+  alias Mithril.Authentication
   alias Mithril.Authorization.GrantType.AccessToken2FA
 
   @direct Mithril.ClientAPI.access_type(:direct)
@@ -23,14 +26,14 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
       }
     )
     factor_value = "+380331002030"
-    insert(:authentication_factor, user_id: user.id, factor: factor_value)
+    factor = insert(:authentication_factor, user_id: user.id, factor: factor_value)
     role = insert(:role, scope: "legal_entity:read legal_entity:write")
     insert(:user_role, user_id: user.id, role_id: role.id, client_id: client.id)
     token = insert(:token, user_id: user.id, name: "2fa_access_token")
-    otp_key = token.id <> "===" <> factor_value
+    otp_key = Authentication.generate_key(token, factor_value)
     otp = insert(:otp, key: otp_key, code: 1234)
 
-    {:ok, %{token: token, user: user, otp: otp}}
+    {:ok, %{token: token, user: user, otp: otp, factor: factor}}
   end
 
   describe "authorize" do
@@ -120,6 +123,13 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
   end
 
   describe "refresh" do
+    test "successfully created new OTP", %{token: token_2fa, factor: factor} do
+      assert {:ok, %{token: token}} = AccessToken2FA.refresh(%{"token_value" => token_2fa.value})
+      # generated new OTP
+      otp_key = Authentication.generate_key(token, factor.factor)
+      assert %OTPSchema{active: true} = OTP.get_otp_by!([key: otp_key])
+    end
+
     test "user blocked", %{token: token_2fa, user: user} do
       refute user.is_blocked
       UserAPI.block_user(user)
