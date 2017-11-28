@@ -60,15 +60,12 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
     client = Mithril.Fixtures.create_client(%{settings: %{"allowed_grant_types" => ["password"]}})
     user   = Mithril.Fixtures.create_user(%{password: "somepa$$word"})
 
-    {:error, errors, code} = PasswordGrantType.authorize(%{
+    assert {:error, {:access_denied, "Identity, password combination is wrong."}} = PasswordGrantType.authorize(%{
       "email" => user.email,
       "password" => "incorrect_password",
       "client_id" => client.id,
       "scope" => "legal_entity:read",
     })
-
-    assert %{invalid_grant: "Identity, password combination is wrong."} = errors
-    assert :unauthorized = code
   end
 
   test "user blocked when reached max login errors" do
@@ -81,7 +78,7 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
       "scope" => "legal_entity:read",
     }
     for _ <- 1..4 do
-      assert {:error, _, _} = PasswordGrantType.authorize(data)
+      {:error, {:access_denied, _}} = PasswordGrantType.authorize(data)
     end
 
     assert %{is_blocked: true} = UserAPI.get_user(user.id)
@@ -90,29 +87,23 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
   test "it returns User Not Found error" do
     client = Mithril.Fixtures.create_client(%{settings: %{"allowed_grant_types" => ["password"]}})
 
-    {:error, errors, code} = PasswordGrantType.authorize(%{
+    assert {:error, {:access_denied, "User not found."}} = PasswordGrantType.authorize(%{
       "email" => "non_existing_email",
       "password" => "incorrect_password",
       "client_id" => client.id,
       "scope" => "legal_entity:read",
     })
-
-    assert %{invalid_grant: "Identity not found."} = errors
-    assert :unauthorized = code
   end
 
   test "it returns Client Not Found error" do
     user = Mithril.Fixtures.create_user(%{password: "somepa$$word"})
 
-    {:error, errors, code} = PasswordGrantType.authorize(%{
+    assert {:error, {:access_denied, "Invalid client id."}} = PasswordGrantType.authorize(%{
       "email" => user.email,
       "password" => "somepa$$word",
       "client_id" => "391374D3-A05D-403B-9290-E0BAAC5CCA21",
       "scope" => "legal_entity:read"
     })
-
-    assert %{invalid_client: "Invalid client id."} = errors
-    assert :unauthorized = code
   end
 
   test "it returns Incorrect Scopes error" do
@@ -123,38 +114,26 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
       client_type_id: client_type.id
     })
     user = Mithril.Fixtures.create_user(%{password: "somepa$$word"})
-
-    {:error, errors, code} = PasswordGrantType.authorize(%{
+    message = "Allowed scopes for the token are #{Enum.join(String.split(allowed_scope), ", ")}."
+    assert {:error, {:access_denied, ^message}} = PasswordGrantType.authorize(%{
       "email" => user.email,
       "password" => "somepa$$word",
       "client_id" => client.id,
       "scope" => "some_hidden_api:read",
     })
-
-    message = "Allowed scopes for the token are #{Enum.join(String.split(allowed_scope), ", ")}."
-    assert %{invalid_scope: ^message} = errors
-    assert :bad_request = code
   end
 
   test "it returns insufficient parameters error" do
-    {:error, errors, code} = PasswordGrantType.authorize(%{})
-
-    message = "Request must include at least email, password, client_id and scope parameters."
-    assert %{invalid_request: ^message} = errors
-    assert :bad_request = code
+    assert %Ecto.Changeset{valid?: false} = PasswordGrantType.authorize(%{})
   end
 
   test "it returns error on missing values" do
-    {:error, errors, code} = PasswordGrantType.authorize(%{
+    assert %Ecto.Changeset{valid?: false} = PasswordGrantType.authorize(%{
       "email" => nil,
       "password" => nil,
       "client_id" => nil,
       "scope" => nil
     })
-
-    message = "Request must include at least email, password, client_id and scope parameters."
-    assert %{invalid_request: ^message} = errors
-    assert :bad_request = code
   end
 
   describe "authorize login errors" do
@@ -178,12 +157,12 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
         "scope" => "legal_entity:read",
       }
       for _ <- 1..(user_login_error_max - 1) do
-        assert {:error, _, :unauthorized} = PasswordGrantType.authorize(data)
+        assert {:error, {:access_denied, _}} = PasswordGrantType.authorize(data)
       end
       # user have last attempt for success login
       refute UserAPI.get_user!(user.id).is_blocked
 
-      assert {:error, _, :unauthorized} = PasswordGrantType.authorize(data)
+      assert {:error, {:access_denied, _}} = PasswordGrantType.authorize(data)
       # now user blocked
       db_user = UserAPI.get_user!(user.id)
       assert db_user.is_blocked
@@ -203,7 +182,7 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
         "scope" => "legal_entity:read",
       }
       for _ <- 1..2 do
-        assert {:error, _, :unauthorized} = PasswordGrantType.authorize(data)
+        assert {:error, {:access_denied, _}} = PasswordGrantType.authorize(data)
       end
       assert {:ok, _} =
                data

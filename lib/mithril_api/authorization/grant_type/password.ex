@@ -1,5 +1,7 @@
 defmodule Mithril.Authorization.GrantType.Password do
   @moduledoc false
+  import Ecto.Changeset
+
   alias Mithril.Authorization.GrantType.Error, as: GrantTypeError
   alias Mithril.UserAPI
   alias Mithril.UserAPI.User
@@ -14,49 +16,54 @@ defmodule Mithril.Authorization.GrantType.Password do
   def next_step(:request_otp), do: @request_otp
   def next_step(:request_apps), do: @request_apps
 
-  def authorize(%{"email" => email, "password" => password, "client_id" => client_id, "scope" => scope})
-      when not (is_nil(email) or is_nil(password) or is_nil(client_id) or is_nil(scope))
-    do
-    client = Mithril.ClientAPI.get_client_with_type(client_id)
 
-    case allowed_to_login?(client) do
-      :ok ->
-        user = Mithril.UserAPI.get_user_by([email: email])
-        create_token(client, user, password, scope)
-      {:error, message} ->
-        GrantTypeError.invalid_client(message)
-    end
-  end
-  def authorize(_) do
-    message = "Request must include at least email, password, client_id and scope parameters."
-    GrantTypeError.invalid_request(message)
-  end
-
-  defp allowed_to_login?(nil),
-       do: {:error, "Invalid client id."}
-  defp allowed_to_login?(client) do
-    allowed_grant_types = Map.get(client.settings, "allowed_grant_types", [])
-
-    if "password" in allowed_grant_types do
-      :ok
-    else
-      {:error, "Client is not allowed to issue login token."}
-    end
-  end
-
-  defp create_token(_, nil, _, _),
-       do: GrantTypeError.invalid_grant("Identity not found.")
-  defp create_token(client, user, password, scope) do
-    with {:ok, user} <- match_with_user_password(user, password),
+  def authorize(attrs) do
+    with %Ecto.Changeset{valid?: true} <- changeset(attrs),
+         client <- Mithril.ClientAPI.get_client_with_type(attrs["client_id"]),
+         :ok <- validate_client(client),
+         user <- Mithril.UserAPI.get_user_by([email: attrs["email"]]),
          {:ok, user} <- AccessToken2FA.validate_user(user),
-         :ok <- validate_token_scope(client.client_type.scope, scope),
+         {:ok, user} <- match_with_user_password(user, attrs["password"]),
+         :ok <- validate_token_scope(client.client_type.scope, attrs["scope"]),
          factor <- Authentication.get_factor_by([user_id: user.id, is_active: true]),
-         {:ok, token} <- create_access_token(factor, user, client, scope),
+         {:ok, token} <- create_access_token(factor, user, client, attrs["scope"]),
          {_, nil} <- Mithril.TokenAPI.deactivate_old_tokens(token),
          sms_send_response <- maybe_send_otp(factor, token),
          {:ok, next_step} <- map_next_step(sms_send_response)
       do
       {:ok, %{token: token, urgent: %{next_step: next_step}}}
+    end
+  end
+
+#  def authorize(%{"email" => email, "password" => password, "client_id" => client_id, "scope" => scope})
+#      when not (is_nil(email) or is_nil(password) or is_nil(client_id) or is_nil(scope))
+#    do
+#    client = Mithril.ClientAPI.get_client_with_type(client_id)
+#
+#    case allowed_to_login?(client) do
+#      :ok ->
+#        user = Mithril.UserAPI.get_user_by([email: email])
+#        create_token(client, user, password, scope)
+#      {:error, message} ->
+#        GrantTypeError.invalid_client(message)
+#    end
+#  end
+
+  defp changeset(attrs) do
+    types = %{email: :string, password: :string, client_id: :string, scope: :string}
+
+    {%{}, types}
+    |> cast(attrs, Map.keys(types))
+    |> validate_required(Map.keys(types))
+  end
+
+  defp validate_client(nil) do
+    {:error, {:access_denied, "Invalid client id."}}
+  end
+  defp validate_client(client) do
+    case "password" in Map.get(client.settings, "allowed_grant_types", []) do
+      true -> :ok
+      false -> {:error, {:access_denied, "Client is not allowed to issue login token."}}
     end
   end
 
@@ -66,7 +73,7 @@ defmodule Mithril.Authorization.GrantType.Password do
       {:ok, user}
     else
       increase_login_error_counter_or_block_user(user)
-      GrantTypeError.invalid_grant("Identity, password combination is wrong.")
+      {:error, {:access_denied, "Identity, password combination is wrong."}}
     end
   end
 
