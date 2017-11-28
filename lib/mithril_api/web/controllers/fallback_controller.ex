@@ -69,6 +69,12 @@ defmodule Mithril.Web.FallbackController do
     |> render(EView.Views.Error, :"400", %{message: error})
   end
 
+  def call(conn, {:error, {:service_unavailable, reason}}) do
+    conn
+    |> put_status(:service_unavailable)
+    |> render(EView.Views.Error, :"503", %{message: reason})
+  end
+
   # ToDo: remove this shit
   def call(conn, {:error, errors, http_status_code}) do
     conn

@@ -10,9 +10,7 @@ defmodule Mithril.Authorization.GrantType.Password do
   @request_otp "REQUEST_OTP"
   @request_apps "REQUEST_APPS"
   @request_factor "REQUEST_FACTOR"
-  @resend_otp "RESEND_OTP"
 
-  def next_step(:resend_otp), do: @resend_otp
   def next_step(:request_otp), do: @request_otp
   def next_step(:request_apps), do: @request_apps
 
@@ -54,14 +52,10 @@ defmodule Mithril.Authorization.GrantType.Password do
          :ok <- validate_token_scope(client.client_type.scope, scope),
          factor <- Authentication.get_factor_by([user_id: user.id, is_active: true]),
          {:ok, token} <- create_access_token(factor, user, client, scope),
-         {_, nil} <- Mithril.TokenAPI.deactivate_old_tokens(token)
+         {_, nil} <- Mithril.TokenAPI.deactivate_old_tokens(token),
+         sms_send_response <- maybe_send_otp(factor, token),
+         {:ok, next_step} <- map_next_step(sms_send_response)
       do
-      next_step = case maybe_send_otp(factor, token) do
-        :ok -> @request_otp
-        {:ok, :request_app} -> @request_apps
-        {:error, :factor_not_set} -> @request_factor
-        {:error, :sms_not_sent} -> @resend_otp
-      end
       {:ok, %{token: token, urgent: %{next_step: next_step}}}
     end
   end
@@ -129,4 +123,9 @@ defmodule Mithril.Authorization.GrantType.Password do
 
   defp maybe_send_otp(%Factor{} = factor, token), do: Authentication.send_otp(factor, token)
   defp maybe_send_otp(_, _), do: {:ok, :request_app}
+
+  def map_next_step(:ok), do: {:ok, @request_otp}
+  def map_next_step({:ok, :request_app}), do: {:ok, @request_apps}
+  def map_next_step({:error, :factor_not_set}), do: {:ok, @request_factor}
+  def map_next_step({:error, :sms_not_sent}), do: {:error, {:service_unavailable, "SMS not send. Try later"}}
 end
