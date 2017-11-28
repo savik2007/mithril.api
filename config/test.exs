@@ -15,7 +15,7 @@ config :mithril_api, Mithril.Web.Endpoint,
   server: true
 
 # Print only warnings and errors during test
-config :logger, level: :error
+config :logger, level: :debug
 
 config :bcrypt_elixir, :log_rounds, 4
 
