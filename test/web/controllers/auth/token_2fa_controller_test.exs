@@ -333,6 +333,64 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
     json_response(conn, 409)
   end
 
+  describe "SMS not send" do
+    defmodule Microservices do
+      use MicroservicesHelper
+
+      Plug.Router.post "/sms/send" do
+        Plug.Conn.send_resp(conn, 500, Poison.encode!(%{"error" => "smth wrng"}))
+      end
+    end
+
+    setup %{conn: conn, user: user, client: client} do
+      insert(:authentication_factor, user_id: user.id)
+      details = %{
+        scope: "app:authorize",
+        client_id: client.id,
+        grant_type: "password",
+        redirect_uri: "http://localhost",
+      }
+      token = insert(:token, user_id: user.id, name: "2fa_access_token", details: details)
+      conn = put_req_header(conn, "authorization", "Bearer #{token.value}")
+
+      {:ok, port, ref} = start_microservices(Microservices)
+      System.put_env("OTP_ENDPOINT", "http://localhost:#{port}")
+      System.put_env("SMS_ENABLED", "true")
+      on_exit fn ->
+        System.delete_env("OTP_ENDPOINT")
+        System.put_env("SMS_ENABLED", "false")
+        stop_microservices(ref)
+      end
+
+      {:ok, conn: conn, user: user, client: client}
+    end
+
+    test "refresh 2FA factor", %{conn: conn} do
+      request_payload = %{
+        "token": %{
+          "grant_type": "refresh_2fa_access_token",
+        }
+      }
+      conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
+      json_response(conn, 503)
+    end
+
+    test "login via password", %{conn: conn, user: user, client: client} do
+      request_payload = %{
+        "token": %{
+          "grant_type": "password",
+          "email": user.email,
+          "password": @password,
+          "client_id": client.id,
+          "scope": "app:authorize"
+        }
+      }
+
+      conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
+      json_response(conn, 503)
+    end
+  end
+
   defp authorize(email, client_id, password \\ @password) do
     {:ok, %{token: token}} = PasswordGrantType.authorize(%{
       "email" => email,

@@ -38,11 +38,10 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
          {:ok, token} <- create_2fa_access_token(token_2fa),
          {_, nil} <- TokenAPI.deactivate_old_tokens(token)
       do
-      next_step = case Authentication.send_otp(factor, token) do
-        :ok -> Password.next_step(:request_otp)
-        {:error, :sms_not_sent} -> Password.next_step(:resend_otp)
+      case Authentication.send_otp(factor, token) do
+        :ok -> {:ok, %{token: token, urgent: %{next_step: Password.next_step(:request_otp)}}}
+        {:error, :sms_not_sent} -> {:error, {:service_unavailable, "SMS not send. Try later"}}
       end
-      {:ok, %{token: token, urgent: %{next_step: next_step}}}
     end
   end
 
