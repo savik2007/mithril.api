@@ -8,7 +8,7 @@ defmodule Mithril.Mixfile do
      description: "Add description to your package.",
      package: package(),
      version: @version,
-     elixir: "~> 1.4",
+     elixir: "~> 1.5",
      elixirc_paths: elixirc_paths(Mix.env),
      compilers: [:phoenix] ++ Mix.compilers,
      build_embedded: Mix.env == :prod,
@@ -63,9 +63,7 @@ defmodule Mithril.Mixfile do
      {:timex, "~> 3.1"},
      {:plug_logger_json, "~> 0.5"},
      {:ecto_logger_json, "~> 0.1"},
-     {:benchfella, ">= 0.3.4", only: [:dev, :test]},
      {:ex_machina, ">= 1.0.0", only: [:dev, :test]},
-     {:ex_doc, ">= 0.15.0", only: [:dev, :test]},
      {:excoveralls, ">= 0.5.0", only: [:dev, :test]},
      {:dogma, ">= 0.1.12", only: [:dev, :test]},
      {:credo, ">= 0.5.1", only: [:dev, :test]}]
