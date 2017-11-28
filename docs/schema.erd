@@ -1,88 +1,119 @@
 [users]
-id          | uuid      | not null
-email       | varchar   | not null
-password    | varchar   | not null
-settings    | jsonb    
-priv_settings| jsonb   
-inserted_at | timestamp | not null
-updated_at  | timestamp | not null
+id            | uuid                        | not null
+email         | character varying(255)      |
+password      | character varying(255)      |
+settings      | jsonb                       |
+priv_settings | jsonb                       |
+inserted_at   | timestamp without time zone | not null
+updated_at    | timestamp without time zone | not null
+is_blocked    | boolean                     | not null default false
+block_reason  | character varying(255)      |
 
 [clients]
-id            | uuid      | not null
-name          | varchar   | not null
-secret        | varchar   | not null
-redirect_uri  | varchar   | not null
-settings      | jsonb
-priv_settings | jsonb
-user_id       | uuid      | not null
-client_type_id| uuid      | not null
-inserted_at   | timestamp | not null
-updated_at    | timestamp | not null
-
-[tokens]
-id          | uuid      | not null
-name        | varchar   | not null
-value       | varchar   | not null
-expires_at  | datetime  | not null
-details     | jsonb
-user_id     | uuid      | not null
-inserted_at | timestamp | not null
-updated_at  | timestamp | not null
-
-[apps]
-id          | uuid      | not null
-scope       | varchar   | not null
-user_id     | uuid      | not null
-client_id   | uuid      | not null
-inserted_at | timestamp | not null
-updated_at  | timestamp | not null
-
-[roles]
-id          | uuid      | not null
-name        | varchar   | not null
-scopes      | varchar   | not null
-inserted_at | timestamp | not null
-updated_at  | timestamp | not null
-
-[user_roles]
-id          | uuid      | not null
-user_id     | uuid      | not null
-client_id   | uuid      | not null
-role_id     | uuid      | not null
-inserted_at | timestamp | not null
-updated_at  | timestamp | not null
+id             | uuid                        | not null
+name           | character varying(255)      |
+secret         | character varying(255)      |
+redirect_uri   | character varying(255)      |
+settings       | jsonb                       |
+priv_settings  | jsonb                       |
+user_id        | uuid                        |
+inserted_at    | timestamp without time zone | not null
+updated_at     | timestamp without time zone | not null
+client_type_id | uuid                        | not null
+is_blocked     | boolean                     | not null default false
+block_reason   | character varying(255)      |
 
 [client_types]
-id          | uuid      | not null
-name        | varchar   | not null
-scope       | varchar   | not null
-inserted_at | timestamp | not null
-updated_at  | timestamp | not null
+id          | uuid                        | not null
+name        | character varying(255)      |
+scope       | character varying(2048)     |
+inserted_at | timestamp without time zone | not null
+updated_at  | timestamp without time zone | not null
 
-[client_client_types]
-id             | uuid      | not null
-client_id      | uuid      | not null
-client_type_id | uuid      | not null
-inserted_at    | timestamp | not null
-updated_at     | timestamp | not null
+[roles]
+id          | uuid                        | not null
+name        | character varying(255)      |
+scope       | character varying(2048)     |
+inserted_at | timestamp without time zone | not null
+updated_at  | timestamp without time zone | not null
 
+[roles_backup]
+id          | uuid                        |
+name        | character varying(255)      |
+scope       | character varying(2048)     |
+inserted_at | timestamp without time zone |
+updated_at  | timestamp without time zone |
+
+[user_roles]
+id          | uuid                        | not null
+user_id     | uuid                        |
+role_id     | uuid                        |
+client_id   | uuid                        |
+inserted_at | timestamp without time zone | not null
+updated_at  | timestamp without time zone | not null
+
+[tokens]
+id          | uuid                        | not null
+name        | character varying(255)      |
+value       | character varying(255)      |
+expires_at  | integer                     |
+details     | jsonb                       |
+user_id     | uuid                        |
+inserted_at | timestamp without time zone | not null
+updated_at  | timestamp without time zone | not null
+
+[apps]
+id          | uuid                        | not null
+scope       | character varying(2048)     |
+user_id     | uuid                        |
+client_id   | uuid                        |
+inserted_at | timestamp without time zone | not null
+updated_at  | timestamp without time zone | not null
+
+[authentication_factors]
+id          | uuid                        | not null
+type        | character varying(255)      | not null
+factor      | character varying(255)      |
+is_active   | boolean                     | default true
+user_id     | uuid                        |
+inserted_at | timestamp without time zone | not null
+updated_at  | timestamp without time zone | not null
+
+[otp]
+id              | uuid                        | not null
+key             | character varying(255)      | not null
+code            | integer                     | not null
+code_expired_at | timestamp without time zone | not null
+status          | character varying(255)      | not null
+attempts_count  | integer                     | default 0
+inserted_at     | timestamp without time zone | not null
+active          | boolean                     | default true
+
+# Table for DB trigger, that run on each insert/update in Clients and collect history of changes
+[black_list_msps_status_hstr]
+id              | bigint                      | not null default
+legal_entity_id | uuid                        | not null
+is_blocked      | boolean                     | not null
+block_reason    | character varying(255)      |
+inserted_at     | timestamp without time zone | not null
 
 (auth)
 users
 clients
+client_types
+roles
+roles_backup
+user_roles
 tokens
 apps
-roles
-user_roles
-client_types
-client_client_types
-
+authentication_factors
+otp
+black_list_msps_status_hstr
 
 users        1--* tokens
 users        1--* apps
 users        1--* clients
 users        1--+ user_roles
 roles        1--* user_roles
-client_types 1--* client_client_types
 clients      1--* client_types
 clients      1--* apps
