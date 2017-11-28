@@ -1,7 +1,7 @@
 defmodule Mithril.Authorization.GrantType.RefreshToken do
   @moduledoc false
 
-  alias Mithril.Authorization.GrantType.Error, as: GrantTypeError
+  alias Mithril.Error
 
   def authorize(%{"client_id" => client_id, "client_secret" => client_secret, "refresh_token" => token})
       when not (is_nil(client_id) or is_nil(client_secret) or is_nil(token))
@@ -16,58 +16,58 @@ defmodule Mithril.Authorization.GrantType.RefreshToken do
   end
   def authorize(_) do
     message = "Request must include at least client_id, client_secret and refresh_token parameters."
-    GrantTypeError.invalid_request(message)
+    Error.invalid_request(message)
   end
 
   defp load_client({client_id, client_secret, token}) do
     case Mithril.ClientAPI.get_client_by(id: client_id, secret: client_secret) do
       nil ->
-        GrantTypeError.invalid_client("Invalid client id or secret.")
+        Error.invalid_client("Invalid client id or secret.")
       client ->
         {:ok, client, token}
     end
   end
 
-  defp load_token({:error, _, _} = error), do: error
+  defp load_token({:error, _} = err), do: err
   defp load_token({:ok, client, value}) do
     case Mithril.TokenAPI.get_token_by(value: value, name: "refresh_token") do
       nil ->
-        GrantTypeError.invalid_grant("Token not found.")
+        Error.invalid_grant("Token not found.")
       token ->
         {:ok, client, token}
     end
   end
 
-  defp validate_client_match({:error, _, _} = error), do: error
+  defp validate_client_match({:error, _} = err), do: err
   defp validate_client_match({:ok, client, token}) do
     case token.details["client_id"] == client.id do
       true ->
         {:ok, client, token}
       _ ->
-        GrantTypeError.invalid_grant("Token not found or expired.")
+        Error.invalid_grant("Token not found or expired.")
     end
   end
 
-  defp validate_token_expiration({:error, _, _} = error), do: error
+  defp validate_token_expiration({:error, _} = err), do: err
   defp validate_token_expiration({:ok, client, token}) do
     if Mithril.TokenAPI.expired?(token) do
-      GrantTypeError.invalid_grant("Token expired.")
+      Error.invalid_grant("Token expired.")
     else
       {:ok, client, token}
     end
   end
 
-  defp validate_app_authorization({:error, _, _} = error), do: error
+  defp validate_app_authorization({:error, _} = err), do: err
   defp validate_app_authorization({:ok, client, token}) do
     case Mithril.AppAPI.approval(token.user_id, token.details["client_id"]) do
       nil ->
-        GrantTypeError.access_denied("Resource owner revoked access for the client.")
+        Error.access_denied("Resource owner revoked access for the client.")
       app ->
         {:ok, client, token, app}
     end
   end
 
-  defp create_access_token({:error, _, _} = error), do: error
+  defp create_access_token({:error, _} = err), do: err
   defp create_access_token({:ok, client, token, app}) do
     Mithril.TokenAPI.create_access_token(%{
       user_id: token.user_id,

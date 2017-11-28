@@ -2,6 +2,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   @moduledoc false
   import Ecto.Changeset
 
+  alias Mithril.Error
   alias Mithril.UserAPI
   alias Mithril.UserAPI.User
   alias Mithril.TokenAPI
@@ -53,23 +54,19 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
     |> validate_required(Map.keys(types))
   end
 
-  def validate_authorization_header(%{"token_value" => token_value}) when is_binary(token_value) do
-    :ok
-  end
-  def validate_authorization_header(_) do
-    {:error, {:access_denied, "Authorization header required."}}
-  end
+  def validate_authorization_header(%{"token_value" => token_value}) when is_binary(token_value), do: :ok
+  def validate_authorization_header(_), do: Error.access_denied("Authorization header required.")
 
   defp get_token(token_value) do
     case TokenAPI.get_token_by([value: token_value]) do
       %Token{} = token -> {:ok, token}
-      _ -> {:error, {:access_denied, %{message: "Invalid token", type: "token_invalid"}}}
+      _ -> Error.token_invalid
     end
   end
 
   defp validate_token(%Token{name: "2fa_access_token"} = token) do
     case TokenAPI.expired?(token) do
-      true -> {:error, {:access_denied, %{message: "Token expired", type: "token_expired"}}}
+      true -> Error.token_expired
       _ -> {:ok, token}
     end
   end
@@ -78,8 +75,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   end
 
   def validate_user(%User{is_blocked: false} = user), do: {:ok, user}
-  def validate_user(%User{is_blocked: true}),
-      do: {:error, {:access_denied, %{message: "User blocked.", type: "user_blocked"}}}
+  def validate_user(%User{is_blocked: true}), do: Error.user_blocked("User blocked.")
   def validate_user(_), do: {:error, {:access_denied, "User not found."}}
 
   defp get_auth_factor_by_user_id(user_id) do
@@ -102,14 +98,13 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
         :ok
       {_, _, err_type} ->
         increase_otp_error_counter_or_block_user(user)
-        {:error, {:access_denied, otp_error(err_type)}}
+        otp_error(err_type)
     end
   end
-  defp otp_error(:reached_max_attempts),
-       do: %{message: "Reached max OTP verify attempts", type: "otp_reached_max_attempts"}
-  defp otp_error(:invalid_code), do: %{message: "Invalid OTP code", type: "otp_invalid"}
-  defp otp_error(:expired), do: %{message: "OTP expired", type: "otp_expired"}
-  defp otp_error(_), do: %{message: "Invalid OTP code", type: "otp_invalid"}
+  defp otp_error(:expired), do: Error.otp_expired
+  defp otp_error(:invalid_code), do: Error.otp_invalid
+  defp otp_error(:reached_max_attempts), do: Error.otp_reached_max_attempts
+  defp otp_error(_), do: Error.otp_invalid
 
   defp create_access_token(%Token{details: details} = token) do
     # changing 2FA token to access token creates token with "app:authorize" scope

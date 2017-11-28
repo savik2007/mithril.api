@@ -53,7 +53,7 @@ defmodule Mithril.Mixfile do
      {:cowboy, "~> 1.1"},
      {:httpoison, "~> 0.13.0"},
      {:poison, "~> 3.1"},
-     {:phoenix, "~> 1.3.0-rc"},
+     {:phoenix, "~> 1.3.0"},
      {:eview, "~> 0.12.2"},
      {:phoenix_ecto, "~> 3.2"},
      {:scrivener_ecto, "~> 1.2"},

@@ -36,34 +36,30 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
   end
 
   test "it returns Request must include at least... error" do
-    {:error, errors, code} = AuthorizationCodeGrantType.authorize(%{
+    message = "Request must include at least client_id, client_secret, code and redirect_uri parameters."
+    assert {:error, {:unprocessable_entity, ^message}} = AuthorizationCodeGrantType.authorize(%{
       "scope" => "legal_entity:read"
     })
-
-    message = "Request must include at least client_id, client_secret, code and redirect_uri parameters."
-    assert %{invalid_request: ^message} = errors
-    assert :bad_request = code
   end
 
   test "it returns invalid client id or secret error" do
     client = Mithril.Fixtures.create_client()
 
-    {:error, errors, code} = AuthorizationCodeGrantType.authorize(%{
+    message = "Invalid client id or secret."
+    assert {:error, {:access_denied, %{message: ^message, type: "invalid_client"}}} =
+             AuthorizationCodeGrantType.authorize(%{
       "client_id" => "F75029D0-DDBA-4897-A6F2-9A785222FD67",
       "client_secret" => client.secret,
       "code" => "some_code",
       "redirect_uri" => client.redirect_uri,
       "scope" => "legal_entity:read"
     })
-
-    assert %{invalid_client: "Invalid client id or secret."} = errors
-    assert :unauthorized = code
   end
 
   test "it returns Token Not Found error" do
     client = Mithril.Fixtures.create_client()
 
-    {:error, errors, code} = AuthorizationCodeGrantType.authorize(%{
+    assert {:error, {:access_denied, errors}} = AuthorizationCodeGrantType.authorize(%{
       "client_id" => client.id,
       "client_secret" => client.secret,
       "code" => "some_code",
@@ -71,8 +67,7 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
       "scope" => "legal_entity:read"
     })
 
-    assert %{invalid_grant: "Token not found."} = errors
-    assert :unauthorized = code
+    assert %{message: "Token not found."} = errors
   end
 
   test "it returns Resource owner revoked access for the client error" do
@@ -81,16 +76,14 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
 
     {:ok, code_grant} = Mithril.Fixtures.create_code_grant_token(client, user)
 
-    {:error, errors, code} = AuthorizationCodeGrantType.authorize(%{
+    message = "Resource owner revoked access for the client."
+    assert {:error, {:access_denied, ^message}} = AuthorizationCodeGrantType.authorize(%{
       "client_id" => client.id,
       "client_secret" => client.secret,
       "code" => code_grant.value,
       "redirect_uri" => client.redirect_uri,
       "scope" => "legal_entity:read"
     })
-
-    assert %{access_denied: "Resource owner revoked access for the client."} = errors
-    assert :unauthorized = code
   end
 
   test "it returns redirection URI client error" do
@@ -105,16 +98,14 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
 
     {:ok, code_grant} = Mithril.Fixtures.create_code_grant_token(client, user)
 
-    {:error, errors, code} = AuthorizationCodeGrantType.authorize(%{
+    message = "The redirection URI provided does not match a pre-registered value."
+    assert {:error, {:access_denied, %{message: ^message}}} = AuthorizationCodeGrantType.authorize(%{
       "client_id" => client.id,
       "client_secret" => client.secret,
       "code" => code_grant.value,
       "redirect_uri" => "some_suspicios_uri",
       "scope" => "legal_entity:read"
     })
-
-    assert %{invalid_client: "The redirection URI provided does not match a pre-registered value."} = errors
-    assert :unauthorized = code
   end
 
   test "it returns token expired error" do
@@ -130,16 +121,14 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
 
     {:ok, code_grant} = Mithril.Fixtures.create_code_grant_token(client, user, scope, 0)
 
-    {:error, errors, code} = AuthorizationCodeGrantType.authorize(%{
+    message = "Token expired."
+    assert {:error, {:access_denied, %{message: ^message}}} = AuthorizationCodeGrantType.authorize(%{
       "client_id" => client.id,
       "client_secret" => client.secret,
       "code" => code_grant.value,
       "redirect_uri" => client.redirect_uri,
       "scope" => "legal_entity:read"
     })
-
-    assert %{invalid_grant: "Token expired."} = errors
-    assert :unauthorized = code
   end
 
   test "it returns token not found or expired error" do
@@ -155,16 +144,15 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
     client2 = Mithril.Fixtures.create_client(%{name: "Another name"})
     {:ok, code_grant} = Mithril.Fixtures.create_code_grant_token(client2, user)
 
-    {:error, errors, code} = AuthorizationCodeGrantType.authorize(%{
+    message = "Token not found or expired."
+    assert {:error, {:access_denied, %{message: ^message, type: "invalid_grant"}}} =
+             AuthorizationCodeGrantType.authorize(%{
       "client_id" => client.id,
       "client_secret" => client.secret,
       "code" => code_grant.value,
       "redirect_uri" => client.redirect_uri,
       "scope" => "legal_entity:read"
     })
-
-    assert %{invalid_grant: "Token not found or expired."} = errors
-    assert :unauthorized = code
   end
 
   test "it returns token was used error" do
@@ -181,7 +169,8 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
     {:ok, code_grant} =
       Mithril.TokenAPI.update_token(code_grant, %{details: Map.put_new(code_grant.details, :used, true)})
 
-    {:error, errors, code} = AuthorizationCodeGrantType.authorize(%{
+    message = "Token has already been used."
+    assert {:error, {:access_denied, ^message}} = AuthorizationCodeGrantType.authorize(%{
       "client_id" => client.id,
       "client_secret" => client.secret,
       "code" => code_grant.value,
@@ -189,21 +178,17 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
       "scope" => "legal_entity:read"
     })
 
-    assert %{access_denied: "Token has already been used."} = errors
-    assert :unauthorized = code
   end
 
   test "it returns error on missing values" do
-    {:error, errors, code} = AuthorizationCodeGrantType.authorize(%{
+    message = "Request must include at least client_id, client_secret, code and redirect_uri parameters."
+
+    assert {:error, {:unprocessable_entity, ^message}} = AuthorizationCodeGrantType.authorize(%{
       "client_id" => nil,
       "client_secret" => nil,
       "code" => nil,
       "redirect_uri" => nil,
       "scope" => nil
     })
-
-    message = "Request must include at least client_id, client_secret, code and redirect_uri parameters."
-    assert %{invalid_request: ^message} = errors
-    assert :bad_request = code
   end
 end

@@ -245,7 +245,7 @@ defmodule Mithril.Web.TokenControllerTest do
     conn = get conn, token_verify_path(conn, :verify, token.value)
 
     resp = json_response(conn, 401)
-    assert %{"error" => %{"invalid_client" => "Authentication failed"}} = resp
+    assert %{"error" => %{"message" => "Authentication failed."}} = resp
   end
 
   test "verify blocked user", %{conn: conn} do
@@ -255,7 +255,7 @@ defmodule Mithril.Web.TokenControllerTest do
     conn = get conn, token_verify_path(conn, :verify, token.value)
 
     resp = json_response(conn, 401)
-    assert %{"error" => %{"invalid_user" => "Authentication failed"}} = resp
+    assert %{"error" => %{"message" => "Authentication failed."}} = resp
   end
 
   test "returns error during token verification", %{conn: conn} do
@@ -265,7 +265,7 @@ defmodule Mithril.Web.TokenControllerTest do
 
     error = json_response(conn, 401)["error"]
 
-    assert error == %{"invalid_grant" => "Token expired or client approval was revoked."}
+    assert %{"message" => "Token expired or client approval was revoked."} = error
   end
 
   describe "verify token using token value via broker client" do
@@ -306,19 +306,19 @@ defmodule Mithril.Web.TokenControllerTest do
 
     test "API-KEY Header required", %{conn: conn, token: token} do
       conn = get conn, token_verify_path(conn, :verify, token)
-      assert "API-KEY header required." == json_response(conn, 422)["error"]["api_key"]
+      assert "API-KEY header required." == json_response(conn, 422)["error"]["message"]
     end
 
     test "invalid API-KEY Header", %{conn: conn, token: token} do
       conn = put_req_header(conn, "api-key", "invalid_api_key")
       conn = get conn, token_verify_path(conn, :verify, token)
-      assert "API-KEY header is invalid." == json_response(conn, 422)["error"]["api_key"]
+      assert "API-KEY header is invalid." == json_response(conn, 422)["error"]["message"]
     end
 
     test "not broker API-KEY Header", %{conn: conn, client: client, token: token} do
       conn = put_req_header(conn, "api-key", client.secret)
       conn = get conn, token_verify_path(conn, :verify, token)
-      assert "Incorrect broker settings." == json_response(conn, 422)["error"]["broker_settings"]
+      assert "Incorrect broker settings." == json_response(conn, 422)["error"]["message"]
     end
 
     test "valid request with broker scope", %{conn: conn, client: client, broker: broker, user: user} do

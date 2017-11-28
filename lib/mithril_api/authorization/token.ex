@@ -4,6 +4,7 @@ defmodule Mithril.Authorization.Token do
   # Functions in this module create new access_tokens,
   # based on grant_type the request came with
 
+  alias Mithril.Error
   alias Mithril.Authorization.GrantType.Password
   alias Mithril.Authorization.GrantType.AuthorizationCode
   alias Mithril.Authorization.GrantType.RefreshToken
@@ -31,6 +32,6 @@ defmodule Mithril.Authorization.Token do
   end
 
   def authorize(_) do
-    {:error, %{invalid_client: "Request must include grant_type."}, :bad_request}
+    Error.invalid_request("Request must include grant_type.")
   end
 end

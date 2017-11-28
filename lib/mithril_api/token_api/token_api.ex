@@ -4,6 +4,7 @@ defmodule Mithril.TokenAPI do
   use Mithril.Search
   import Ecto.{Query, Changeset}, warn: false
 
+  alias Mithril.Error
   alias Mithril.Repo
   alias Mithril.UserAPI
   alias Mithril.ClientAPI
@@ -132,23 +133,17 @@ defmodule Mithril.TokenAPI do
       do
       {:ok, token}
     else
-      true -> {:error, {:access_denied, "Token expired"}}
-      nil -> {:error, {:access_denied, "Invalid token"}}
+      true -> Error.token_expired
+      nil -> Error.token_invalid
     end
   end
 
   defp validate_approve_token(%Token{details: %{@factor_field => _, @type_field => _}}), do: :ok
-  defp validate_approve_token(_), do: {:error, {:access_denied, "Invalid token type. Init factor at first"}}
+  defp validate_approve_token(_), do: Error.access_denied("Invalid token type. Init factor at first")
 
-  defp validate_token_type(%Token{name: @access_token_2fa}, %Factor{factor: val}) when (is_nil(val) or "" == val) do
-    :ok
-  end
-  defp validate_token_type(%Token{name: @access_token}, %Factor{factor: val}) when byte_size(val) > 0 do
-    :ok
-  end
-  defp validate_token_type(_, _) do
-    {:error, {:access_denied, "Invalid token type"}}
-  end
+  defp validate_token_type(%Token{name: @access_token_2fa}, %Factor{factor: v}) when (is_nil(v) or "" == v), do: :ok
+  defp validate_token_type(%Token{name: @access_token}, %Factor{factor: val}) when byte_size(val) > 0, do: :ok
+  defp validate_token_type(_, _), do: Error.token_invalid_type
 
   defp prepare_factor_where_clause(%Token{user_id: user_id, details: %{@type_field => type}}) do
     [user_id: user_id, is_active: true, type: type]
@@ -216,8 +211,7 @@ defmodule Mithril.TokenAPI do
       {:ok, token}
     else
       _ ->
-        message = "Token expired or client approval was revoked."
-        Mithril.Authorization.GrantType.Error.invalid_grant(message)
+        Error.invalid_grant("Token expired or client approval was revoked.")
     end
   end
 
@@ -233,11 +227,8 @@ defmodule Mithril.TokenAPI do
          {:ok, token} <- put_broker_scopes(token, client, api_key) do
       {:ok, token}
     else
-      {:error, _, _} = err ->
-        err
-      _ ->
-        message = "Token expired or client approval was revoked."
-        Mithril.Authorization.GrantType.Error.invalid_grant(message)
+      {:error, _} = err -> err
+      _ -> Error.invalid_grant("Token expired or client approval was revoked.")
     end
   end
 
@@ -247,7 +238,7 @@ defmodule Mithril.TokenAPI do
 
   defp put_broker_scopes(token, client, api_key) do
     case Map.get(client.priv_settings, "access_type") do
-      nil -> {:error, %{invalid_client: "Client settings must contain access_type."}, :unprocessable_entity}
+      nil -> Error.access_denied("Client settings must contain access_type.")
 
       # Clients such as NHS Admin, MIS
       @direct -> {:ok, token}
@@ -263,26 +254,26 @@ defmodule Mithril.TokenAPI do
   end
 
   defp validate_api_key(api_key) when is_binary(api_key), do: api_key
-  defp validate_api_key(_), do: {:error, %{api_key: "API-KEY header required."}, :unprocessable_entity}
+  defp validate_api_key(_), do: Error.invalid_request("API-KEY header required.")
 
-  defp fetch_client_by_secret({:error, errors, status}), do: {:error, errors, status}
+  defp fetch_client_by_secret({:error, _} = err), do: err
   defp fetch_client_by_secret(api_key) do
     case ClientAPI.get_client_by([secret: api_key]) do
       %ClientAPI.Client{} = client -> client
       _ ->
-        {:error, %{api_key: "API-KEY header is invalid."}, :unprocessable_entity}
+        Error.invalid_request("API-KEY header is invalid.")
     end
   end
 
-  defp fetch_broker_scope({:error, errors, status}), do: {:error, errors, status}
+  defp fetch_broker_scope({:error, _} = err), do: err
   defp fetch_broker_scope(%ClientAPI.Client{priv_settings: %{"broker_scope" => broker_scope}}) do
     broker_scope
   end
   defp fetch_broker_scope(_) do
-    {:error, %{broker_settings: "Incorrect broker settings."}, :unprocessable_entity}
+    Error.invalid_request("Incorrect broker settings.")
   end
 
-  defp put_broker_scope_into_token_details({:error, errors, status}, _token), do: {:error, errors, status}
+  defp put_broker_scope_into_token_details({:error, _} = err, _token), do: err
   defp put_broker_scope_into_token_details(broker_scope, token) do
     details = Map.put(token.details, "broker_scope", broker_scope)
     {:ok, Map.put(token, :details, details)}
@@ -370,11 +361,11 @@ defmodule Mithril.TokenAPI do
 
   defp check_client_is_blocked(%Client{is_blocked: false}), do: :ok
   defp check_client_is_blocked(_) do
-    {:error, %{invalid_client: "Authentication failed"}, :unauthorized}
+    Error.invalid_client("Authentication failed.")
   end
 
   defp check_user_is_blocked(%User{is_blocked: false}), do: :ok
   defp check_user_is_blocked(_) do
-    {:error, %{invalid_user: "Authentication failed"}, :unauthorized}
+    Error.invalid_user("Authentication failed.")
   end
 end

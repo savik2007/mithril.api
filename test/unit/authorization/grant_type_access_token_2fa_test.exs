@@ -105,7 +105,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
         "otp" => 9999
       }
       for _ <- 1..2 do
-        assert {:error, {:access_denied, %{message: "Invalid OTP code"}}} = AccessToken2FA.authorize(data)
+        assert {:error, {:access_denied, %{type: "otp_invalid"}}} = AccessToken2FA.authorize(data)
       end
       db_user = UserAPI.get_user!(user.id)
       refute db_user.is_blocked

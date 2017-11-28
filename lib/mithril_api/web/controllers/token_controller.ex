@@ -33,26 +33,15 @@ defmodule Mithril.Web.TokenController do
       |> Plug.Conn.get_req_header("api-key")
       |> List.first()
 
-    case TokenAPI.verify_client_token(value, api_key) do
-      {:ok, token} ->
-        render(conn, "show.json", token: token)
-      {:error, errors, http_status_code} ->
-        conn
-        |> put_status(http_status_code)
-        |> render(Mithril.Web.TokenView, http_status_code, errors: errors)
+    with {:ok, %Token{} = token} <- TokenAPI.verify_client_token(value, api_key) do
+      render(conn, "show.json", token: token)
     end
   end
 
   def user(conn, %{"token_id" => value}) do
-    case TokenAPI.verify(value) do
-      {:ok, token} ->
-        user = Mithril.UserAPI.get_full_user(token.user_id, token.details["client_id"])
-
-        render(conn, Mithril.Web.UserView, "urgent.json", user: user, urgent: true, expires_at: token.expires_at)
-      {:error, errors, http_status_code} ->
-        conn
-        |> put_status(http_status_code)
-        |> render(Mithril.Web.TokenView, http_status_code, errors: errors)
+    with {:ok, %Token{} = token} <- TokenAPI.verify(value) do
+      user = Mithril.UserAPI.get_full_user(token.user_id, token.details["client_id"])
+      render(conn, Mithril.Web.UserView, "urgent.json", user: user, urgent: true, expires_at: token.expires_at)
     end
   end
 

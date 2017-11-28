@@ -121,8 +121,8 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
     conn = post(conn, "/oauth/tokens", Poison.encode!(request))
 
-    result = json_response(conn, 400)["error"]
-    assert result["invalid_client"] == "Request must include grant_type."
+    result = json_response(conn, 422)["error"]
+    assert result["message"] == "Request must include grant_type."
   end
 
   test "expire old password tokens", %{conn: conn} do
