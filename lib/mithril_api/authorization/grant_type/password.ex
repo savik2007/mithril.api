@@ -2,7 +2,7 @@ defmodule Mithril.Authorization.GrantType.Password do
   @moduledoc false
   import Ecto.Changeset
 
-  alias Mithril.Authorization.GrantType.Error, as: GrantTypeError
+  alias Mithril.Error
   alias Mithril.UserAPI
   alias Mithril.UserAPI.User
   alias Mithril.Authentication
@@ -15,7 +15,6 @@ defmodule Mithril.Authorization.GrantType.Password do
 
   def next_step(:request_otp), do: @request_otp
   def next_step(:request_apps), do: @request_apps
-
 
   def authorize(attrs) do
     with %Ecto.Changeset{valid?: true} <- changeset(attrs),
@@ -34,20 +33,6 @@ defmodule Mithril.Authorization.GrantType.Password do
       {:ok, %{token: token, urgent: %{next_step: next_step}}}
     end
   end
-
-#  def authorize(%{"email" => email, "password" => password, "client_id" => client_id, "scope" => scope})
-#      when not (is_nil(email) or is_nil(password) or is_nil(client_id) or is_nil(scope))
-#    do
-#    client = Mithril.ClientAPI.get_client_with_type(client_id)
-#
-#    case allowed_to_login?(client) do
-#      :ok ->
-#        user = Mithril.UserAPI.get_user_by([email: email])
-#        create_token(client, user, password, scope)
-#      {:error, message} ->
-#        GrantTypeError.invalid_client(message)
-#    end
-#  end
 
   defp changeset(attrs) do
     types = %{email: :string, password: :string, client_id: :string, scope: :string}
@@ -99,7 +84,7 @@ defmodule Mithril.Authorization.GrantType.Password do
     if Mithril.Utils.List.subset?(allowed_scopes, required_scopes) do
       :ok
     else
-      GrantTypeError.invalid_scope(allowed_scopes)
+      Error.invalid_scope(allowed_scopes)
     end
   end
 

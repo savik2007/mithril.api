@@ -254,12 +254,12 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
           "otp" => 0
         }
       }
-      assert "Invalid OTP code" ==
+      assert "otp_invalid" ==
         conn
         |> put_req_header("authorization", "Bearer #{otp_token_value}")
         |> post("/oauth/tokens", Poison.encode!(otp_request_body))
         |> json_response(401)
-        |> get_in(~w(error message))
+        |> get_in(~w(error type))
     end
   end
 end

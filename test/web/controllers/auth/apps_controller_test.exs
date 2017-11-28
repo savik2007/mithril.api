@@ -113,7 +113,7 @@ defmodule Mithril.OAuth.AppControllerTest do
       |> put_req_header("x-consumer-id", user.id)
       |> post("/oauth/apps/authorize", Poison.encode!(request))
     resp = json_response(conn, 401)
-    assert %{"error" => %{"invalid_client" => "Authentication failed"}} = resp
+    assert %{"error" => %{"message" => "Authentication failed"}} = resp
   end
 
   test "incorrectly crafted body is still treated nicely", %{conn: conn} do
@@ -134,8 +134,8 @@ defmodule Mithril.OAuth.AppControllerTest do
       |> put_req_header("x-consumer-id", "F003D59D-3E7A-40E0-8207-7EC05C3303FF")
       |> post("/oauth/apps/authorize", Poison.encode!(request))
 
-    result = json_response(conn, 400)["error"]
-    assert result["invalid_client"] == "Request must include at least client_id, redirect_uri and scopes parameters."
+    result = json_response(conn, 422)["error"]
+    assert result["message"] == "Request must include at least client_id, redirect_uri and scopes parameters."
   end
 
   test "returns error when redirect uri is not whitelisted", %{conn: conn} do
@@ -166,7 +166,7 @@ defmodule Mithril.OAuth.AppControllerTest do
     result = json_response(conn, 422)["error"]
 
     message = "The redirection URI provided does not match a pre-registered value."
-    assert %{"invalid_client" => ^message} = result
+    assert %{"message" => ^message} = result
   end
 
   test "validates list of available user scopes", %{conn: conn} do
@@ -192,7 +192,7 @@ defmodule Mithril.OAuth.AppControllerTest do
     result = json_response(conn, 422)["error"]
 
     message = "User requested scope that is not allowed by role based access policies."
-    assert %{"invalid_client" => ^message} = result
+    assert %{"message" => ^message} = result
   end
 
   test "validates list of available client scopes", %{conn: conn} do
@@ -218,6 +218,6 @@ defmodule Mithril.OAuth.AppControllerTest do
     result = json_response(conn, 422)["error"]
 
     message = "Scope is not allowed by client type."
-    assert %{"invalid_client" => ^message} = result
+    assert %{"message" => ^message} = result
   end
 end

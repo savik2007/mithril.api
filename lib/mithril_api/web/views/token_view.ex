@@ -21,16 +21,4 @@ defmodule Mithril.Web.TokenView do
   def render("token-without-details.json", %{token: token}) do
     Map.take(token, List.delete(@fields, :details))
   end
-
-  def render("unprocessable_entity.json", %{errors: errors}) do
-    errors
-  end
-
-  def render("unauthorized.json", %{errors: errors}) do
-    errors
-  end
-
-  def render("bad_request.json", %{errors: errors}) do
-    errors
-  end
 end

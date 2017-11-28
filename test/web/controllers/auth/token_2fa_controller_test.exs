@@ -83,7 +83,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
              |> put_req_header("authorization", "Bearer a")
              |> post("/oauth/tokens", Poison.encode!(request_payload))
       result = json_response(conn, 401)["error"]
-      assert "Invalid token" == result["message"]
+      assert "token_invalid" == result["type"]
     end
 
     test "authorization header not set", %{conn: conn, otp: otp} do
@@ -193,7 +193,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       conn = put_req_header(conn, "authorization", "Bearer #{token.value}")
 
       conn = post conn, oauth2_token_path(conn, :init_factor), %{type: "SMS", factor: "+380881002030"}
-      assert "Invalid token type" == json_response(conn, 401)["error"]["message"]
+      assert "token_invalid_type" == json_response(conn, 401)["error"]["type"]
     end
   end
 
@@ -220,7 +220,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       conn = put_req_header(conn, "authorization", "Bearer #{token.value}")
 
       conn = post conn, oauth2_token_path(conn, :init_factor), %{type: "SMS", factor: "+380881002030"}
-      assert "Invalid token type" == json_response(conn, 401)["error"]["message"]
+      assert "token_invalid_type" == json_response(conn, 401)["error"]["type"]
     end
   end
 
@@ -253,7 +253,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
     test "invalid OTP", %{conn: conn} do
       conn = post conn, oauth2_token_path(conn, :approve_factor), %{otp: 100200}
       json_response(conn, 401)
-      assert %{"message" => "Invalid OTP code", "type" => "otp_invalid"} == json_response(conn, 401)["error"]
+      assert %{"type" => "otp_invalid"} = json_response(conn, 401)["error"]
     end
 
     test "OTP expired", %{conn: conn, otp: otp} do
@@ -263,7 +263,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
 
       conn = post conn, oauth2_token_path(conn, :approve_factor), %{otp: 100200}
       json_response(conn, 401)
-      assert %{"message" => "OTP expired", "type" => "otp_expired"} == json_response(conn, 401)["error"]
+      assert %{"type" => "otp_expired"} = json_response(conn, 401)["error"]
     end
   end
 
