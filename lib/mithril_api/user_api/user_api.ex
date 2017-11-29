@@ -58,20 +58,19 @@ defmodule Mithril.UserAPI do
     user_changeset = user_changeset(user, attrs)
     Multi.new
     |> Multi.insert(:user, user_changeset)
-    |> Multi.run(
-         :authentication_factors,
-         fn %{user: user} ->
-           case enabled_2fa?(attrs) do
-             true -> Authentication.create_factor(%{type: Authentication.type(:sms), user_id: user.id})
-             false -> {:ok, :not_enabled}
-           end
-         end
-       )
+    |> Multi.run(:authentication_factors, &create_user_factor(&1, attrs))
     |> Repo.transaction()
     |> case do
          {:ok, %{user: user}} -> {:ok, user}
          {:error, _, err, _} -> {:error, err}
        end
+  end
+
+  defp create_user_factor(%{user: user}, attrs) do
+    case enabled_2fa?(attrs) do
+      true -> Authentication.create_factor(%{type: Authentication.type(:sms), user_id: user.id})
+      false -> {:ok, :not_enabled}
+    end
   end
 
   defp enabled_2fa?(attrs) do
