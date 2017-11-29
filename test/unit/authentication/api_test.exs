@@ -1,10 +1,13 @@
-defmodule Mithril.Authentication.CRUDTest do
-  use Mithril.DataCase, async: true
+defmodule Mithril.Authentication.APITest do
+  use Mithril.DataCase, async: false
 
+  alias Mithril.OTP.SMS
   alias Ecto.Changeset
   alias Mithril.UserAPI
   alias Mithril.Authentication
   alias Mithril.Authentication.Factor
+
+  @env "OTP_SMS_TEMPLATE"
 
   describe "create" do
     setup do
@@ -105,6 +108,26 @@ defmodule Mithril.Authentication.CRUDTest do
     test "invalid params for user" do
       assert {:error, _} = UserAPI.create_user(%{"email" => "test@example.com"})
       assert [] == Repo.all(Factor)
+    end
+  end
+
+  describe "Template message generation" do
+    test "valid template" do
+      System.put_env(@env, "template <otp.code>")
+
+      code = 1234
+      assert "template 1234" == Authentication.generate_message(code)
+
+      System.put_env(@env, "Код підтвердження: <otp.code>")
+    end
+
+    test "template doesn't contains required code mask" do
+      System.put_env(@env, "template without code mask")
+
+      code = 1230
+      assert "1230" == Authentication.generate_message(code)
+
+      System.put_env(@env, "Код підтвердження: <otp.code>")
     end
   end
 end

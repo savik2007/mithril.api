@@ -70,10 +70,26 @@ defmodule Mithril.Authentication do
     token.id <> "===" <> value
   end
 
-  defp generate_message(code) when is_integer(code), do: Integer.to_string(code)
-  defp generate_message(code) do
-    # ToDo: write a code
+  def generate_message(code) when is_integer(code) do
     code
+    |> Integer.to_string()
+    |> generate_message()
+  end
+  def generate_message(code) do
+    code_mask = "<otp.code>"
+    sms_template = Confex.get_env(:mithril_api, :"2fa")[:otp_sms_template]
+
+    case valid_sms_template?(sms_template, code_mask) do
+      true -> String.replace(sms_template, code_mask, code)
+      false -> code
+    end
+  end
+
+  defp valid_sms_template?(sms_template, code_mask) when is_binary(sms_template) do
+    String.contains?(sms_template, code_mask)
+  end
+  defp valid_sms_template?(_, _) do
+    false
   end
 
   def get_factor!(id),
