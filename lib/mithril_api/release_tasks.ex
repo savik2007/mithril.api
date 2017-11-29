@@ -59,6 +59,6 @@ defmodule Mithril.ReleaseTasks do
     Enum.each(@repos, &Migrator.run(&1, migrations_path(app), :up, all: true))
   end
 
-  defp migrations_path(app), do: Path.join([priv_dir(app), "repo", "migrations"])
-  defp seed_path(app), do: Path.join([priv_dir(app), "repo", "seeds.exs"])
+  defp migrations_path(app), do: Application.app_dir(:mithril_api, "priv/repo/migrations")
+  defp seed_path(app), do: Application.app_dir(:mithril_api, "priv/repo/seeds")
 end
