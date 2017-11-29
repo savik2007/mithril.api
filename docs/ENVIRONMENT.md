@@ -62,3 +62,4 @@ If you want to run migrations when container starts, use a `DB_MIGRATE` variable
 | OTP_LENGTH            | 6              | OTP code length |
 | OTP_LIFETIME          | 300            | OTP lifetime in seconds |
 | OTP_MAX_ATTEMPTS      | 3              | Max attempts for verification OTP |
+| OTP_SMS_TEMPLATE      | "Код підтвердження: <otp.code>" | SMS template for verification OTP. <otp.code> will replaced to OTP code |

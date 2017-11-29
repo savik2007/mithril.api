@@ -50,7 +50,8 @@ config :mithril_api, :"2fa",
   user_otp_error_max: {:system, :integer, "USER_OTP_ERROR_MAX", 3},
   otp_ttl: {:system, :integer, "OTP_LIFETIME", 300}, # seconds
   otp_length: {:system, :integer, "OTP_LENGTH", 6},
-  otp_max_attempts: {:system, :integer, "OTP_MAX_ATTEMPTS", 3}
+  otp_max_attempts: {:system, :integer, "OTP_MAX_ATTEMPTS", 3},
+  otp_sms_template: {:system, :string, "OTP_SMS_TEMPLATE", "Код підтвердження: <otp.code>"}
 
 # Configures the endpoint
 config :mithril_api, Mithril.Web.Endpoint,
