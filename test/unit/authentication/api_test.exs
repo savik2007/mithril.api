@@ -1,7 +1,6 @@
 defmodule Mithril.Authentication.APITest do
   use Mithril.DataCase, async: false
 
-  alias Mithril.OTP.SMS
   alias Ecto.Changeset
   alias Mithril.UserAPI
   alias Mithril.Authentication

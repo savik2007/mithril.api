@@ -28,7 +28,6 @@ defmodule Mithril.TokenAPI do
   @factor_field "request_authentication_factor"
 
   @approve_factor "APPROVE_FACTOR"
-  @init_factor "INIT_FACTOR"
 
   def list_tokens(params) do
     %TokenSearch{}
@@ -100,12 +99,10 @@ defmodule Mithril.TokenAPI do
       do
 
       factor = %Factor{factor: attrs["factor"], type: Authentication.type(:sms)}
-      next_step =
-        case Authentication.send_otp(factor, token_2fa) do
-          :ok -> @approve_factor
-          {:error, :sms_not_sent} -> @init_factor
-        end
-      {:ok, %{token: token_2fa, urgent: %{next_step: next_step}}}
+      case Authentication.send_otp(factor, token_2fa) do
+        :ok -> {:ok, %{token: token_2fa, urgent: %{next_step: @approve_factor}}}
+        {:error, :sms_not_sent} -> {:error, {:service_unavailable, "SMS not send. Try later"}}
+      end
     end
   end
 
