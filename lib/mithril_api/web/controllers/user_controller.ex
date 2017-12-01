@@ -53,7 +53,7 @@ defmodule Mithril.Web.UserController do
 
   def block(conn, %{"user_id" => id} = user_params) do
     with %User{is_blocked: false} = user <- UserAPI.get_user!(id),
-         {:ok, %User{} = user} <- UserAPI.block_user(user, get_in(user_params, ["user", "block_reason"]))
+         {:ok, %User{} = user} <- UserAPI.block_user(user, fetch_user_block_reason(user_params))
       do
       render(conn, "show.json", user: user)
     else
@@ -64,7 +64,7 @@ defmodule Mithril.Web.UserController do
 
   def unblock(conn, %{"user_id" => id} = user_params) do
     with %User{is_blocked: true} = user <- UserAPI.get_user!(id),
-         {:ok, %User{} = user} <- UserAPI.unblock_user(user, get_in(user_params, ["user", "block_reason"]))
+         {:ok, %User{} = user} <- UserAPI.unblock_user(user, fetch_user_block_reason(user_params))
       do
       render(conn, "show.json", user: user)
     else
@@ -72,4 +72,7 @@ defmodule Mithril.Web.UserController do
       err -> err
     end
   end
+
+  defp fetch_user_block_reason(%{"user" => %{"block_reason" => block_reason}}), do: block_reason
+  defp fetch_user_block_reason(_), do: nil
 end
