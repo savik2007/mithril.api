@@ -7,7 +7,6 @@ defmodule Mithril.Authorization.GrantType.Password do
   alias Mithril.UserAPI.User
   alias Mithril.Authentication
   alias Mithril.Authentication.Factor
-  alias Mithril.Authorization.GrantType.AccessToken2FA
 
   @request_otp "REQUEST_OTP"
   @request_apps "REQUEST_APPS"
@@ -21,7 +20,7 @@ defmodule Mithril.Authorization.GrantType.Password do
          client <- Mithril.ClientAPI.get_client_with_type(attrs["client_id"]),
          :ok <- validate_client(client),
          user <- Mithril.UserAPI.get_user_by([email: attrs["email"]]),
-         {:ok, user} <- AccessToken2FA.validate_user(user),
+         {:ok, user} <- validate_user(user),
          {:ok, user} <- match_with_user_password(user, attrs["password"]),
          :ok <- validate_token_scope(client.client_type.scope, attrs["scope"]),
          factor <- Authentication.get_factor_by([user_id: user.id, is_active: true]),
@@ -51,6 +50,10 @@ defmodule Mithril.Authorization.GrantType.Password do
       false -> {:error, {:access_denied, "Client is not allowed to issue login token."}}
     end
   end
+
+  def validate_user(%User{is_blocked: false} = user), do: {:ok, user}
+  def validate_user(%User{is_blocked: true}), do: Error.user_blocked("User blocked.")
+  def validate_user(_), do: {:error, {:access_denied, "Identity, password combination is wrong."}}
 
   defp match_with_user_password(user, password) do
     if Comeonin.Bcrypt.checkpw(password, Map.get(user, :password, "")) do

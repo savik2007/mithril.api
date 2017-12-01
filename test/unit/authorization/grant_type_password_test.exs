@@ -84,10 +84,10 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
     assert %{is_blocked: true} = UserAPI.get_user(user.id)
   end
 
-  test "it returns User Not Found error" do
+  test "it returns Incorrect password error when invalid email" do
     client = Mithril.Fixtures.create_client(%{settings: %{"allowed_grant_types" => ["password"]}})
 
-    assert {:error, {:access_denied, "User not found."}} = PasswordGrantType.authorize(%{
+    assert {:error, {:access_denied, "Identity, password combination is wrong."}} = PasswordGrantType.authorize(%{
       "email" => "non_existing_email",
       "password" => "incorrect_password",
       "client_id" => client.id,
