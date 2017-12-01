@@ -12,6 +12,7 @@ defmodule Mithril.Authentication do
   alias Mithril.TokenAPI.Token
   alias Mithril.Authentication.Factor
   alias Mithril.Authentication.FactorSearch
+  alias Mithril.Authentication.OTPSearch
 
   require Logger
 
@@ -28,6 +29,12 @@ defmodule Mithril.Authentication do
   @type_sms "SMS"
 
   def type(:sms), do: @type_sms
+
+  def list_otps(params) do
+    %OTPSearch{}
+    |> changeset(params)
+    |> search(params, OTPSchema)
+  end
 
   def send_otp(%Factor{factor: value} = factor, %Token{} = token) when is_binary(value) and byte_size(value) > 0 do
     otp =
@@ -133,6 +140,10 @@ defmodule Mithril.Authentication do
 
   def changeset(%FactorSearch{} = factor, attrs) do
     cast(factor, attrs, FactorSearch.__schema__(:fields))
+  end
+
+  def changeset(%OTPSearch{} = factor, attrs) do
+    cast(factor, attrs, OTPSearch.__schema__(:fields))
   end
 
   def changeset(%Factor{} = client, attrs, cast_fields \\ @fields_required ++ @fields_optional) do
