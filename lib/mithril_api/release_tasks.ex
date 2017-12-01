@@ -40,7 +40,7 @@ defmodule Mithril.ReleaseTasks do
     Enum.each(@apps, &run_migrations_for/1)
 
     # Run the seed script if it exists
-    seed_script = seed_path(:mithril_api)
+    seed_script = seed_path()
     if File.exists?(seed_script) do
       IO.puts "Running seed script.."
       Code.eval_file(seed_script)
@@ -56,9 +56,9 @@ defmodule Mithril.ReleaseTasks do
 
   defp run_migrations_for(app) do
     IO.puts "Running migrations for #{app}"
-    Enum.each(@repos, &Migrator.run(&1, migrations_path(app), :up, all: true))
+    Enum.each(@repos, &Migrator.run(&1, migrations_path(), :up, all: true))
   end
 
-  defp migrations_path(app), do: Application.app_dir(:mithril_api, "priv/repo/migrations")
-  defp seed_path(app), do: Application.app_dir(:mithril_api, "priv/repo/seeds")
+  defp migrations_path, do: Application.app_dir(:mithril_api, "priv/repo/migrations")
+  defp seed_path, do: Application.app_dir(:mithril_api, "priv/repo/seeds")
 end
