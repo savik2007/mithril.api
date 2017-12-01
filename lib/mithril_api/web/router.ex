@@ -70,6 +70,7 @@ defmodule MithrilWeb.Router do
     resources "/apps", AppController, except: [:new, :edit]
     resources "/client_types", ClientTypeController, except: [:new, :edit]
     resources "/roles", RoleController, except: [:new, :edit]
+    get "/otps", OTPController, :index
   end
 
   defp handle_errors(%Plug.Conn{status: 500} = conn, %{kind: kind, reason: reason, stack: stacktrace}) do

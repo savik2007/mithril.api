@@ -70,7 +70,6 @@ defmodule Mithril.Authorization.App do
       params
     else
       message = "User requested scope that is not allowed by role based access policies."
-      Error.invalid_request("Scope is not allowed by client type.")
       Error.invalid_request(message)
     end
   end
