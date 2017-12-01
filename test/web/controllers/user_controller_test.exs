@@ -77,21 +77,23 @@ defmodule Mithril.Web.UserControllerTest do
     assert length(json_response(conn, 200)["data"]) == 0
   end
 
-  test "creates user and renders user when data is valid", %{conn: conn} do
-    conn = post conn, user_path(conn, :create), user: @create_attrs
-    assert %{"id" => id} = json_response(conn, 201)["data"]
+  describe "create user" do
+    test "creates user and renders user when data is valid", %{conn: conn} do
+      conn = post conn, user_path(conn, :create), user: @create_attrs
+      assert %{"id" => id} = json_response(conn, 201)["data"]
 
-    conn = get conn, user_path(conn, :show, id)
-    assert %{
-      "id" => ^id,
-      "email" => "some email",
-      "settings" => %{},
-    } = json_response(conn, 200)["data"]
-  end
+      conn = get conn, user_path(conn, :show, id)
+      assert %{
+               "id" => ^id,
+               "email" => "some email",
+               "settings" => %{},
+             } = json_response(conn, 200)["data"]
+    end
 
-  test "does not create user and renders errors when data is invalid", %{conn: conn} do
-    conn = post conn, user_path(conn, :create), user: @invalid_attrs
-    assert json_response(conn, 422)["errors"] != %{}
+    test "does not create user and renders errors when data is invalid", %{conn: conn} do
+      conn = post conn, user_path(conn, :create), user: @invalid_attrs
+      assert json_response(conn, 422)["errors"] != %{}
+    end
   end
 
   test "updates chosen user and renders user when data is valid", %{conn: conn} do
@@ -146,6 +148,12 @@ defmodule Mithril.Web.UserControllerTest do
       user = insert(:user, is_blocked: true)
       conn = patch conn, user_path(conn, :update, user) <> "/actions/block"
       assert json_response(conn, 409)
+    end
+
+    test "invalid user params will be ignored", %{conn: conn} do
+      user = insert(:user)
+      conn = patch conn, user_path(conn, :update, user) <> "/actions/block", ~S({"user" : [{}] })
+      json_response(conn, 200)
     end
 
     test "unblock user", %{conn: conn} do
