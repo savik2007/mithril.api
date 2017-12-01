@@ -90,7 +90,7 @@ inserted_at     | timestamp without time zone | not null
 active          | boolean                     | default true
 
 # Table for DB trigger, that run on each insert/update in Clients and collect history of changes
-[black_list_msps_status_hstr]
+[clients_block_reason_hstr]
 id              | bigint                      | not null default
 legal_entity_id | uuid                        | not null
 is_blocked      | boolean                     | not null
@@ -108,7 +108,7 @@ tokens
 apps
 authentication_factors
 otp
-black_list_msps_status_hstr
+clients_block_reason_hstr
 
 users        1--* tokens
 users        1--* apps
