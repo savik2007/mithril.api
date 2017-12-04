@@ -91,13 +91,14 @@ defmodule Mithril.Authorization.GrantType.Password do
     end
   end
 
-  defp create_access_token(%Factor{}, %User{} = user, client, _scope) do
+  defp create_access_token(%Factor{}, %User{} = user, client, scope) do
     data = %{
       user_id: user.id,
       details: %{
         "grant_type" => "password",
         "client_id" => client.id,
         "scope" => "", # 2FA access token requires no scopes
+        "scope_request" => scope,
         "redirect_uri" => client.redirect_uri
       }
     }

@@ -107,17 +107,19 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   defp otp_error(_), do: Error.otp_invalid
 
   defp create_access_token(%Token{details: details} = token) do
-    # changing 2FA token to access token creates token with "app:authorize" scope
+    # changing 2FA token to access token
+    # creates token with scope that stored in detais.scope_request
+    scope = Map.get(details, "scope_request", "app:authorize")
     Mithril.TokenAPI.create_access_token(%{
       user_id: token.user_id,
-      details: Map.put(details, "scope", "app:authorize")
+      details: Map.put(details, "scope", scope)
     })
   end
 
-  defp create_2fa_access_token(%Token{details: details} = token) do
+  defp create_2fa_access_token(%Token{details: details} = token_2fa) do
     Mithril.TokenAPI.create_2fa_access_token(%{
-      user_id: token.user_id,
-      details: Map.put(details, "scope", "") # 2FA access token requires no scopes
+      user_id: token_2fa.user_id,
+      details: Map.put(details, "scope", "")
     })
   end
 

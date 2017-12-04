@@ -270,8 +270,10 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
   describe "refresh" do
     setup %{conn: conn, user: user, client: client} do
       insert(:authentication_factor, user_id: user.id)
+      # details.scope should be empty, but for case, that we flush scope on creating 2fa token you can see it
       details = %{
         scope: "app:authorize",
+        scope_request: "app:authorize",
         client_id: client.id,
         grant_type: "password",
         redirect_uri: "http://localhost",
@@ -305,6 +307,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       assert token["details"]["grant_type"] == "password"
       assert token["details"]["redirect_uri"] == client.redirect_uri
       assert token["details"]["scope"] == ""
+      assert token["details"]["scope_request"] == "app:authorize"
     end
 
     test "invalid token type", %{conn: conn, user: user} do
@@ -396,7 +399,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       "email" => email,
       "password" => password,
       "client_id" => client_id,
-      "scope" => "legal_entity:read",
+      "scope" => "app:authorize",
     })
     token
   end
