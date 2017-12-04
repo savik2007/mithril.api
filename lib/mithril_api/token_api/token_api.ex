@@ -151,11 +151,13 @@ defmodule Mithril.TokenAPI do
   end
 
   defp prepare_token_data(%Token{details: details} = token) do
-    # changing 2FA token to access token creates token with "app:authorize" scope
+    # changing 2FA token to access token
+    # creates token with scope that stored in detais.scope_request
+    scope = Map.get(details, "scope_request", "app:authorize")
     details =
       details
       |> Map.drop(["request_authentication_factor", "request_authentication_factor_type"])
-      |> Map.put("scope", "app:authorize")
+      |> Map.put("scope", scope)
     %{user_id: token.user_id, details: details}
   end
   defp prepare_2fa_token_data(%Token{} = token, attrs) do
