@@ -53,6 +53,7 @@ defmodule Mithril.Factory do
       priv_settings: %Mithril.UserAPI.User.PrivSettings{
         login_error_counter: 0,
         otp_error_counter: 0,
+        last_send_otp_timestamp: 0,
       },
       is_blocked: false,
       block_reason: nil,

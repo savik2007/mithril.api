@@ -39,9 +39,10 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
          {:ok, token} <- create_2fa_access_token(token_2fa),
          {_, nil} <- TokenAPI.deactivate_old_tokens(token)
       do
-      case Authentication.send_otp(factor, token) do
+      case Authentication.send_otp(user, factor, token) do
         :ok -> {:ok, %{token: token, urgent: %{next_step: Password.next_step(:request_otp)}}}
-        {:error, :sms_not_sent} -> {:error, {:service_unavailable, "SMS not send. Try later"}}
+        {:error, :otp_timeout} -> Error.otp_timeout()
+        {:error, :sms_not_sent} -> {:error, {:service_unavailable, "SMS not sent. Try later"}}
       end
     end
   end
@@ -131,10 +132,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
       UserAPI.block_user(user, "Passed invalid OTP more than USER_OTP_ERROR_MAX")
     end
   end
-  defp set_otp_error_counter(%User{priv_settings: priv_settings} = user, counter) do
-    data = priv_settings
-           |> Map.from_struct()
-           |> Map.put(:otp_error_counter, counter)
-    UserAPI.update_user_priv_settings(user, data)
+  defp set_otp_error_counter(%User{} = user, counter) do
+    UserAPI.merge_user_priv_settings(user, %{otp_error_counter: counter})
   end
 end

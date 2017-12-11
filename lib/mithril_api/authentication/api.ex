@@ -9,10 +9,10 @@ defmodule Mithril.Authentication do
   alias Mithril.OTP.SMS
   alias Mithril.OTP.Schema, as: OTPSchema
   alias Mithril.Repo
+  alias Mithril.UserAPI
+  alias Mithril.UserAPI.User
   alias Mithril.TokenAPI.Token
-  alias Mithril.Authentication.Factor
-  alias Mithril.Authentication.FactorSearch
-  alias Mithril.Authentication.OTPSearch
+  alias Mithril.Authentication.{Factor, FactorSearch, OTPSearch}
 
   require Logger
 
@@ -36,19 +36,28 @@ defmodule Mithril.Authentication do
     |> search(params, OTPSchema)
   end
 
-  def send_otp(%Factor{factor: value} = factor, %Token{} = token) when is_binary(value) and byte_size(value) > 0 do
-    otp =
-      token
-      |> generate_key(value)
-      |> OTP.initialize_otp()
+  def send_otp(%User{priv_settings: priv_settings} = user, %Factor{factor: value} = factor, %Token{} = token)
+      when is_binary(value) and byte_size(value) > 0 do
 
+    with :ok <- check_otp_timeout(priv_settings),
+         otp <- token
+                |> generate_key(value)
+                |> OTP.initialize_otp(),
+         :ok <- maybe_send_otp(otp, factor)
+      do
+        UserAPI.merge_user_priv_settings(user, %{last_send_otp_timestamp: :os.system_time(:seconds)})
+        :ok
+    end
+  end
+  def send_otp(_user, %Factor{}, _token) do
+    {:error, :factor_not_set}
+  end
+
+  defp maybe_send_otp(otp, factor) do
     case Confex.get_env(:mithril_api, :"2fa")[:sms_enabled?] do
       true -> send_otp_by_factor(otp, factor)
       false -> :ok
     end
-  end
-  def send_otp(%Factor{}, _token) do
-    {:error, :factor_not_set}
   end
 
   defp send_otp_by_factor({:ok, %OTPSchema{code: code}}, %Factor{factor: factor, type: @type_sms}) do
@@ -58,6 +67,20 @@ defmodule Mithril.Authentication do
       err ->
         Logger.error("Cannot send 2FA SMS with error: #{inspect(err)}")
         {:error, :sms_not_sent}
+    end
+  end
+  defp send_otp_by_factor(err, _) do
+    Logger.error("Cannot initialize_otp with error: #{inspect(err)}")
+    {:error, :sms_not_sent}
+  end
+
+  defp check_otp_timeout(priv_settings) do
+    timeout = Confex.get_env(:mithril_api, :"2fa")[:otp_send_timeout]
+    last_send_otp = Map.get(priv_settings, :last_send_otp_timestamp, 0)
+    now = :os.system_time(:seconds)
+    case timeout + last_send_otp <= now do
+      true -> :ok
+      false -> {:error, :otp_timeout}
     end
   end
 

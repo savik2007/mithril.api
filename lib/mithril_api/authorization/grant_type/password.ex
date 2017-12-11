@@ -26,7 +26,7 @@ defmodule Mithril.Authorization.GrantType.Password do
          factor <- Authentication.get_factor_by([user_id: user.id, is_active: true]),
          {:ok, token} <- create_access_token(factor, user, client, attrs["scope"]),
          {_, nil} <- Mithril.TokenAPI.deactivate_old_tokens(token),
-         sms_send_response <- maybe_send_otp(factor, token),
+         sms_send_response <- maybe_send_otp(user, factor, token),
          {:ok, next_step} <- map_next_step(sms_send_response)
       do
       {:ok, %{token: token, urgent: %{next_step: next_step}}}
@@ -74,11 +74,8 @@ defmodule Mithril.Authorization.GrantType.Password do
         UserAPI.block_user(user, "Passed invalid password more than USER_LOGIN_ERROR_MAX")
     end
   end
-  defp set_login_error_counter(%User{priv_settings: priv_settings} = user, counter) do
-    data = priv_settings
-           |> Map.from_struct()
-           |> Map.put(:login_error_counter, counter)
-    UserAPI.update_user_priv_settings(user, data)
+  defp set_login_error_counter(%User{} = user, counter) do
+    UserAPI.merge_user_priv_settings(user, %{login_error_counter: counter})
   end
 
   defp validate_token_scope(client_scope, required_scope) do
@@ -117,11 +114,12 @@ defmodule Mithril.Authorization.GrantType.Password do
     Mithril.TokenAPI.create_access_token(data)
   end
 
-  defp maybe_send_otp(%Factor{} = factor, token), do: Authentication.send_otp(factor, token)
-  defp maybe_send_otp(_, _), do: {:ok, :request_app}
+  defp maybe_send_otp(user, %Factor{} = factor, token), do: Authentication.send_otp(user, factor, token)
+  defp maybe_send_otp(_, _, _), do: {:ok, :request_app}
 
   def map_next_step(:ok), do: {:ok, @request_otp}
   def map_next_step({:ok, :request_app}), do: {:ok, @request_apps}
   def map_next_step({:error, :factor_not_set}), do: {:ok, @request_factor}
-  def map_next_step({:error, :sms_not_sent}), do: {:error, {:service_unavailable, "SMS not send. Try later"}}
+  def map_next_step({:error, :sms_not_sent}), do: {:error, {:service_unavailable, "SMS not sent. Try later"}}
+  def map_next_step({:error, :otp_timeout}), do: Error.otp_timeout()
 end
