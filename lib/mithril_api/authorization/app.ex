@@ -101,7 +101,7 @@ defmodule Mithril.Authorization.App do
           client_id: client.id,
           grant_type: "password",
           redirect_uri: redirect_uri,
-          scope: scope
+          scope_request: scope
         }
       })
 

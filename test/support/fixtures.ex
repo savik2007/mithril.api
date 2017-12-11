@@ -98,7 +98,7 @@ defmodule Mithril.Fixtures do
   def create_code_grant_token(client, user, scope \\ "app:authorize", expires_at \\ 2000000000) do
     Mithril.TokenAPI.create_token(%{
       details: %{
-        scope: scope,
+        scope_request: scope,
         client_id: client.id,
         grant_type: "password",
         redirect_uri: client.redirect_uri
@@ -125,7 +125,7 @@ defmodule Mithril.Fixtures do
   end
 
   def create_access_token(client, user, expires_at \\ 2000000000) do
-    Mithril.TokenAPI.create_token(%{
+    Mithril.TokenAPI.create_access_token(%{
       details: %{
         scope: "legal_entity:read legal_entity:write",
         client_id: client.id,
@@ -133,7 +133,6 @@ defmodule Mithril.Fixtures do
       },
       user_id: user.id,
       expires_at: expires_at,
-      name: "access_token",
       value: "some_access_token"
     })
   end
