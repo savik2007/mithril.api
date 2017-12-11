@@ -5,6 +5,7 @@ defmodule Mithril.Authentication.APITest do
   alias Mithril.UserAPI
   alias Mithril.Authentication
   alias Mithril.Authentication.Factor
+  alias Mithril.UserAPI.User.PrivSettings
 
   @env "OTP_SMS_TEMPLATE"
 
@@ -127,6 +128,44 @@ defmodule Mithril.Authentication.APITest do
       assert "1230" == Authentication.generate_message(code)
 
       System.put_env(@env, "Код підтвердження: <otp.code>")
+    end
+  end
+
+  describe "OTP requests limit" do
+    setup do
+      System.put_env("OTP_SEND_TIMEOUT", "30")
+      on_exit fn ->
+        System.put_env("OTP_SEND_TIMEOUT", "0")
+      end
+    end
+
+    test "timeouted" do
+      user = insert(:user, priv_settings: %PrivSettings{
+        login_error_counter: 0,
+        otp_error_counter: 0,
+        last_send_otp_timestamp: :os.system_time(:seconds)
+      })
+      factor = insert(:authentication_factor, user_id: user.id)
+      token = insert(:token, user_id: user.id)
+
+      assert {:error, :otp_timeout} = Authentication.send_otp(user, factor, token)
+    end
+
+    test "set last_send_otp_timestamp for empty user.priv_settings" do
+      user = insert(:user, priv_settings: %PrivSettings{
+        login_error_counter: 0,
+        otp_error_counter: 0,
+      })
+      factor = insert(:authentication_factor, user_id: user.id)
+      token = insert(:token, user_id: user.id)
+
+      assert :ok = Authentication.send_otp(user, factor, token)
+      db_user = UserAPI.get_user!(user.id)
+      assert Map.has_key?(db_user.priv_settings, :last_send_otp_timestamp)
+      assert :os.system_time(:seconds) <= db_user.priv_settings.last_send_otp_timestamp
+
+      # second attempt is timeouted
+      assert {:error, :otp_timeout} = Authentication.send_otp(db_user, factor, token)
     end
   end
 end

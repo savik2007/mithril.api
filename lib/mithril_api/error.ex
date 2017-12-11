@@ -23,6 +23,9 @@ defmodule Mithril.Error do
   def otp_expired,
       do: {:error, {:access_denied, %{type: "otp_expired", message: "OTP expired."}}}
 
+  def otp_timeout,
+      do: {:error, {:too_many_requests, %{type: "otp_timeout", message: "Sending OTP timeout. Try later."}}}
+
   def otp_reached_max_attempts,
       do: {:error, {:access_denied, %{type: "otp_reached_max_attempts", message: "Reached max OTP verify attempts"}}}
 

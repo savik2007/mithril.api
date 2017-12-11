@@ -99,9 +99,10 @@ defmodule Mithril.TokenAPI do
       do
 
       factor = %Factor{factor: attrs["factor"], type: Authentication.type(:sms)}
-      case Authentication.send_otp(factor, token_2fa) do
+      case Authentication.send_otp(user, factor, token_2fa) do
         :ok -> {:ok, %{token: token_2fa, urgent: %{next_step: @approve_factor}}}
-        {:error, :sms_not_sent} -> {:error, {:service_unavailable, "SMS not send. Try later"}}
+        {:error, :sms_not_sent} -> {:error, {:service_unavailable, "SMS not sent. Try later"}}
+        {:error, :otp_timeout} -> Error.otp_timeout()
       end
     end
   end

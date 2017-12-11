@@ -3,6 +3,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
 
   alias Mithril.OTP
   alias Mithril.TokenAPI.Token
+  alias Mithril.UserAPI.User.PrivSettings
   alias Mithril.Authorization.GrantType.Password, as: PasswordGrantType
 
   @password "somepa$$word"
@@ -180,6 +181,23 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       conn = post conn, oauth2_token_path(conn, :init_factor), %{type: 123, factor: "+380881002030"}
       assert err = hd(json_response(conn, 422)["error"]["invalid"])
       assert "$.type" == err["entry"]
+    end
+
+    test "OTP timeouted", %{conn: conn} do
+      user = insert(:user, priv_settings: %PrivSettings{
+        login_error_counter: 0,
+        otp_error_counter: 0,
+        last_send_otp_timestamp: :os.system_time(:seconds) + 10
+      })
+      insert(:authentication_factor, user_id: user.id)
+      token = insert(:token, user_id: user.id, name: "access_token")
+
+      assert "otp_timeout" ==
+        conn
+        |> put_req_header("authorization", "Bearer #{token.value}")
+        |> post(oauth2_token_path(conn, :init_factor), Poison.encode!(%{type: "SMS", factor: "+380881002030"}))
+        |> json_response(429)
+        |> get_in(["error", "type"])
     end
 
     test "invalid factor", %{conn: conn} do

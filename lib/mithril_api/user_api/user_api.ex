@@ -86,6 +86,13 @@ defmodule Mithril.UserAPI do
     |> Repo.update()
   end
 
+  def merge_user_priv_settings(%User{priv_settings: priv_settings} = user, new_settings) when is_map(new_settings) do
+    data = priv_settings
+           |> Map.from_struct()
+           |> Map.merge(new_settings)
+    update_user_priv_settings(user, data)
+  end
+
   def update_user_priv_settings(%User{} = user, priv_settings) do
     user
     |> cast(%{priv_settings: priv_settings}, [])
@@ -151,7 +158,7 @@ defmodule Mithril.UserAPI do
   end
 
   defp priv_settings_changeset(%PrivSettings{} = priv_settings, attrs) do
-    cast(priv_settings, attrs, [:login_error_counter, :otp_error_counter])
+    cast(priv_settings, attrs, [:login_error_counter, :otp_error_counter, :last_send_otp_timestamp])
   end
 
   defp put_password(changeset) do
