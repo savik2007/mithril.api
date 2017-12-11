@@ -5,10 +5,11 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
   @direct Mithril.ClientAPI.access_type(:direct)
 
   test "client successfully obtain an access_token API calls", %{conn: conn} do
-    client_type = Mithril.Fixtures.create_client_type(%{scope: "legal_entity:read legal_entity:write"})
+    client_type = Mithril.Fixtures.create_client_type(%{scope: "app:authorize legal_entity:read legal_entity:write"})
     client = Mithril.Fixtures.create_client(%{
       redirect_uri: "http://localhost",
       client_type_id: client_type.id,
+      settings: %{"allowed_grant_types" => ["password"]},
       priv_settings: %{"access_type" => @direct}
     })
     user = Mithril.Fixtures.create_user(%{password: "super$ecre7"})
@@ -29,16 +30,18 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
     conn
     |> put_req_header("accept", "application/json")
     |> post("/oauth/tokens", Poison.encode!(login_request_body))
+    |> json_response(201)
 
     # 2. After login user is presented with a list of scopes
     # The request goes through gateway, which
     # converts login_response["data"]["value"] into user_id
     # and puts it in as "x-consumer-id" header
+    scope = "legal_entity:read legal_entity:write"
     approval_request_body = %{
       "app" => %{
         "client_id": client.id,
         "redirect_uri": client.redirect_uri,
-        "scope": "legal_entity:read legal_entity:write"
+        "scope": scope
       }
     }
 
@@ -47,11 +50,14 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       |> put_req_header("x-consumer-id", user.id)
       |> post("/oauth/apps/authorize", Poison.encode!(approval_request_body))
 
-    code_grant =
+    decoded_approval_response =
       approval_response
       |> Map.get(:resp_body)
       |> Poison.decode!()
-      |> get_in(["data", "value"])
+
+    assert scope == get_in(decoded_approval_response, ["data", "details", "scope_request"])
+    refute get_in(decoded_approval_response, ["data", "details", "scope"])
+    code_grant = get_in(decoded_approval_response, ["data", "value"])
 
     redirect_uri = "http://localhost?code=#{code_grant}"
 
@@ -66,7 +72,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
         "client_id": client.id,
         "client_secret": client.secret,
         "code": code_grant,
-        "scope": "legal_entity:read legal_entity:write",
+        "scope": scope,
         "redirect_uri": client.redirect_uri
       }
     }
@@ -81,6 +87,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
     assert tokens_response["data"]["name"] == "access_token"
     assert tokens_response["data"]["value"]
     assert tokens_response["data"]["details"]["refresh_token"]
+    assert scope == tokens_response["data"]["details"]["scope"]
   end
 
   describe "2fa flow" do

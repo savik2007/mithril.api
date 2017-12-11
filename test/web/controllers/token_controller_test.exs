@@ -230,7 +230,7 @@ defmodule Mithril.Web.TokenControllerTest do
     assert token["details"]["client_id"] == client.id
     assert token["details"]["grant_type"] == "password"
     assert token["details"]["redirect_uri"] == client.redirect_uri
-    assert token["details"]["scope"] == "app:authorize"
+    assert token["details"]["scope_request"] == "app:authorize"
   end
 
   test "verify blocked client", %{conn: conn} do
