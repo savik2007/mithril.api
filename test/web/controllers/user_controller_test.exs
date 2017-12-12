@@ -169,7 +169,7 @@ defmodule Mithril.Web.UserControllerTest do
   end
 
   test "updates chosen user and renders user when data is valid", %{conn: conn} do
-    %User{id: id} = user = fixture(:user)
+    %User{id: id, password_set_at: password_set_at} = user = fixture(:user)
     conn = put conn, user_path(conn, :update, user), user: @update_attrs
     assert %{"id" => ^id} = json_response(conn, 200)["data"]
 
@@ -179,6 +179,8 @@ defmodule Mithril.Web.UserControllerTest do
       "email" => "some updated email",
       "settings" => %{},
     } = json_response(conn, 200)["data"]
+    user = Repo.one(User)
+    refute password_set_at == user.password_set_at
   end
 
   test "does not update chosen user and renders errors when data is invalid", %{conn: conn} do
@@ -253,7 +255,9 @@ defmodule Mithril.Web.UserControllerTest do
       conn = patch conn, user_path(conn, :update, user) <> "/actions/change_password", update_params
       assert json_response(conn, 200)
 
-      assert Comeonin.Bcrypt.checkpw("World123", UserAPI.get_user(user.id).password)
+      updated_user = UserAPI.get_user(user.id)
+      assert Comeonin.Bcrypt.checkpw("World123", updated_user.password)
+      refute user.password_set_at == updated_user.password_set_at
     end
 
     test "returns validation error when current password is invalid", %{conn: conn} do

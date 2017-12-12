@@ -1,13 +1,14 @@
 [users]
-id            | uuid                        | not null
-email         | character varying(255)      |
-password      | character varying(255)      |
-settings      | jsonb                       |
-priv_settings | jsonb                       |
-inserted_at   | timestamp without time zone | not null
-updated_at    | timestamp without time zone | not null
-is_blocked    | boolean                     | not null default false
-block_reason  | character varying(255)      |
+id              | uuid                        | not null
+email           | character varying(255)      |
+password        | character varying(255)      |
+password_set_at | timestamp without time zone | not null
+settings        | jsonb                       |
+priv_settings   | jsonb                       |
+inserted_at     | timestamp without time zone | not null
+updated_at      | timestamp without time zone | not null
+is_blocked      | boolean                     | not null default false
+block_reason    | character varying(255)      |
 
 [clients]
 id             | uuid                        | not null
