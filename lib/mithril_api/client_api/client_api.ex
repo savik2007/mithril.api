@@ -37,21 +37,31 @@ defmodule Mithril.ClientAPI do
   def get_client!(id), do: Repo.get!(Client, id)
   def get_client(id), do: Repo.get(Client, id)
 
-  def get_client_with_type(id) do
-    query =
-      from c in Client,
-        left_join: ct in assoc(c, :client_type), on: ct.id == c.client_type_id,
-        where: c.id == ^id,
-        preload: [client_type: ct]
+  def get_client_with_type(id),
+      do: id
+          |> query_client_with_type()
+          |> Repo.one()
 
-    Repo.one(query)
+  def get_client_with_type!(id),
+      do: id
+          |> query_client_with_type()
+          |> Repo.one!()
+
+  defp query_client_with_type(id) do
+    from c in Client,
+         left_join: ct in assoc(c, :client_type),
+         on: ct.id == c.client_type_id,
+         where: c.id == ^id,
+         preload: [
+           client_type: ct
+         ]
   end
 
   def get_client_by(attrs), do: Repo.get_by(Client, attrs)
 
   def edit_client(id, attrs \\ %{}) do
     case Repo.get(Client, id) do
-      nil                -> create_client(id, attrs)
+      nil -> create_client(id, attrs)
       %Client{} = client -> update_client(client, attrs)
     end
   end
