@@ -13,11 +13,11 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
       settings: %{"allowed_grant_types" => ["password"]},
       client_type_id: client_type.id
     })
-    user = Mithril.Fixtures.create_user(%{password: "somepa$$word"})
+    user = Mithril.Fixtures.create_user(%{password: "Somepa$$word1"})
 
     {:ok,  %{token: token}} = PasswordGrantType.authorize(%{
       "email" => user.email,
-      "password" => "somepa$$word",
+      "password" => "Somepa$$word1",
       "client_id" => client.id,
       "scope" => "legal_entity:read",
     })
@@ -36,7 +36,7 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
 
   test "creates password-granted 2FA access token" do
     allowed_scope = "app:authorize legal_entity:read legal_entity:write"
-    password = "somepa$$word"
+    password = "Somepa$$word1"
     user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt(password))
     client_type = insert(:client_type, scope: allowed_scope)
     client = insert(:client,
@@ -58,7 +58,7 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
 
   test "it returns Incorrect password error" do
     client = Mithril.Fixtures.create_client(%{settings: %{"allowed_grant_types" => ["password"]}})
-    user   = Mithril.Fixtures.create_user(%{password: "somepa$$word"})
+    user   = Mithril.Fixtures.create_user(%{password: "Somepa$$word1"})
 
     assert {:error, {:access_denied, "Identity, password combination is wrong."}} = PasswordGrantType.authorize(%{
       "email" => user.email,
@@ -70,7 +70,7 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
 
   test "user blocked when reached max login errors" do
     client = Mithril.Fixtures.create_client(%{settings: %{"allowed_grant_types" => ["password"]}})
-    user   = Mithril.Fixtures.create_user(%{password: "somepa$$word"})
+    user   = Mithril.Fixtures.create_user(%{password: "Somepa$$word1"})
     data = %{
       "email" => user.email,
       "password" => "incorrect_password",
@@ -96,11 +96,11 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
   end
 
   test "it returns Client Not Found error" do
-    user = Mithril.Fixtures.create_user(%{password: "somepa$$word"})
+    user = Mithril.Fixtures.create_user(%{password: "Somepa$$word1"})
 
     assert {:error, {:access_denied, "Invalid client id."}} = PasswordGrantType.authorize(%{
       "email" => user.email,
-      "password" => "somepa$$word",
+      "password" => "Somepa$$word1",
       "client_id" => "391374D3-A05D-403B-9290-E0BAAC5CCA21",
       "scope" => "legal_entity:read"
     })
@@ -113,11 +113,11 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
       settings: %{"allowed_grant_types" => ["password"]},
       client_type_id: client_type.id
     })
-    user = Mithril.Fixtures.create_user(%{password: "somepa$$word"})
+    user = Mithril.Fixtures.create_user(%{password: "Somepa$$word1"})
     message = "Allowed scopes for the token are #{Enum.join(String.split(allowed_scope), ", ")}."
     assert {:error, {:access_denied, ^message}} = PasswordGrantType.authorize(%{
       "email" => user.email,
-      "password" => "somepa$$word",
+      "password" => "Somepa$$word1",
       "client_id" => client.id,
       "scope" => "some_hidden_api:read",
     })

@@ -5,10 +5,10 @@ defmodule Mithril.UserAPITest do
   alias Mithril.UserAPI.User
   alias Scrivener.Page
 
-  @create_attrs %{email: "some email", password: "some password", settings: %{}}
+  @create_attrs %{email: "some email", password: "Some password1", settings: %{}}
   @update_attrs %{
     email: "some updated email",
-    password: "some updated password",
+    password: "Some updated password1",
     settings: %{},
     priv_settings: %{
       login_error_counter: 2,
@@ -75,7 +75,7 @@ defmodule Mithril.UserAPITest do
   test "create_user/1 secures user password" do
     {:ok, user} = UserAPI.create_user(@create_attrs)
 
-    assert Comeonin.Bcrypt.checkpw("some password", user.password)
+    assert Comeonin.Bcrypt.checkpw("Some password1", user.password)
   end
 
   test "create_user/1 with invalid data returns error changeset" do

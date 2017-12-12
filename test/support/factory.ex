@@ -48,7 +48,7 @@ defmodule Mithril.Factory do
   def user_factory do
     %Mithril.UserAPI.User{
       email: sequence("mail@example.com-"),
-      password: "some password",
+      password: "Somepassword1",
       settings: %{},
       priv_settings: %Mithril.UserAPI.User.PrivSettings{
         login_error_counter: 0,
