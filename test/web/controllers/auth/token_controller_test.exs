@@ -8,7 +8,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
   end
 
   test "user is blocked", %{conn: conn} do
-    password = "somepa$$word"
+    password = "Somepa$$word1"
     user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt(password), is_blocked: true)
     client_type = insert(:client_type, scope: "app:authorize")
     client = insert(:client,
@@ -72,7 +72,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
   test "successfully issues new access_token using code_grant", %{conn: conn} do
     client = Mithril.Fixtures.create_client()
-    user   = Mithril.Fixtures.create_user(%{password: "secret_password"})
+    user   = Mithril.Fixtures.create_user(%{password: "Secret_password1"})
 
     Mithril.AppAPI.create_app(%{
       user_id: user.id,
@@ -132,13 +132,13 @@ defmodule Mithril.OAuth.TokenControllerTest do
       settings: %{"allowed_grant_types" => ["password"]},
       client_type_id: client_type.id
     })
-    user = Mithril.Fixtures.create_user(%{password: "secret_password"})
+    user = Mithril.Fixtures.create_user(%{password: "Secret_password1"})
 
     request_payload = %{
       "token": %{
         "grant_type": "password",
         "email": user.email,
-        "password": "secret_password",
+        "password": "Secret_password1",
         "client_id": client.id,
         "scope": "app:authorize"
       }

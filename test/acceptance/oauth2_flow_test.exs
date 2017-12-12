@@ -12,7 +12,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       settings: %{"allowed_grant_types" => ["password"]},
       priv_settings: %{"access_type" => @direct}
     })
-    user = Mithril.Fixtures.create_user(%{password: "super$ecre7"})
+    user = Mithril.Fixtures.create_user(%{password: "Super$ecre7"})
     user_role = Mithril.Fixtures.create_role(%{scope: "legal_entity:read legal_entity:write"})
     Mithril.UserRoleAPI.create_user_role(%{user_id: user.id, role_id: user_role.id, client_id: client.id})
 
@@ -21,7 +21,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       "token" => %{
         "grant_type": "password",
         "email": user.email,
-        "password": "super$ecre7",
+        "password": "Super$ecre7",
         "client_id": client.id,
         "scope": "app:authorize"
       }

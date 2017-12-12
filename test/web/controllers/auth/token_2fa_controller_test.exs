@@ -6,7 +6,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
   alias Mithril.UserAPI.User.PrivSettings
   alias Mithril.Authorization.GrantType.Password, as: PasswordGrantType
 
-  @password "somepa$$word"
+  @password "Somepa$$word1"
 
   setup %{conn: conn} do
     allowed_scope = "app:authorize legal_entity:read"
@@ -112,13 +112,13 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
           client_type_id: client_type.id
         }
       )
-      user = Mithril.Fixtures.create_user(%{password: "secret_password"})
+      user = Mithril.Fixtures.create_user(%{password: "Secret_password1"})
 
       request_payload = %{
         "token": %{
           "grant_type": "password",
           "email": user.email,
-          "password": "secret_password",
+          "password": "Secret_password1",
           "client_id": client.id,
           "scope": "app:authorize"
         }

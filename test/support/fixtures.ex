@@ -90,7 +90,7 @@ defmodule Mithril.Fixtures do
   def user_create_attrs do
     %{
       email: "some #{inspect :rand.normal()} email",
-      password: "some password",
+      password: "Some password1",
       settings: %{}
     }
   end
