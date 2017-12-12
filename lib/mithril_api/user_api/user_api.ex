@@ -167,7 +167,9 @@ defmodule Mithril.UserAPI do
 
   defp put_password(changeset) do
     if password = get_change(changeset, :password) do
-      put_change(changeset, :password, get_password_hash(password))
+      changeset
+      |> put_change(:password, get_password_hash(password))
+      |> put_change(:password_set_at, NaiveDateTime.utc_now())
     else
       changeset
     end

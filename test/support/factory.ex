@@ -49,6 +49,7 @@ defmodule Mithril.Factory do
     %Mithril.UserAPI.User{
       email: sequence("mail@example.com-"),
       password: "Somepassword1",
+      password_set_at: NaiveDateTime.utc_now(),
       settings: %{},
       priv_settings: %Mithril.UserAPI.User.PrivSettings{
         login_error_counter: 0,
