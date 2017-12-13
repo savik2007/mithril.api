@@ -139,11 +139,10 @@ defmodule Mithril.Authentication.APITest do
       end
     end
 
-    test "timeouted" do
+    test "timed out and reached max send attempts" do
       user = insert(:user, priv_settings: %PrivSettings{
-        login_error_counter: 0,
-        otp_error_counter: 0,
-        last_send_otp_timestamp: :os.system_time(:seconds)
+        otp_send_counter: 3,
+        last_send_otp_timestamp: :os.system_time(:seconds) - 1
       })
       factor = insert(:authentication_factor, user_id: user.id)
       token = insert(:token, user_id: user.id)
@@ -151,7 +150,48 @@ defmodule Mithril.Authentication.APITest do
       assert {:error, :otp_timeout} = Authentication.send_otp(user, factor, token)
     end
 
-    test "set last_send_otp_timestamp for empty user.priv_settings" do
+    test "timed out but NOT reached max send attempts" do
+      user = insert(:user, priv_settings: %PrivSettings{
+        otp_send_counter: 2,
+        last_send_otp_timestamp: :os.system_time(:seconds) + 1
+      })
+      factor = insert(:authentication_factor, user_id: user.id)
+      token = insert(:token, user_id: user.id)
+
+      assert :ok = Authentication.send_otp(user, factor, token)
+
+      db_user = UserAPI.get_user!(user.id)
+      assert 3 <= db_user.priv_settings.otp_send_counter
+    end
+
+    test "NOT timed out but reached max send attempts" do
+      user = insert(:user, priv_settings: %PrivSettings{
+        otp_send_counter: 3,
+      })
+      factor = insert(:authentication_factor, user_id: user.id)
+      token = insert(:token, user_id: user.id)
+
+      assert {:error, :otp_timeout} = Authentication.send_otp(user, factor, token)
+
+      db_user = UserAPI.get_user!(user.id)
+      assert :os.system_time(:seconds) <= db_user.priv_settings.last_send_otp_timestamp
+    end
+
+    test "NOT timed out and NOT reached max send attempts" do
+      user = insert(:user, priv_settings: %PrivSettings{
+        last_send_otp_timestamp: :os.system_time(:seconds) - 100
+      })
+      factor = insert(:authentication_factor, user_id: user.id)
+      token = insert(:token, user_id: user.id)
+
+      assert :ok = Authentication.send_otp(user, factor, token)
+
+      db_user = UserAPI.get_user!(user.id)
+      assert 1 <= db_user.priv_settings.otp_send_counter
+      assert :os.system_time(:seconds) <= db_user.priv_settings.last_send_otp_timestamp
+    end
+
+    test "reach max send attempts" do
       user = insert(:user, priv_settings: %PrivSettings{
         login_error_counter: 0,
         otp_error_counter: 0,
@@ -159,13 +199,15 @@ defmodule Mithril.Authentication.APITest do
       factor = insert(:authentication_factor, user_id: user.id)
       token = insert(:token, user_id: user.id)
 
-      assert :ok = Authentication.send_otp(user, factor, token)
+      for _ <- 1..3 do
+        db_user = UserAPI.get_user!(user.id)
+        assert :ok = Authentication.send_otp(db_user, factor, token)
+      end
       db_user = UserAPI.get_user!(user.id)
-      assert Map.has_key?(db_user.priv_settings, :last_send_otp_timestamp)
-      assert :os.system_time(:seconds) <= db_user.priv_settings.last_send_otp_timestamp
-
-      # second attempt is timeouted
       assert {:error, :otp_timeout} = Authentication.send_otp(db_user, factor, token)
+
+      assert 3 <= db_user.priv_settings.otp_send_counter
+      assert :os.system_time(:seconds) <= db_user.priv_settings.last_send_otp_timestamp
     end
   end
 end

@@ -187,6 +187,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       user = insert(:user, priv_settings: %PrivSettings{
         login_error_counter: 0,
         otp_error_counter: 0,
+        otp_send_counter: 3,
         last_send_otp_timestamp: :os.system_time(:seconds) + 10
       })
       insert(:authentication_factor, user_id: user.id)
