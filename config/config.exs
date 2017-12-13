@@ -43,6 +43,9 @@ config :mithril_api, :generators,
   binary_id: true,
   sample_binary_id: "11111111-1111-1111-1111-111111111111"
 
+config :mithril_api, :password,
+  expiration: {:system, :integer, "PASSWORD_EXPIRATION_DAYS", 90}
+
 config :mithril_api, :"2fa",
   user_2fa_enabled?: {:system, :boolean, "USER_2FA_ENABLED", true},
   sms_enabled?: {:system, :boolean, "SMS_ENABLED", false},
