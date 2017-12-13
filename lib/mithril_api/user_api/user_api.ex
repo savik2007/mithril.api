@@ -162,7 +162,7 @@ defmodule Mithril.UserAPI do
   end
 
   defp priv_settings_changeset(%PrivSettings{} = priv_settings, attrs) do
-    cast(priv_settings, attrs, [:login_error_counter, :otp_error_counter, :last_send_otp_timestamp])
+    cast(priv_settings, attrs, [:login_error_counter, :otp_error_counter, :last_send_otp_timestamp, :otp_send_counter])
   end
 
   defp put_password(changeset) do
