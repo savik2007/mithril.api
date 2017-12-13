@@ -125,9 +125,4 @@ defmodule Mithril.UserAPITest do
     assert {:ok, %User{}} = UserAPI.delete_user(user)
     assert_raise Ecto.NoResultsError, fn -> UserAPI.get_user!(user.id) end
   end
-
-  test "change_user/1 returns a user changeset" do
-    user = fixture(:user)
-    assert %Ecto.Changeset{} = UserAPI.change_user(user)
-  end
 end

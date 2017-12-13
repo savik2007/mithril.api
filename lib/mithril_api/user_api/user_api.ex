@@ -11,6 +11,7 @@ defmodule Mithril.UserAPI do
   alias Mithril.TokenAPI
   alias Mithril.UserAPI.{User, UserSearch}
   alias Mithril.UserAPI.User.PrivSettings
+  alias Mithril.UserAPI.PasswordHistory
   alias Mithril.Authentication
 
   def list_users(params) do
@@ -81,9 +82,7 @@ defmodule Mithril.UserAPI do
   end
 
   def update_user(%User{} = user, attrs) do
-    user
-    |> user_changeset(attrs)
-    |> Repo.update()
+    elem(Repo.transaction(fn -> do_update(user, attrs) end), 1)
   end
 
   def merge_user_priv_settings(%User{priv_settings: priv_settings} = user, new_settings) when is_map(new_settings) do
@@ -127,12 +126,9 @@ defmodule Mithril.UserAPI do
     Repo.delete(user)
   end
 
-  def change_user(%User{} = user) do
-    user_changeset(user, %{})
-  end
-
   def change_user_password(%User{} = user, user_params) do
-    changeset =
+    elem(Repo.transaction(fn ->
+      changeset =
       user
       |> user_changeset(user_params)
       |> validate_required([:current_password])
@@ -140,6 +136,7 @@ defmodule Mithril.UserAPI do
       |> validate_passwords_match(:password, :current_password)
 
     Repo.update(changeset)
+    end), 1)
   end
 
   defp get_password_hash(password) do
@@ -155,7 +152,7 @@ defmodule Mithril.UserAPI do
     |> validate_format(:password, ~r/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
       message: "password should contain both upper and lowercase letters, numbers"
     )
-    |> put_password()
+    |> put_password(user)
   end
   defp user_changeset(%UserSearch{} = user_role, attrs) do
     cast(user_role, attrs, UserSearch.__schema__(:fields))
@@ -165,12 +162,38 @@ defmodule Mithril.UserAPI do
     cast(priv_settings, attrs, [:login_error_counter, :otp_error_counter, :last_send_otp_timestamp])
   end
 
-  defp put_password(changeset) do
-    if password = get_change(changeset, :password) do
+  defp put_password(changeset, %User{} = user) do
+    password = get_change(changeset, :password)
+    if password do
       changeset
       |> put_change(:password, get_password_hash(password))
+      |> validate_previous_passwords(user, password)
       |> put_change(:password_set_at, NaiveDateTime.utc_now())
     else
+      changeset
+    end
+  end
+
+  defp validate_previous_passwords(changeset, %User{id: nil}, _), do: changeset
+  defp validate_previous_passwords(changeset, %User{id: id}, password) do
+    previous_passwords =
+      PasswordHistory
+      |> where([ph], ph.user_id == ^id)
+      |> order_by([ph], asc: ph.id)
+      |> Repo.all()
+
+    already_used = Enum.any?(previous_passwords, fn previous_password ->
+      Comeonin.Bcrypt.checkpw(password, previous_password.password)
+    end)
+
+    if already_used do
+      add_error(changeset, :password, "This password was already used")
+    else
+      if length(previous_passwords) > 2 do
+        previous_passwords
+        |> hd()
+        |> Repo.delete()
+      end
       changeset
     end
   end
@@ -198,5 +221,11 @@ defmodule Mithril.UserAPI do
             {"#{to_string(field1)} does not match password in field #{to_string(field2)}", [validation: :password]}}]
       end
     end
+  end
+
+  defp do_update(user, attrs) do
+    user
+    |> user_changeset(attrs)
+    |> Repo.update()
   end
 end

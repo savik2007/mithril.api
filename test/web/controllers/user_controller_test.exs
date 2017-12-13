@@ -1,10 +1,12 @@
 defmodule Mithril.Web.UserControllerTest do
   use Mithril.Web.ConnCase
 
+  import Ecto.Query
   alias Ecto.UUID
   alias Mithril.TokenAPI
   alias Mithril.UserAPI
   alias Mithril.UserAPI.User
+  alias Mithril.UserAPI.PasswordHistory
 
   @create_attrs %{email: "some email", password: "Somepassword1", settings: %{}, "2fa_enable": true}
   @update_attrs %{email: "some updated email", password: "Some updated password1", settings: %{}}
@@ -285,6 +287,47 @@ defmodule Mithril.Web.UserControllerTest do
       conn = patch conn, user_path(conn, :update, user) <> "/actions/change_password", update_params
       assert [%{"entry" => "$.password", "rules" => [%{"rule" => "required"}]}]
         = json_response(conn, 422)["error"]["invalid"]
+    end
+
+    test "validation error when password has already been used", %{conn: conn} do
+      user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("SecurePassword1"))
+
+      update_params = %{user: %{"password" => "Password1", current_password: "SecurePassword1"}}
+      conn1 = patch conn, user_path(conn, :update, user) <> "/actions/change_password", update_params
+      assert json_response(conn1, 200)
+
+      update_params = %{user: %{"password" => "Password2", current_password: "Password1"}}
+      conn2 = patch conn, user_path(conn, :update, user) <> "/actions/change_password", update_params
+      assert json_response(conn2, 200)
+
+      update_params = %{user: %{"password" => "Password3", current_password: "Password2"}}
+      conn3 = patch conn, user_path(conn, :update, user) <> "/actions/change_password", update_params
+      assert json_response(conn3, 200)
+
+      update_params = %{user: %{"password" => "Password1", current_password: "Password3"}}
+      conn4 = patch conn, user_path(conn, :update, user) <> "/actions/change_password", update_params
+      res = json_response(conn4, 422)
+      assert [
+        %{
+          "entry" => "$.password",
+          "entry_type" => "json_data_property",
+          "rules" => [
+            %{
+              "description" => "This password was already used",
+              "params" => [],
+              "rule" => nil
+            }
+          ]
+        }
+      ] = res["error"]["invalid"]
+
+      history =
+        PasswordHistory
+        |> where([ph], ph.user_id == ^user.id)
+        |> order_by([ph], asc: ph.id)
+        |> Repo.all()
+      assert 3 == length(history)
+      assert Comeonin.Bcrypt.checkpw("Password1", hd(history).password)
     end
   end
 end
