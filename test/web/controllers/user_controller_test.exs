@@ -22,25 +22,25 @@ defmodule Mithril.Web.UserControllerTest do
   end
 
   test "lists all entries on index", %{conn: conn} do
-    fixture(:user, %{email: "1", password: "Password1", settings: %{}})
-    fixture(:user, %{email: "2", password: "Password2", settings: %{}})
-    fixture(:user, %{email: "3", password: "Password3", settings: %{}})
+    fixture(:user, %{email: "1", password: "Password1234", settings: %{}})
+    fixture(:user, %{email: "2", password: "Password2234", settings: %{}})
+    fixture(:user, %{email: "3", password: "Password3234", settings: %{}})
     conn = get conn, user_path(conn, :index)
     assert 3 == length(json_response(conn, 200)["data"])
   end
 
   test "does not list all entries on index when limit is set", %{conn: conn} do
-    fixture(:user, %{email: "1", password: "Password1", settings: %{}})
-    fixture(:user, %{email: "2", password: "Password2", settings: %{}})
-    fixture(:user, %{email: "3", password: "Password3", settings: %{}})
+    fixture(:user, %{email: "1", password: "Password1234", settings: %{}})
+    fixture(:user, %{email: "2", password: "Password2234", settings: %{}})
+    fixture(:user, %{email: "3", password: "Password3234", settings: %{}})
     conn = get conn, user_path(conn, :index), %{page_size: 2}
     assert 2 == length(json_response(conn, 200)["data"])
   end
 
   test "does not list all entries on index when starting_after is set", %{conn: conn} do
-    fixture(:user, %{email: "1", password: "Password1", settings: %{}})
-    fixture(:user, %{email: "2", password: "Password2", settings: %{}})
-    user = fixture(:user, %{email: "3", password: "Password3", settings: %{}})
+    fixture(:user, %{email: "1", password: "Password1234", settings: %{}})
+    fixture(:user, %{email: "2", password: "Password2234", settings: %{}})
+    user = fixture(:user, %{email: "3", password: "Password3234", settings: %{}})
     conn = get conn, user_path(conn, :index), %{page_size: 2, page: 2}
     resp = json_response(conn, 200)["data"]
     assert 1 == length(resp)
@@ -54,16 +54,16 @@ defmodule Mithril.Web.UserControllerTest do
   end
 
   test "finds users by id", %{conn: conn} do
-    user = fixture(:user, %{email: "1", password: "Password1", settings: %{}})
+    user = fixture(:user, %{email: "1", password: "Password1234", settings: %{}})
     conn = get conn, user_path(conn, :index, %{id: user.id})
     assert length(json_response(conn, 200)["data"]) == 1
   end
 
   test "finds users by ids and is_blocked", %{conn: conn} do
-    %{id: id1} = fixture(:user, %{email: "1", password: "Password1", settings: %{}, is_blocked: true})
-    %{id: id2} = fixture(:user, %{email: "2", password: "Password2", settings: %{}, is_blocked: true})
-    %{id: id3} = fixture(:user, %{email: "3", password: "Password3", settings: %{}})
-    fixture(:user, %{email: "4", password: "Password4", settings: %{}})
+    %{id: id1} = fixture(:user, %{email: "1", password: "Password1234", settings: %{}, is_blocked: true})
+    %{id: id2} = fixture(:user, %{email: "2", password: "Password2234", settings: %{}, is_blocked: true})
+    %{id: id3} = fixture(:user, %{email: "3", password: "Password3234", settings: %{}})
+    fixture(:user, %{email: "4", password: "Password4234", settings: %{}})
 
     conn = get conn, user_path(conn, :index, %{ids: Enum.join([id1, id2, id3], ","), is_blocked: true})
     data = json_response(conn, 200)["data"]
@@ -101,8 +101,8 @@ defmodule Mithril.Web.UserControllerTest do
           "entry_type" => "json_data_property",
           "rules" => [
             %{
-              "description" => "should be at least 8 character(s)",
-              "params" => %{"min" => 8},
+              "description" => "should be at least 12 character(s)",
+              "params" => %{"min" => 12},
               "rule" => "length"
             }
           ]
@@ -111,7 +111,7 @@ defmodule Mithril.Web.UserControllerTest do
     end
 
     test "password has no uppercase", %{conn: conn} do
-      conn = post conn, user_path(conn, :create), user: Map.put(@create_attrs, :password, "password1")
+      conn = post conn, user_path(conn, :create), user: Map.put(@create_attrs, :password, "password1234")
       res = json_response(conn, 422)
       assert [
         %{
@@ -119,8 +119,8 @@ defmodule Mithril.Web.UserControllerTest do
           "entry_type" => "json_data_property",
           "rules" => [
             %{
-              "description" => "password should contain both upper and lowercase letters, numbers",
-              "params" => ["~r/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)/"],
+              "description" => "Password does not meet complexity requirements",
+              "params" => ["~r/^(?=.*[a-zа-яёїієґ])(?=.*[A-ZА-ЯЁЇIЄҐ])(?=.*\\d)/"],
               "rule" => "format"
             }
           ]
@@ -129,7 +129,7 @@ defmodule Mithril.Web.UserControllerTest do
     end
 
     test "password has no lowercase", %{conn: conn} do
-      conn = post conn, user_path(conn, :create), user: Map.put(@create_attrs, :password, "PASSWORD1")
+      conn = post conn, user_path(conn, :create), user: Map.put(@create_attrs, :password, "PASSWORD1234")
       res = json_response(conn, 422)
       assert [
         %{
@@ -137,8 +137,8 @@ defmodule Mithril.Web.UserControllerTest do
           "entry_type" => "json_data_property",
           "rules" => [
             %{
-              "description" => "password should contain both upper and lowercase letters, numbers",
-              "params" => ["~r/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)/"],
+              "description" => "Password does not meet complexity requirements",
+              "params" => ["~r/^(?=.*[a-zа-яёїієґ])(?=.*[A-ZА-ЯЁЇIЄҐ])(?=.*\\d)/"],
               "rule" => "format"
             }
           ]
@@ -147,7 +147,7 @@ defmodule Mithril.Web.UserControllerTest do
     end
 
     test "password has no numbers", %{conn: conn} do
-      conn = post conn, user_path(conn, :create), user: Map.put(@create_attrs, :password, "Password")
+      conn = post conn, user_path(conn, :create), user: Map.put(@create_attrs, :password, "Passwordpassword")
       res = json_response(conn, 422)
       assert [
         %{
@@ -155,8 +155,8 @@ defmodule Mithril.Web.UserControllerTest do
           "entry_type" => "json_data_property",
           "rules" => [
             %{
-              "description" => "password should contain both upper and lowercase letters, numbers",
-              "params" => ["~r/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)/"],
+              "description" => "Password does not meet complexity requirements",
+              "params" => ["~r/^(?=.*[a-zа-яёїієґ])(?=.*[A-ZА-ЯЁЇIЄҐ])(?=.*\\d)/"],
               "rule" => "format"
             }
           ]
@@ -251,39 +251,39 @@ defmodule Mithril.Web.UserControllerTest do
 
   describe "change password" do
     test "works with when current password is valid", %{conn: conn} do
-      user = fixture(:user, %{email: "1", password: "Hello123", settings: %{}})
+      user = fixture(:user, %{email: "1", password: "Hello1231234", settings: %{}})
 
-      update_params = %{user: %{"password" => "World123", current_password: "Hello123"}}
+      update_params = %{user: %{"password" => "World1231234", current_password: "Hello1231234"}}
       conn = patch conn, user_path(conn, :update, user) <> "/actions/change_password", update_params
       assert json_response(conn, 200)
 
       updated_user = UserAPI.get_user(user.id)
-      assert Comeonin.Bcrypt.checkpw("World123", updated_user.password)
+      assert Comeonin.Bcrypt.checkpw("World1231234", updated_user.password)
       refute user.password_set_at == updated_user.password_set_at
     end
 
     test "returns validation error when current password is invalid", %{conn: conn} do
-      user = fixture(:user, %{email: "1", password: "Hello123", settings: %{}})
+      user = fixture(:user, %{email: "1", password: "Hello1231234", settings: %{}})
 
-      update_params = %{user: %{"password" => "World123", current_password: "invalid"}}
+      update_params = %{user: %{"password" => "World1231234", current_password: "invalid"}}
       conn = patch conn, user_path(conn, :update, user) <> "/actions/change_password", update_params
       assert [%{"entry" => "$.current_password", "rules" => [%{"rule" => "password"}]}]
         = json_response(conn, 422)["error"]["invalid"]
     end
 
     test "returns validation error when current password is not present", %{conn: conn} do
-      user = fixture(:user, %{email: "1", password: "Hello123", settings: %{}})
+      user = fixture(:user, %{email: "1", password: "Hello1231234", settings: %{}})
 
-      update_params = %{user: %{"password" => "World123"}}
+      update_params = %{user: %{"password" => "World1231234"}}
       conn = patch conn, user_path(conn, :update, user) <> "/actions/change_password", update_params
       assert [%{"entry" => "$.current_password", "rules" => [%{"rule" => "required"}]}]
         = json_response(conn, 422)["error"]["invalid"]
     end
 
     test "returns validation error when new password is not present", %{conn: conn} do
-      user = fixture(:user, %{email: "1", password: "Hello123", settings: %{}})
+      user = fixture(:user, %{email: "1", password: "Hello1231234", settings: %{}})
 
-      update_params = %{user: %{current_password: "Hello123"}}
+      update_params = %{user: %{current_password: "Hello1231234"}}
       conn = patch conn, user_path(conn, :update, user) <> "/actions/change_password", update_params
       assert [%{"entry" => "$.password", "rules" => [%{"rule" => "required"}]}]
         = json_response(conn, 422)["error"]["invalid"]
@@ -292,19 +292,19 @@ defmodule Mithril.Web.UserControllerTest do
     test "validation error when password has already been used", %{conn: conn} do
       user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("SecurePassword1"))
 
-      update_params = %{user: %{"password" => "Password1", current_password: "SecurePassword1"}}
+      update_params = %{user: %{"password" => "Password1234", current_password: "SecurePassword1"}}
       conn1 = patch conn, user_path(conn, :update, user) <> "/actions/change_password", update_params
       assert json_response(conn1, 200)
 
-      update_params = %{user: %{"password" => "Password2", current_password: "Password1"}}
+      update_params = %{user: %{"password" => "Password2234", current_password: "Password1234"}}
       conn2 = patch conn, user_path(conn, :update, user) <> "/actions/change_password", update_params
       assert json_response(conn2, 200)
 
-      update_params = %{user: %{"password" => "Password3", current_password: "Password2"}}
+      update_params = %{user: %{"password" => "Password3234", current_password: "Password2234"}}
       conn3 = patch conn, user_path(conn, :update, user) <> "/actions/change_password", update_params
       assert json_response(conn3, 200)
 
-      update_params = %{user: %{"password" => "Password1", current_password: "Password3"}}
+      update_params = %{user: %{"password" => "Password1234", current_password: "Password3234"}}
       conn4 = patch conn, user_path(conn, :update, user) <> "/actions/change_password", update_params
       res = json_response(conn4, 422)
       assert [
@@ -327,7 +327,7 @@ defmodule Mithril.Web.UserControllerTest do
         |> order_by([ph], asc: ph.id)
         |> Repo.all()
       assert 3 == length(history)
-      assert Comeonin.Bcrypt.checkpw("Password1", hd(history).password)
+      assert Comeonin.Bcrypt.checkpw("Password1234", hd(history).password)
     end
   end
 end

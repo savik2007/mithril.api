@@ -148,9 +148,9 @@ defmodule Mithril.UserAPI do
     |> cast(attrs, [:email, :password, :settings, :current_password, :is_blocked, :block_reason])
     |> validate_required([:email, :password])
     |> unique_constraint(:email)
-    |> validate_length(:password, min: 8)
-    |> validate_format(:password, ~r/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-      message: "password should contain both upper and lowercase letters, numbers"
+    |> validate_length(:password, min: 12)
+    |> validate_format(:password, ~r/^(?=.*[a-zа-яёїієґ])(?=.*[A-ZА-ЯЁЇIЄҐ])(?=.*\d)/,
+      message: "Password does not meet complexity requirements"
     )
     |> put_password(user)
   end
