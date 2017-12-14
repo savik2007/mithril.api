@@ -88,4 +88,7 @@ config :mithril_api, Mithril.OTP.SMS,
     timeout: {:system, :integer, "OTP_REQUEST_TIMEOUT", 30_000}
   ]
 
+config :mithril_api, Mithril.Scheduler,
+  token_expiration: {:system, :string, "TOKEN_EXPIRATION_SCHEDULE", "* 0-4 * * *"}
+
 import_config "#{Mix.env}.exs"

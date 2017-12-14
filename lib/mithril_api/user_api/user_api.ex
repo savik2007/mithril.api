@@ -187,7 +187,7 @@ defmodule Mithril.UserAPI do
     end)
 
     if already_used do
-      add_error(changeset, :password, "This password was already used")
+      add_error(changeset, :password, "This password has been used recently. Try another one")
     else
       if length(previous_passwords) > 2 do
         previous_passwords

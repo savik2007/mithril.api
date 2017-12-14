@@ -61,6 +61,7 @@ defmodule Mithril.Mixfile do
      {:bcrypt_elixir, "~> 1.0"},
      {:secure_random, ">= 0.0.0"},
      {:timex, "~> 3.1"},
+     {:quantum, ">= 2.1.0"},
      {:plug_logger_json, "~> 0.5"},
      {:ecto_logger_json, "~> 0.1"},
      {:ex_machina, ">= 1.0.0", only: [:dev, :test]},

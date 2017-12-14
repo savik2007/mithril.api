@@ -313,7 +313,7 @@ defmodule Mithril.Web.UserControllerTest do
           "entry_type" => "json_data_property",
           "rules" => [
             %{
-              "description" => "This password was already used",
+              "description" => "This password has been used recently. Try another one",
               "params" => [],
               "rule" => nil
             }

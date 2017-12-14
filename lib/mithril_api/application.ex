@@ -5,6 +5,7 @@ defmodule Mithril do
   use Application
   alias Mithril.Web.Endpoint
   alias Confex.Resolver
+  alias Mithril.Scheduler
 
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
   # for more information on OTP Applications
@@ -18,6 +19,7 @@ defmodule Mithril do
       # Start the endpoint when the application starts
       supervisor(Endpoint, []),
       supervisor(Mithril.OTP.Terminator, []),
+      worker(Scheduler, []),
       # Starts a worker by calling: Mithril.Worker.start_link(arg1, arg2, arg3)
       # worker(Mithril.Worker, [arg1, arg2, arg3]),
     ]
@@ -25,7 +27,9 @@ defmodule Mithril do
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Mithril.Supervisor]
-    Supervisor.start_link(children, opts)
+    result = Supervisor.start_link(children, opts)
+    Scheduler.create_jobs()
+    result
   end
 
   # Tell Phoenix to update the endpoint configuration
