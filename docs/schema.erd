@@ -2,13 +2,19 @@
 id              | uuid                        | not null
 email           | character varying(255)      |
 password        | character varying(255)      |
-password_set_at | timestamp without time zone | not null
+password_set_at | timestamp without time zone | not null default now()
 settings        | jsonb                       |
 priv_settings   | jsonb                       |
 inserted_at     | timestamp without time zone | not null
 updated_at      | timestamp without time zone | not null
 is_blocked      | boolean                     | not null default false
 block_reason    | character varying(255)      |
+
+[password_hstr]
+id          | id                          | not null
+user_id     | uuid                        | not null
+password    | character varying(255)      | not null
+inserted_at | timestamp without time zone | not null
 
 [clients]
 id             | uuid                        | not null

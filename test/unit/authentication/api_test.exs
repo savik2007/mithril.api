@@ -70,7 +70,7 @@ defmodule Mithril.Authentication.APITest do
 
   describe "authentication factor created when user created" do
     test "success" do
-      assert {:ok, user} = UserAPI.create_user(%{"email" => "test@example.com", "password" => "p@S$w0rD"})
+      assert {:ok, user} = UserAPI.create_user(%{"email" => "test@example.com", "password" => "p@S$w0rD1234"})
       assert %{login_error_counter: 0, otp_error_counter: 0} = user.priv_settings
       assert %Factor{} = Authentication.get_factor_by!(user_id: user.id)
     end
@@ -78,7 +78,7 @@ defmodule Mithril.Authentication.APITest do
     test "2fa not enabled in ENV" do
       System.put_env("USER_2FA_ENABLED", "false")
 
-      assert {:ok, user} = UserAPI.create_user(%{"email" => "test@example.com", "password" => "p@S$w0rD"})
+      assert {:ok, user} = UserAPI.create_user(%{"email" => "test@example.com", "password" => "p@S$w0rD1234"})
       assert_raise Ecto.NoResultsError, fn -> Authentication.get_factor_by!(user_id: user.id) end
 
       System.put_env("USER_2FA_ENABLED", "true")
@@ -87,20 +87,20 @@ defmodule Mithril.Authentication.APITest do
     test "2fa not enabled in ENV but passed param 2fa_enable" do
       System.put_env("USER_2FA_ENABLED", "false")
 
-      data = %{"email" => "test@example.com", "password" => "p@S$w0rD", "2fa_enable" => true}
+      data = %{"email" => "test@example.com", "password" => "p@S$w0rD1234", "2fa_enable" => true}
       assert {:ok, user} = UserAPI.create_user(data)
       assert %Factor{} = Authentication.get_factor_by!(user_id: user.id)
       System.put_env("USER_2FA_ENABLED", "true")
     end
 
     test "2fa enabled in ENV but passed param 2fa_enable FALSE" do
-      data = %{"email" => "test@example.com", "password" => "p@S$w0rD", "2fa_enable" => false}
+      data = %{"email" => "test@example.com", "password" => "p@S$w0rD1234", "2fa_enable" => false}
       assert {:ok, user} = UserAPI.create_user(data)
       assert_raise Ecto.NoResultsError, fn -> Authentication.get_factor_by!(user_id: user.id) end
     end
 
     test "invalid 2fa_enable param" do
-      data = %{"email" => "test@example.com", "password" => "p@S$w0rD", "2fa_enable" => "yes"}
+      data = %{"email" => "test@example.com", "password" => "p@S$w0rD1234", "2fa_enable" => "yes"}
       assert {:ok, user} = UserAPI.create_user(data)
       assert_raise Ecto.NoResultsError, fn -> Authentication.get_factor_by!(user_id: user.id) end
     end

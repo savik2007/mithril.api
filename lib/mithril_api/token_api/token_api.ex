@@ -15,6 +15,7 @@ defmodule Mithril.TokenAPI do
   alias Mithril.Authentication
   alias Mithril.Authentication.Factor
   alias Mithril.Authorization.GrantType.AccessToken2FA
+  alias Ecto.Multi
 
   @direct ClientAPI.access_type(:direct)
   @broker ClientAPI.access_type(:broker)
@@ -302,6 +303,19 @@ defmodule Mithril.TokenAPI do
   end
   defp deactivate_old_tokens_where_name_clause(query, name) do
     where(query, [t], t.name == ^name)
+  end
+
+  def deactivate_old_password_tokens do
+    expiration_days = Confex.get_env(:mithril_api, :password)[:expiration]
+
+    query =
+      Token
+      |> join(:inner, [t], u in User, t.user_id == u.id)
+      |> where([t, u], fragment("now() >= ?", datetime_add(u.password_set_at, ^expiration_days, "day")))
+
+    Multi.new()
+    |> Multi.update_all(:tokens, query, [set: [expires_at: :os.system_time(:seconds)]])
+    |> Repo.transaction()
   end
 
   @uuid_regex ~r|[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}|
