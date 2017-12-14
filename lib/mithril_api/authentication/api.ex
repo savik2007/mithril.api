@@ -91,8 +91,9 @@ defmodule Mithril.Authentication do
       {false, true} ->
         UserAPI.merge_user_priv_settings(user, %{
           last_send_otp_timestamp: :os.system_time(:seconds),
+          otp_send_counter: 0
         })
-        {:error, :otp_timeout}
+        true
 
       # OTP NOT timed out and NOT reached max send attempts
       {false, false} ->
