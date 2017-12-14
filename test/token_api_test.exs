@@ -149,6 +149,16 @@ defmodule Mithril.TokenAPITest do
              |> TokenAPI.expired?()
     end
 
+    test "deactivate_old_password_tokens" do
+      %{id: user_id} = insert(:user,
+        password_set_at: NaiveDateTime.add(NaiveDateTime.utc_now(), -100 * 24 * 60 * 60, :second)
+      )
+      token = insert(:token, user_id: user_id)
+      assert token.expires_at == 2000000000
+      TokenAPI.deactivate_old_password_tokens()
+      token = Repo.get(Token, token.id)
+      assert token.expires_at <= :os.system_time(:seconds)
+    end
   end
 
   test "user_id is validated" do

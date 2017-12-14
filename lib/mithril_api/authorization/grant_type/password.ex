@@ -22,6 +22,7 @@ defmodule Mithril.Authorization.GrantType.Password do
          user <- Mithril.UserAPI.get_user_by([email: attrs["email"]]),
          {:ok, user} <- validate_user(user),
          {:ok, user} <- match_with_user_password(user, attrs["password"]),
+         :ok <- validate_user_password(user),
          :ok <- validate_token_scope(client.client_type.scope, attrs["scope"]),
          factor <- Authentication.get_factor_by([user_id: user.id, is_active: true]),
          {:ok, token} <- create_access_token(factor, user, client, attrs["scope"]),
@@ -30,6 +31,15 @@ defmodule Mithril.Authorization.GrantType.Password do
          {:ok, next_step} <- map_next_step(sms_send_response)
       do
       {:ok, %{token: token, urgent: %{next_step: next_step}}}
+    end
+  end
+
+  defp validate_user_password(%User{password_set_at: password_set_at}) do
+    expiration_seconds = Confex.get_env(:mithril_api, :password)[:expiration] * 60 * 60 * 24
+    expire_date = NaiveDateTime.add(password_set_at, expiration_seconds, :second)
+    case NaiveDateTime.compare(expire_date, NaiveDateTime.utc_now()) do
+      :gt -> :ok
+      _ -> {:error, {:access_denied, "The password expired"}}
     end
   end
 

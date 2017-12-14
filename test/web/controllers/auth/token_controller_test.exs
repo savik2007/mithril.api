@@ -155,4 +155,32 @@ defmodule Mithril.OAuth.TokenControllerTest do
     %{expires_at: expires_at} = Repo.get!(Token, token1_id)
     assert expires_at <= now
   end
+
+  test "password has been expired", %{conn: conn} do
+    default_expiration = Confex.get_env(:mithril_api, :password)[:expiration]
+    System.put_env("PASSWORD_EXPIRATION_DAYS", "0")
+
+    allowed_scope = "app:authorize"
+    client_type = Mithril.Fixtures.create_client_type(%{scope: allowed_scope})
+    client = Mithril.Fixtures.create_client(%{
+      settings: %{"allowed_grant_types" => ["password"]},
+      client_type_id: client_type.id
+    })
+    user = Mithril.Fixtures.create_user(%{password: "Secret_password1"})
+
+    request_payload = %{
+      "token": %{
+        "grant_type": "password",
+        "email": user.email,
+        "password": "Secret_password1",
+        "client_id": client.id,
+        "scope": "app:authorize"
+      }
+    }
+
+    conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
+    res = json_response(conn, 401)
+    assert %{"message" => "The password expired", "type" => "access_denied"} = res["error"]
+    System.put_env("PASSWORD_EXPIRATION_DAYS", to_string(default_expiration))
+  end
 end
