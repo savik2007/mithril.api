@@ -174,7 +174,7 @@ defmodule Mithril.Authentication.APITest do
       assert :ok = Authentication.send_otp(user, factor, token)
 
       db_user = UserAPI.get_user!(user.id)
-      assert 0 == db_user.priv_settings.otp_send_counter
+      assert 1 == db_user.priv_settings.otp_send_counter
       assert :os.system_time(:seconds) <= db_user.priv_settings.last_send_otp_timestamp
     end
 
