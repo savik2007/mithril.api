@@ -128,7 +128,9 @@ defmodule Mithril.UserAPITest do
       ],
       otp_error_counter: 3
     })
-    assert %{priv_settings: %{login_hstr: [%LoginHstr{}, %LoginHstr{}], otp_error_counter: 3}} = UserAPI.get_user!(user.id)
+    assert %{priv_settings: %{
+      login_hstr: [%LoginHstr{}, %LoginHstr{}], otp_error_counter: 3
+    }} = UserAPI.get_user!(user.id)
     assert {:ok, %User{}} = UserAPI.unblock_user(user)
     db_user = UserAPI.get_user!(user.id)
     assert %{login_hstr: [], otp_error_counter: 0} = db_user.priv_settings

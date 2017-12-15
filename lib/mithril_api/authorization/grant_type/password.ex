@@ -21,8 +21,8 @@ defmodule Mithril.Authorization.GrantType.Password do
          client <- Mithril.ClientAPI.get_client_with_type(attrs["client_id"]),
          :ok <- validate_client(client),
          user <- UserAPI.get_user_by([email: attrs["email"]]),
-         # TODO check failed login count
          {:ok, user} <- validate_user(user),
+         :ok <- LoginHistory.check_failed_login(user, LoginHistory.type(:password)),
          {:ok, user} <- match_with_user_password(user, attrs["password"]),
          :ok <- validate_user_password(user),
          :ok <- validate_token_scope(client.client_type.scope, attrs["scope"]),
