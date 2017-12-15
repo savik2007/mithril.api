@@ -19,7 +19,7 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
       "client_id" => client.id,
       "client_secret" => client.secret,
       "code" => code_grant.value,
-      "redirect_uri" => client.redirect_uri <> "#world"
+      "redirect_uri" => client.redirect_uri <> "?world"
     })
 
     assert token.name == "access_token"
