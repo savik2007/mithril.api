@@ -91,7 +91,7 @@ defmodule Mithril.Authentication do
       {false, true} ->
         UserAPI.merge_user_priv_settings(user, %{
           last_send_otp_timestamp: :os.system_time(:seconds),
-          otp_send_counter: 0
+          otp_send_counter: 1
         })
         true
 
