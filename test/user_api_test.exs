@@ -3,6 +3,8 @@ defmodule Mithril.UserAPITest do
 
   alias Mithril.UserAPI
   alias Mithril.UserAPI.User
+  alias Mithril.UserAPI.User.LoginHstr
+  alias Mithril.Authorization.LoginHistory
   alias Scrivener.Page
 
   @create_attrs %{email: "some email", password: "Some password1", settings: %{}}
@@ -11,7 +13,16 @@ defmodule Mithril.UserAPITest do
     password: "Some updated password1",
     settings: %{},
     priv_settings: %{
-      login_error_counter: 2,
+      login_hstr: [
+        %{
+          type: LoginHistory.type(:password),
+          time: NaiveDateTime.utc_now(),
+        },
+        %{
+          type: LoginHistory.type(:password),
+          time: NaiveDateTime.utc_now(),
+        },
+      ],
       otp_error_counter: 5,
       invalid: "field"
     }
@@ -67,9 +78,9 @@ defmodule Mithril.UserAPITest do
     assert String.length(user.password) == 60
     assert user.settings == %{}
     assert user.priv_settings == %Mithril.UserAPI.User.PrivSettings{
-             login_error_counter: 0,
-             otp_error_counter: 0
-           }
+      login_hstr: [],
+      otp_error_counter: 0
+    }
   end
 
   test "create_user/1 secures user password" do
@@ -90,19 +101,17 @@ defmodule Mithril.UserAPITest do
     assert String.length(user.password) == 60
     assert user.settings == %{}
     assert user.priv_settings == %Mithril.UserAPI.User.PrivSettings{
-             login_error_counter: 0,
-             otp_error_counter: 0
-           }
+      login_hstr: [],
+      otp_error_counter: 0
+    }
   end
 
   test "update_user_priv_settings/2 with valid data updates the user.priv_settings" do
     user = fixture(:user)
     assert {:ok, user} = UserAPI.update_user_priv_settings(user, @update_attrs.priv_settings)
     assert %User{} = user
-    assert user.priv_settings == %Mithril.UserAPI.User.PrivSettings{
-             login_error_counter: 2,
-             otp_error_counter: 5
-           }
+    assert length(user.priv_settings.login_hstr) == 2
+    assert user.priv_settings.otp_error_counter == 5
   end
 
   test "update_user/2 with invalid data returns error changeset" do
@@ -112,11 +121,17 @@ defmodule Mithril.UserAPITest do
   end
 
   test "unblock/1 and refresh error counters" do
-    user = insert(:user, priv_settings: %{login_error_counter: 2, otp_error_counter: 3})
-    assert %{priv_settings: %{login_error_counter: 2, otp_error_counter: 3}} = UserAPI.get_user!(user.id)
+    user = insert(:user, priv_settings: %{
+      login_hstr: [
+        %LoginHstr{type: LoginHistory.type(:password), time: NaiveDateTime.utc_now()},
+        %LoginHstr{type: LoginHistory.type(:password), time: NaiveDateTime.utc_now()},
+      ],
+      otp_error_counter: 3
+    })
+    assert %{priv_settings: %{login_hstr: [%LoginHstr{}, %LoginHstr{}], otp_error_counter: 3}} = UserAPI.get_user!(user.id)
     assert {:ok, %User{}} = UserAPI.unblock_user(user)
     db_user = UserAPI.get_user!(user.id)
-    assert %{login_error_counter: 0, otp_error_counter: 0} = db_user.priv_settings
+    assert %{login_hstr: [], otp_error_counter: 0} = db_user.priv_settings
     refute db_user.is_blocked
   end
 
