@@ -7,6 +7,7 @@ defmodule Mithril.Authorization.GrantType.Password do
   alias Mithril.UserAPI.User
   alias Mithril.Authentication
   alias Mithril.Authentication.Factor
+  alias Mithril.Authorization.LoginHistory
 
   @request_otp "REQUEST_OTP"
   @request_apps "REQUEST_APPS"
@@ -19,8 +20,9 @@ defmodule Mithril.Authorization.GrantType.Password do
     with %Ecto.Changeset{valid?: true} <- changeset(attrs),
          client <- Mithril.ClientAPI.get_client_with_type(attrs["client_id"]),
          :ok <- validate_client(client),
-         user <- Mithril.UserAPI.get_user_by([email: attrs["email"]]),
+         user <- UserAPI.get_user_by([email: attrs["email"]]),
          {:ok, user} <- validate_user(user),
+         :ok <- LoginHistory.check_failed_login(user, LoginHistory.type(:password)),
          {:ok, user} <- match_with_user_password(user, attrs["password"]),
          :ok <- validate_user_password(user),
          :ok <- validate_token_scope(client.client_type.scope, attrs["scope"]),
@@ -29,7 +31,7 @@ defmodule Mithril.Authorization.GrantType.Password do
          {_, nil} <- Mithril.TokenAPI.deactivate_old_tokens(token),
          sms_send_response <- maybe_send_otp(user, factor, token),
          {:ok, next_step} <- map_next_step(sms_send_response)
-      do
+    do
       {:ok, %{token: token, urgent: %{next_step: next_step}}}
     end
   end
@@ -67,25 +69,12 @@ defmodule Mithril.Authorization.GrantType.Password do
 
   defp match_with_user_password(user, password) do
     if Comeonin.Bcrypt.checkpw(password, Map.get(user, :password, "")) do
-      set_login_error_counter(user, 0)
+      LoginHistory.clear_failed_logins(user, LoginHistory.type(:password))
       {:ok, user}
     else
-      increase_login_error_counter_or_block_user(user)
+      LoginHistory.add_failed_login(user, LoginHistory.type(:password))
       {:error, {:access_denied, "Identity, password combination is wrong."}}
     end
-  end
-
-  defp increase_login_error_counter_or_block_user(%User{} = user) do
-    login_error = user.priv_settings.login_error_counter + 1
-    login_error_max = Confex.get_env(:mithril_api, :"2fa")[:user_login_error_max]
-
-    set_login_error_counter(user, login_error)
-    if login_error_max <= login_error do
-        UserAPI.block_user(user, "Passed invalid password more than USER_LOGIN_ERROR_MAX")
-    end
-  end
-  defp set_login_error_counter(%User{} = user, counter) do
-    UserAPI.merge_user_priv_settings(user, %{login_error_counter: counter})
   end
 
   defp validate_token_scope(client_scope, required_scope) do

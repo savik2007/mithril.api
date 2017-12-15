@@ -52,7 +52,6 @@ defmodule Mithril.Factory do
       password_set_at: NaiveDateTime.utc_now(),
       settings: %{},
       priv_settings: %Mithril.UserAPI.User.PrivSettings{
-        login_error_counter: 0,
         otp_error_counter: 0,
         last_send_otp_timestamp: 0,
       },

@@ -44,14 +44,15 @@ config :mithril_api, :generators,
   sample_binary_id: "11111111-1111-1111-1111-111111111111"
 
 config :mithril_api, :password,
-  expiration: {:system, :integer, "PASSWORD_EXPIRATION_DAYS", 90}
+  expiration: {:system, :integer, "PASSWORD_EXPIRATION_DAYS", 90},
+  max_failed_logins: {:system, :integer, "MAX_FAILED_LOGINS", 10},
+  max_failed_logins_period: {:system, :integer, "MAX_FAILED_LOGINS_PERIOD", 10}
 
 config :mithril_api, :"2fa",
   user_2fa_enabled?: {:system, :boolean, "USER_2FA_ENABLED", true},
   sms_enabled?: {:system, :boolean, "SMS_ENABLED", false},
   otp_send_timeout: {:system, :integer, "OTP_SEND_TIMEOUT", 60}, # seconds
   otp_send_counter_max: {:system, :integer, "OTP_SEND_COUNTER_MAX", 3},
-  user_login_error_max: {:system, :integer, "USER_LOGIN_ERROR_MAX", 3},
   user_otp_error_max: {:system, :integer, "USER_OTP_ERROR_MAX", 3},
   otp_ttl: {:system, :integer, "OTP_LIFETIME", 300}, # seconds
   otp_length: {:system, :integer, "OTP_LENGTH", 6},

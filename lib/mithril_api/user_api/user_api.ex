@@ -52,7 +52,6 @@ defmodule Mithril.UserAPI do
   def create_user(attrs \\ %{}) do
     user = %User{
       priv_settings: %{
-        login_error_counter: 0,
         otp_error_counter: 0
       }
     }
@@ -115,7 +114,7 @@ defmodule Mithril.UserAPI do
   end
 
   def unblock_user(%User{} = user, reason \\ nil) do
-    attrs = %{is_blocked: false, block_reason: reason, priv_settings: %{login_error_counter: 0, otp_error_counter: 0}}
+    attrs = %{is_blocked: false, block_reason: reason, priv_settings: %{login_hstr: [], otp_error_counter: 0}}
     user
     |> cast(attrs, [:is_blocked, :block_reason])
     |> cast_embed(:priv_settings, with: &priv_settings_changeset/2)
@@ -159,7 +158,9 @@ defmodule Mithril.UserAPI do
   end
 
   defp priv_settings_changeset(%PrivSettings{} = priv_settings, attrs) do
-    cast(priv_settings, attrs, [:login_error_counter, :otp_error_counter, :last_send_otp_timestamp, :otp_send_counter])
+    priv_settings
+    |> cast(attrs, [:otp_error_counter, :last_send_otp_timestamp, :otp_send_counter])
+    |> cast_embed(:login_hstr)
   end
 
   defp put_password(changeset, %User{} = user) do

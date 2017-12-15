@@ -71,7 +71,7 @@ defmodule Mithril.Authentication.APITest do
   describe "authentication factor created when user created" do
     test "success" do
       assert {:ok, user} = UserAPI.create_user(%{"email" => "test@example.com", "password" => "p@S$w0rD1234"})
-      assert %{login_error_counter: 0, otp_error_counter: 0} = user.priv_settings
+      assert %{login_hstr: [], otp_error_counter: 0} = user.priv_settings
       assert %Factor{} = Authentication.get_factor_by!(user_id: user.id)
     end
 
@@ -194,7 +194,6 @@ defmodule Mithril.Authentication.APITest do
 
     test "reach max send attempts" do
       user = insert(:user, priv_settings: %PrivSettings{
-        login_error_counter: 0,
         otp_error_counter: 0,
       })
       factor = insert(:authentication_factor, user_id: user.id)
