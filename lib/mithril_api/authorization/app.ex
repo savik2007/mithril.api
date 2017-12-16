@@ -3,6 +3,7 @@ defmodule Mithril.Authorization.App do
 
   alias Mithril.Error
   alias Mithril.ClientAPI.Client
+  alias Mithril.Utils.RedirectUriChecker
 
   # NOTE: Mark password token as used.
   #
@@ -42,7 +43,7 @@ defmodule Mithril.Authorization.App do
 
   defp validate_redirect_uri({:error, _} = err), do: err
   defp validate_redirect_uri(%{"client" => client, "redirect_uri" => redirect_uri} = params) do
-    if String.starts_with?(redirect_uri, client.redirect_uri) do
+    if Regex.match?(RedirectUriChecker.generate_redirect_uri_regexp(client.redirect_uri), redirect_uri) do
       params
     else
       message = "The redirection URI provided does not match a pre-registered value."

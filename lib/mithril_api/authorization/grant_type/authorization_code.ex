@@ -2,6 +2,7 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCode do
   @moduledoc false
 
   alias Mithril.Error
+  alias Mithril.Utils.RedirectUriChecker
 
   def authorize(%{
     "client_id" => client_id,
@@ -89,7 +90,7 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCode do
 
   defp validate_token_redirect_uri({:error, _} = err, _), do: err
   defp validate_token_redirect_uri({:ok, token}, redirect_uri) do
-    if String.starts_with?(redirect_uri, token.details["redirect_uri"]) do
+    if Regex.match?(RedirectUriChecker.generate_redirect_uri_regexp(token.details["redirect_uri"]), redirect_uri) do
       {:ok, token}
     else
       Error.invalid_client("The redirection URI provided does not match a pre-registered value.")
