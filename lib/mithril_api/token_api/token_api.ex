@@ -96,15 +96,15 @@ defmodule Mithril.TokenAPI do
          :ok <- validate_token_type(token, factor),
          token_data <- prepare_2fa_token_data(token, attrs),
          {:ok, token_2fa} <- create_2fa_access_token(token_data),
+         factor <- %Factor{factor: attrs["factor"], type: Authentication.type(:sms)},
+         :ok <- Authentication.send_otp(user, factor, token_2fa),
          {_, nil} <- deactivate_old_tokens(token_2fa)
       do
-
-      factor = %Factor{factor: attrs["factor"], type: Authentication.type(:sms)}
-      case Authentication.send_otp(user, factor, token_2fa) do
-        :ok -> {:ok, %{token: token_2fa, urgent: %{next_step: @approve_factor}}}
-        {:error, :sms_not_sent} -> {:error, {:service_unavailable, "SMS not sent. Try later"}}
-        {:error, :otp_timeout} -> Error.otp_timeout()
-      end
+        {:ok, %{token: token_2fa, urgent: %{next_step: @approve_factor}}}
+    else
+      {:error, :sms_not_sent} -> {:error, {:service_unavailable, "SMS not sent. Try later"}}
+      {:error, :otp_timeout} -> Error.otp_timeout()
+      err -> err
     end
   end
 
