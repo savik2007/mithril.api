@@ -198,6 +198,14 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
         |> post(oauth2_token_path(conn, :init_factor), Poison.encode!(%{type: "SMS", factor: "+380881002030"}))
         |> json_response(429)
         |> get_in(["error", "type"])
+
+        # check that token not expired after timed out OTP
+      assert "otp_timeout" ==
+        conn
+        |> put_req_header("authorization", "Bearer #{token.value}")
+        |> post(oauth2_token_path(conn, :init_factor), Poison.encode!(%{type: "SMS", factor: "+380881002030"}))
+        |> json_response(429)
+        |> get_in(["error", "type"])
     end
 
     test "invalid factor", %{conn: conn} do
