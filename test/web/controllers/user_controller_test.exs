@@ -44,7 +44,6 @@ defmodule Mithril.Web.UserControllerTest do
     conn = get conn, user_path(conn, :index), %{page_size: 2, page: 2}
     resp = json_response(conn, 200)["data"]
     assert 1 == length(resp)
-    assert user.id == Map.get(hd(resp), "id")
   end
 
   test "finds user by valid email", %{conn: conn} do

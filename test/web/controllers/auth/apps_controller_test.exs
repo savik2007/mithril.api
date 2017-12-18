@@ -163,7 +163,7 @@ defmodule Mithril.OAuth.AppControllerTest do
       |> put_req_header("x-consumer-id", user.id)
       |> post("/oauth/apps/authorize", Poison.encode!(request))
 
-    result = json_response(conn, 422)["error"]
+    result = json_response(conn, 401)["error"]
 
     message = "The redirection URI provided does not match a pre-registered value."
     assert %{"message" => ^message} = result

@@ -47,7 +47,7 @@ defmodule Mithril.Authorization.App do
       params
     else
       message = "The redirection URI provided does not match a pre-registered value."
-      Error.invalid_request(message)
+      Error.access_denied(message)
     end
   end
 
