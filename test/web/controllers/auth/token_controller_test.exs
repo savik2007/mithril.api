@@ -180,7 +180,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
     conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
     res = json_response(conn, 401)
-    assert %{"message" => "The password expired", "type" => "access_denied"} = res["error"]
+    assert %{"message" => "The password expired", "type" => "password_expired"} = res["error"]
     System.put_env("PASSWORD_EXPIRATION_DAYS", to_string(default_expiration))
   end
 end
