@@ -41,7 +41,7 @@ defmodule Mithril.Authorization.GrantType.Password do
     expire_date = NaiveDateTime.add(password_set_at, expiration_seconds, :second)
     case NaiveDateTime.compare(expire_date, NaiveDateTime.utc_now()) do
       :gt -> :ok
-      _ -> {:error, {:access_denied, "The password expired"}}
+      _ -> {:error, {:password_expired, "The password expired"}}
     end
   end
 

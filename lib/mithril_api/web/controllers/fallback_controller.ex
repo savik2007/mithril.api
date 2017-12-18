@@ -29,6 +29,12 @@ defmodule Mithril.Web.FallbackController do
     |> render(EView.Views.Error, :"401", %{message: reason})
   end
 
+  def call(conn, {:error, {:password_expired, reason}}) do
+    conn
+    |> put_status(:unauthorized)
+    |> render(EView.Views.Error, :"401", %{message: reason, type: :password_expired})
+  end
+
   def call(conn, {:error, :not_found}) do
     conn
     |> put_status(:not_found)
