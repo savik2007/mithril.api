@@ -86,6 +86,27 @@ defmodule Mithril.Web.RoleControllerTest do
     }
   end
 
+  test "creates same role twice", %{conn: conn} do
+    conn1 = post conn, role_path(conn, :create), role: Map.put(@create_attrs, :name, "some name")
+    assert %{"id" => id} = json_response(conn1, 201)["data"]
+
+    conn = get conn, role_path(conn, :show, id)
+    assert json_response(conn, 200)["data"] == %{
+      "id" => id,
+      "name" => "some name",
+      "scope" => "some scope",
+    }
+
+    conn2 = post conn, role_path(conn, :create), role: Map.put(@create_attrs, :name, "some name")
+    assert %{
+      "error" => %{
+        "invalid" => [
+          %{"rules" => [%{"description" => "has already been taken"}]}
+        ]
+      }
+    } = json_response(conn2, 422)
+  end
+
   test "does not create role and renders errors when data is invalid", %{conn: conn} do
     conn = post conn, role_path(conn, :create), role: @invalid_attrs
     assert json_response(conn, 422)["errors"] != %{}

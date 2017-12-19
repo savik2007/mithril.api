@@ -114,6 +114,7 @@ defmodule Mithril.RoleAPI do
     role
     |> cast(attrs, [:name, :scope])
     |> validate_required([:name, :scope])
+    |> unique_constraint(:name)
   end
 
   defp role_changeset(%RoleSearch{} = role, attrs) do
