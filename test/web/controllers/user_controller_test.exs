@@ -40,7 +40,7 @@ defmodule Mithril.Web.UserControllerTest do
   test "does not list all entries on index when starting_after is set", %{conn: conn} do
     fixture(:user, %{email: "1", password: "Password1234", settings: %{}})
     fixture(:user, %{email: "2", password: "Password2234", settings: %{}})
-    user = fixture(:user, %{email: "3", password: "Password3234", settings: %{}})
+    fixture(:user, %{email: "3", password: "Password3234", settings: %{}})
     conn = get conn, user_path(conn, :index), %{page_size: 2, page: 2}
     resp = json_response(conn, 200)["data"]
     assert 1 == length(resp)
