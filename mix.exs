@@ -63,7 +63,6 @@ defmodule Mithril.Mixfile do
      {:timex, "~> 3.1"},
      {:quantum, ">= 2.1.0"},
      {:plug_logger_json, "~> 0.5"},
-     {:ecto_logger_json, "~> 0.1"},
      {:ex_machina, ">= 1.0.0", only: [:dev, :test]},
      {:excoveralls, ">= 0.5.0", only: [:dev, :test]},
      {:dogma, ">= 0.1.12", only: [:dev, :test]},
