@@ -23,6 +23,7 @@ defmodule Mithril.DataCase do
       import Ecto.Query
       import Mithril.Factory
       import Mithril.DataCase
+      import Mithril.Test.Helpers
     end
   end
 
