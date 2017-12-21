@@ -4,7 +4,7 @@ defmodule Mithril.AppAPI.AppSearch do
   use Ecto.Schema
 
   schema "app_search" do
-    field :user_id, :string
-    field :client_id, :string
+    field :user_id, Ecto.UUID
+    field :client_id, Ecto.UUID
   end
 end
