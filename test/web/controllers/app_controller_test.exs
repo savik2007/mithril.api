@@ -21,30 +21,41 @@ defmodule Mithril.Web.AppControllerTest do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
   end
 
-  test "lists all entries on index", %{conn: conn} do
-    fixture(:app)
-    fixture(:app)
-    fixture(:app)
-    conn = get conn, app_path(conn, :index)
-    assert 3 == length(json_response(conn, 200)["data"])
-  end
+  describe "list all apps" do
+    test "lists all entries on index", %{conn: conn} do
+      fixture(:app)
+      fixture(:app)
+      fixture(:app)
+      conn = get conn, app_path(conn, :index)
+      assert 3 == length(json_response(conn, 200)["data"])
+    end
 
-  test "does not list all entries on index when limit is set", %{conn: conn} do
-    fixture(:app)
-    fixture(:app)
-    fixture(:app)
-    conn = get conn, app_path(conn, :index), %{page_size: 2}
-    assert 2 == length(json_response(conn, 200)["data"])
-  end
+    test "does not list all entries on index when limit is set", %{conn: conn} do
+      fixture(:app)
+      fixture(:app)
+      fixture(:app)
+      conn = get conn, app_path(conn, :index), %{page_size: 2}
+      assert 2 == length(json_response(conn, 200)["data"])
+    end
 
-  test "does not list all entries on index when starting_after is set", %{conn: conn} do
-    fixture(:app)
-    fixture(:app)
-    app = fixture(:app)
-    conn = get conn, app_path(conn, :index), %{page_size: 2, page: 2}
-    resp = json_response(conn, 200)["data"]
-    assert 1 == length(resp)
-    assert app.id == Map.get(hd(resp), "id")
+    test "does not list all entries on index when starting_after is set", %{conn: conn} do
+      fixture(:app)
+      fixture(:app)
+      app = fixture(:app)
+      conn = get conn, app_path(conn, :index), %{page_size: 2, page: 2}
+      resp = json_response(conn, 200)["data"]
+      assert 1 == length(resp)
+      assert app.id == Map.get(hd(resp), "id")
+    end
+
+    test "invalid client_id", %{conn: conn} do
+      assert [err] =
+               conn
+               |> get(app_path(conn, :index), %{client_id: "asd"})
+               |> json_response(422)
+               |> get_in(~w(error invalid))
+      assert "$.client_id" == err["entry"]
+    end
   end
 
   test "creates app and renders app when data is valid", %{conn: conn} do
