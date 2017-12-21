@@ -54,7 +54,6 @@ config :mithril_api, :"2fa",
   otp_send_timeout: {:system, :integer, "OTP_SEND_TIMEOUT", 60}, # seconds
   otp_send_counter_max: {:system, :integer, "OTP_SEND_COUNTER_MAX", 3},
   user_otp_error_max: {:system, :integer, "USER_OTP_ERROR_MAX", 3},
-  otp_ttl: {:system, :integer, "OTP_LIFETIME", 300}, # seconds
   otp_length: {:system, :integer, "OTP_LENGTH", 6},
   otp_max_attempts: {:system, :integer, "OTP_MAX_ATTEMPTS", 3},
   otp_sms_template: {:system, :string, "OTP_SMS_TEMPLATE", "Код підтвердження: <otp.code>"}
@@ -77,10 +76,6 @@ config :mithril_api, :token_lifetime, %{
   refresh: {:system, "AUTH_REFRESH_TOKEN_LIFETIME", 7 * 24 * 60 * 60}
 }
 
-# Configures employee request terminator
-config :mithril_api, Mithril.OTP.Terminator,
-  frequency: 60 * 60 * 1000 # every hour
-
 # Configures OTP Verification API
 config :mithril_api, Mithril.OTP.SMS,
   endpoint: {:system, "OTP_ENDPOINT"},
@@ -91,6 +86,7 @@ config :mithril_api, Mithril.OTP.SMS,
   ]
 
 config :mithril_api, Mithril.Scheduler,
-  token_expiration: {:system, :string, "TOKEN_EXPIRATION_SCHEDULE", "* 0-4 * * *"}
+  token_expiration: {:system, :string, "TOKEN_EXPIRATION_SCHEDULE", "* 0-4 * * *"},
+  otp_expiration: {:system, :string, "OTP_EXPIRATION_SCHEDULE", "*/5 * * * *"}
 
 import_config "#{Mix.env}.exs"
