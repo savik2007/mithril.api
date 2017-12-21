@@ -18,7 +18,6 @@ defmodule Mithril do
       supervisor(Mithril.Repo, []),
       # Start the endpoint when the application starts
       supervisor(Endpoint, []),
-      supervisor(Mithril.OTP.Terminator, []),
       worker(Scheduler, []),
       # Starts a worker by calling: Mithril.Worker.start_link(arg1, arg2, arg3)
       # worker(Mithril.Worker, [arg1, arg2, arg3]),
