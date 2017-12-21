@@ -60,6 +60,7 @@ If you want to run migrations when container starts, use a `DB_MIGRATE` variable
 | USER_LOGIN_ERROR_MAX    | 3              | Max failed user login attempts until user will be blocked |
 | USER_OTP_ERROR_MAX      | 3              | Max failed OTP verifications attempts until user will be blocked |
 | OTP_LENGTH              | 6              | OTP code length |
+| OTP_LIFETIME            | 300            | OTP lifetime in seconds |
 | OTP_EXPIRATION_SCHEDULE | */5 * * * *    | Cron config for running OTP expiration tasks |
 | OTP_MAX_ATTEMPTS        | 3              | Max attempts for verification OTP |
 | OTP_SMS_TEMPLATE        | "Код підтвердження: <otp.code>" | SMS template for verification OTP. <otp.code> will replaced to OTP code |

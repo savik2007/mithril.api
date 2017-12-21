@@ -54,6 +54,7 @@ config :mithril_api, :"2fa",
   otp_send_timeout: {:system, :integer, "OTP_SEND_TIMEOUT", 60}, # seconds
   otp_send_counter_max: {:system, :integer, "OTP_SEND_COUNTER_MAX", 3},
   user_otp_error_max: {:system, :integer, "USER_OTP_ERROR_MAX", 3},
+  otp_ttl: {:system, :integer, "OTP_LIFETIME", 300}, # seconds
   otp_length: {:system, :integer, "OTP_LENGTH", 6},
   otp_max_attempts: {:system, :integer, "OTP_MAX_ATTEMPTS", 3},
   otp_sms_template: {:system, :string, "OTP_SMS_TEMPLATE", "Код підтвердження: <otp.code>"}
