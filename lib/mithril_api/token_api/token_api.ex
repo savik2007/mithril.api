@@ -335,6 +335,8 @@ defmodule Mithril.TokenAPI do
     |> cast(attrs, [:name, :user_id, :value, :expires_at, :details])
     |> validate_format(:user_id, @uuid_regex)
     |> validate_required([:name, :user_id, :value, :expires_at, :details])
+    |> foreign_key_constraint(:user_id)
+    |> unique_constraint(:value, name: :tokens_value_name_index)
   end
 
   defp token_changeset(%TokenSearch{} = token, attrs) do

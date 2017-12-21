@@ -63,6 +63,16 @@ defmodule Mithril.TokenAPITest do
     assert {:error, %Ecto.Changeset{}} = TokenAPI.create_token(@invalid_attrs)
   end
 
+  test "create_token/1 with duplicated user_id" do
+    user = Mithril.Fixtures.create_user()
+    assert {:ok, %Token{}} = TokenAPI.create_token(Map.put_new(@create_attrs, :user_id, user.id))
+    assert {:error, %Ecto.Changeset{}} = TokenAPI.create_token(Map.put_new(@create_attrs, :user_id, user.id))
+  end
+
+  test "create_token/1 with invalid user_id" do
+    assert {:error, %Ecto.Changeset{}} = TokenAPI.create_token(Map.put_new(@create_attrs, :user_id, UUID.generate()))
+  end
+
   test "update_token/2 with valid data updates the token" do
     token = fixture(:token)
     assert {:ok, token} = TokenAPI.update_token(token, @update_attrs)
