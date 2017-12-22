@@ -147,6 +147,7 @@ defmodule Mithril.Web.UserRoleControllerTest do
   end
 
   test "deletes user_roles by user_id and client_id", %{user_id: user_id, conn: conn} do
+    cleanup_fixture_roles()
     %{id: role_id_admin} = create_role(%{name: "ADMIN", user_id: user_id})
     %{id: role_id_doctor} = create_role(%{name: "DOCTOR", user_id: user_id})
     create_user_role(%{role_id: role_id_admin, user_id: user_id})

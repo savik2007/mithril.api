@@ -1,0 +1,14 @@
+division:activate
+division:deactivate
+division:details
+division:read
+division:write
+employee:deactivate
+employee:details
+employee:read
+employee:write
+employee_request:approve
+employee_request:read
+employee_request:reject
+employee_request:write
+legal_entity:read

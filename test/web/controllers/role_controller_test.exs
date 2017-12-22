@@ -29,6 +29,7 @@ defmodule Mithril.Web.RoleControllerTest do
     end
 
     test "lists all entries on index", %{conn: conn} do
+      cleanup_fixture_roles()
       fixture(:role)
       fixture(:role)
       fixture(:role)
@@ -45,6 +46,7 @@ defmodule Mithril.Web.RoleControllerTest do
     end
 
     test "does not list all entries on index when starting_after is set", %{conn: conn} do
+      cleanup_fixture_roles()
       fixture(:role)
       fixture(:role)
       role = fixture(:role)
@@ -55,6 +57,7 @@ defmodule Mithril.Web.RoleControllerTest do
     end
 
     test "list roles by scopes", %{conn: conn} do
+      cleanup_fixture_roles()
       fixture(:role, %{scope: "some scope"})
       fixture(:role, %{scope: "employee:read employee:write"})
       fixture(:role, %{scope: "employee:read employee:write"})

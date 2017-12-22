@@ -1,0 +1,12 @@
+declaration:read
+division:read
+employee:read
+employee_request:approve
+employee_request:read
+employee_request:reject
+legal_entity:read
+medication_dispense:process
+medication_dispense:read
+medication_dispense:reject
+medication_dispense:write
+medication_request:details

@@ -21,6 +21,7 @@ defmodule Mithril.Web.ClientTypeControllerTest do
 
   describe "list client types" do
     test "lists all entries on index", %{conn: conn} do
+      cleanup_fixture_client_type()
       fixture(:client_type)
       fixture(:client_type)
       fixture(:client_type)
@@ -37,6 +38,7 @@ defmodule Mithril.Web.ClientTypeControllerTest do
     end
 
     test "does not list all entries on index when starting_after is set", %{conn: conn} do
+      cleanup_fixture_client_type()
       fixture(:client_type)
       fixture(:client_type)
       client_type = fixture(:client_type)
@@ -47,7 +49,7 @@ defmodule Mithril.Web.ClientTypeControllerTest do
     end
 
     test "search client types by name", %{conn: conn} do
-      name = "MSP"
+      name = "MSP1"
       fixture(:client_type)
       {:ok, _} = name |> Mithril.Fixtures.client_type_attrs() |> ClientTypeAPI.create_client_type()
 
@@ -60,6 +62,7 @@ defmodule Mithril.Web.ClientTypeControllerTest do
     end
 
     test "list client types by scopes", %{conn: conn} do
+      cleanup_fixture_client_type()
       fixture(:client_type, %{scope: "some scope"})
       fixture(:client_type, %{scope: "employee:read employee:write"})
       fixture(:client_type, %{scope: "employee:read employee:write"})

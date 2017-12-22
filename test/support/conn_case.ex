@@ -24,6 +24,7 @@ defmodule Mithril.Web.ConnCase do
       import Ecto.Changeset
       import Ecto.Query
       import Mithril.Factory
+      import Mithril.Test.Helpers
       alias Mithril.Repo
 
       # The default endpoint for testing

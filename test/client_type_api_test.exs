@@ -15,6 +15,7 @@ defmodule Mithril.ClientTypeAPITest do
   end
 
   test "list_client_types/1 returns all client_types" do
+    cleanup_fixture_client_type()
     client_type = fixture(:client_type)
     assert %Page{entries: [^client_type]} = ClientTypeAPI.list_client_types()
   end
