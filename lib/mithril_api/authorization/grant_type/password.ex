@@ -36,12 +36,12 @@ defmodule Mithril.Authorization.GrantType.Password do
     end
   end
 
-  defp validate_user_password(%User{password_set_at: password_set_at}) do
+  defp validate_user_password(%User{id: id, password_set_at: password_set_at}) do
     expiration_seconds = Confex.get_env(:mithril_api, :password)[:expiration] * 60 * 60 * 24
     expire_date = NaiveDateTime.add(password_set_at, expiration_seconds, :second)
     case NaiveDateTime.compare(expire_date, NaiveDateTime.utc_now()) do
       :gt -> :ok
-      _ -> {:error, {:password_expired, "The password expired"}}
+      _ -> {:error, {:password_expired, "The password expired for user: #{id}"}}
     end
   end
 
