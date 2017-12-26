@@ -33,6 +33,12 @@ defmodule Mithril.OAuth.TokenController do
     end
   end
 
+  def create_change_pwd_token(conn, token_params) do
+    with {:ok, resp} <- Token.authorize(token_params) do
+      send_response(conn, resp, "show.json")
+    end
+  end
+
   defp put_token_value(token_params, conn) do
     case get_req_header(conn, "authorization") do
       ["Bearer " <> token | _] -> Map.put(token_params, "token_value", token)

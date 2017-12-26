@@ -26,6 +26,7 @@ defmodule MithrilWeb.Router do
 
     post "/apps/authorize", OAuth.AppController, :authorize
     post "/tokens", OAuth.TokenController, :create
+    post "/tokens/change_password",  OAuth.TokenController, :create_change_pwd_token
     post "/users/actions/init_factor", OAuth.TokenController, :init_factor
     post "/users/actions/approve_factor", OAuth.TokenController, :approve_factor
   end
