@@ -13,6 +13,7 @@ defmodule Mithril.Authentication do
   alias Mithril.UserAPI.User
   alias Mithril.TokenAPI.Token
   alias Mithril.Authentication.{Factor, FactorSearch, OTPSearch}
+  alias Mithril.Authorization.LoginHistory
 
   require Logger
 
@@ -39,10 +40,11 @@ defmodule Mithril.Authentication do
   def send_otp(%User{} = user, %Factor{factor: value} = factor, %Token{} = token)
       when is_binary(value) and byte_size(value) > 0 do
 
-    with true <- can_send_otp?(user),
+    with :ok <- LoginHistory.check_sent_otps(user),
          otp <- token
                 |> generate_key(value)
                 |> OTP.initialize_otp(),
+         _   <- LoginHistory.add_login(user, LoginHistory.type(:otp), true),
          :ok <- maybe_send_otp(otp, factor)
       do
         :ok
@@ -71,47 +73,6 @@ defmodule Mithril.Authentication do
   defp send_otp_by_factor(err, _) do
     Logger.error("Cannot initialize_otp with error: #{inspect(err)}")
     {:error, :sms_not_sent}
-  end
-
-  defp can_send_otp?(%User{priv_settings: priv_settings} = user) do
-    case {otp_timeout?(priv_settings), otp_reached_max_send_counter?(priv_settings)} do
-      # OTP timed out and reached max send attempts
-      {true, true} ->
-        {:error, :otp_timeout}
-
-      # OTP timed out but NOT reached max send attempts
-      {true, false} ->
-        UserAPI.merge_user_priv_settings(user, %{
-          last_send_otp_timestamp: :os.system_time(:seconds),
-          otp_send_counter: Map.get(priv_settings, :otp_send_counter, 0) + 1
-        })
-        true
-
-      # OTP NOT timed out but reached max send attempts
-      {false, true} ->
-        UserAPI.merge_user_priv_settings(user, %{
-          last_send_otp_timestamp: :os.system_time(:seconds),
-          otp_send_counter: 1
-        })
-        true
-
-      # OTP NOT timed out and NOT reached max send attempts
-      {false, false} ->
-        UserAPI.merge_user_priv_settings(user, %{
-          last_send_otp_timestamp: :os.system_time(:seconds),
-          otp_send_counter: Map.get(priv_settings, :otp_send_counter, 0) + 1
-        })
-        true
-    end
-  end
-
-  defp otp_timeout?(priv_settings) do
-    timeout = Confex.get_env(:mithril_api, :"2fa")[:otp_send_timeout]
-    last_send_otp = Map.get(priv_settings, :last_send_otp_timestamp, 0)
-    timeout + last_send_otp > :os.system_time(:seconds)
-  end
-  defp otp_reached_max_send_counter?(priv_settings) do
-    Map.get(priv_settings, :otp_send_counter, 0) + 1 > Confex.get_env(:mithril_api, :"2fa")[:otp_send_counter_max]
   end
 
   def verify_otp(%Factor{factor: value}, %Token{} = token, otp) when is_binary(value) do

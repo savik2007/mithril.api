@@ -86,7 +86,7 @@ defmodule Mithril.UserAPI do
 
   def merge_user_priv_settings(%User{priv_settings: priv_settings} = user, new_settings) when is_map(new_settings) do
     data = priv_settings
-           |> Map.from_struct()
+           |> to_map()
            |> Map.merge(new_settings)
     update_user_priv_settings(user, data)
   end
@@ -159,7 +159,7 @@ defmodule Mithril.UserAPI do
 
   defp priv_settings_changeset(%PrivSettings{} = priv_settings, attrs) do
     priv_settings
-    |> cast(attrs, [:otp_error_counter, :last_send_otp_timestamp, :otp_send_counter])
+    |> cast(attrs, [:otp_error_counter])
     |> cast_embed(:login_hstr)
   end
 
@@ -228,5 +228,21 @@ defmodule Mithril.UserAPI do
     user
     |> user_changeset(attrs)
     |> Repo.update()
+  end
+
+  defp to_map(%_{} = data) do
+    data
+    |> Map.from_struct()
+    |> Enum.map(&to_map/1)
+    |> Enum.into(%{})
+  end
+  defp to_map({key, list}) when is_list(list) do
+    {key, Enum.map(list, &to_map/1)}
+  end
+  defp to_map({key, %_{} = value})  do
+    {key, Map.from_struct(value)}
+  end
+  defp to_map(field) do
+    field
   end
 end

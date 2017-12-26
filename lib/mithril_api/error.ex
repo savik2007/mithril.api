@@ -29,6 +29,9 @@ defmodule Mithril.Error do
   def otp_reached_max_attempts,
       do: {:error, {:access_denied, %{type: "otp_reached_max_attempts", message: "Reached max OTP verify attempts"}}}
 
+  def login_reached_max_attempts,
+      do: {:error, {:access_denied, "You reached login attempts limit. Try again later"}}
+
   def invalid_user(msg),
       do: {:error, {:access_denied, %{type: "invalid_user", message: msg}}}
 
