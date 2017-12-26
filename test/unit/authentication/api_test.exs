@@ -5,6 +5,7 @@ defmodule Mithril.Authentication.APITest do
   alias Mithril.UserAPI
   alias Mithril.Authentication
   alias Mithril.Authentication.Factor
+  alias Mithril.Authorization.LoginHistory
   alias Mithril.UserAPI.User.PrivSettings
 
   @env "OTP_SMS_TEMPLATE"
@@ -140,9 +141,11 @@ defmodule Mithril.Authentication.APITest do
     end
 
     test "timed out and reached max send attempts" do
+      time = unixtime_to_naive(:os.system_time(:seconds))
       user = insert(:user, priv_settings: %PrivSettings{
-        otp_send_counter: 3,
-        last_send_otp_timestamp: :os.system_time(:seconds) - 1
+        login_hstr: [
+          build(:login_history, time: time), build(:login_history, time: time), build(:login_history, time: time),
+        ],
       })
       factor = insert(:authentication_factor, user_id: user.id)
       token = insert(:token, user_id: user.id)
@@ -151,9 +154,11 @@ defmodule Mithril.Authentication.APITest do
     end
 
     test "timed out but NOT reached max send attempts" do
+      time = unixtime_to_naive(:os.system_time(:seconds))
       user = insert(:user, priv_settings: %PrivSettings{
-        otp_send_counter: 2,
-        last_send_otp_timestamp: :os.system_time(:seconds) + 1
+        login_hstr: [
+          build(:login_history, time: time), build(:login_history, time: time)
+        ],
       })
       factor = insert(:authentication_factor, user_id: user.id)
       token = insert(:token, user_id: user.id)
@@ -161,12 +166,14 @@ defmodule Mithril.Authentication.APITest do
       assert :ok = Authentication.send_otp(user, factor, token)
 
       db_user = UserAPI.get_user!(user.id)
-      assert 3 <= db_user.priv_settings.otp_send_counter
+      assert 3 <= length(db_user.priv_settings.login_hstr)
     end
 
     test "NOT timed out but reached max send attempts" do
       user = insert(:user, priv_settings: %PrivSettings{
-        otp_send_counter: 3,
+        login_hstr: [
+          build(:login_history), build(:login_history), build(:login_history)
+        ]
       })
       factor = insert(:authentication_factor, user_id: user.id)
       token = insert(:token, user_id: user.id)
@@ -174,13 +181,19 @@ defmodule Mithril.Authentication.APITest do
       assert :ok = Authentication.send_otp(user, factor, token)
 
       db_user = UserAPI.get_user!(user.id)
-      assert 1 == db_user.priv_settings.otp_send_counter
-      assert :os.system_time(:seconds) <= db_user.priv_settings.last_send_otp_timestamp
+      login_hstr = db_user.priv_settings.login_hstr
+      assert 3 <= length(login_hstr)
+
+      max_logins_period = Confex.get_env(:mithril_api, :"2fa")[:otp_send_counter_max]
+      timeouted_logins = Enum.filter(login_hstr, &LoginHistory.filter_by_period(&1, max_logins_period))
+      assert 1 == length(timeouted_logins)
     end
 
     test "NOT timed out and NOT reached max send attempts" do
       user = insert(:user, priv_settings: %PrivSettings{
-        last_send_otp_timestamp: :os.system_time(:seconds) - 100
+        login_hstr: [
+          build(:login_history)
+        ]
       })
       factor = insert(:authentication_factor, user_id: user.id)
       token = insert(:token, user_id: user.id)
@@ -188,8 +201,12 @@ defmodule Mithril.Authentication.APITest do
       assert :ok = Authentication.send_otp(user, factor, token)
 
       db_user = UserAPI.get_user!(user.id)
-      assert 1 <= db_user.priv_settings.otp_send_counter
-      assert :os.system_time(:seconds) <= db_user.priv_settings.last_send_otp_timestamp
+      login_hstr = db_user.priv_settings.login_hstr
+      assert 2 <= length(login_hstr)
+
+      max_logins_period = Confex.get_env(:mithril_api, :"2fa")[:otp_send_counter_max]
+      timeouted_logins = Enum.filter(login_hstr, &LoginHistory.filter_by_period(&1, max_logins_period))
+      assert 1 == length(timeouted_logins)
     end
 
     test "reach max send attempts" do
@@ -206,8 +223,14 @@ defmodule Mithril.Authentication.APITest do
       db_user = UserAPI.get_user!(user.id)
       assert {:error, :otp_timeout} = Authentication.send_otp(db_user, factor, token)
 
-      assert 3 <= db_user.priv_settings.otp_send_counter
-      assert :os.system_time(:seconds) <= db_user.priv_settings.last_send_otp_timestamp
+      db_user = UserAPI.get_user!(user.id)
+      assert 3 <= length(db_user.priv_settings.login_hstr)
     end
+  end
+
+  defp unixtime_to_naive(time) do
+    time
+    |> DateTime.from_unix!()
+    |> DateTime.to_naive()
   end
 end

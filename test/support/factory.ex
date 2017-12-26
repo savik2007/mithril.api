@@ -52,11 +52,19 @@ defmodule Mithril.Factory do
       password_set_at: NaiveDateTime.utc_now(),
       settings: %{},
       priv_settings: %Mithril.UserAPI.User.PrivSettings{
+        login_hstr: [],
         otp_error_counter: 0,
-        last_send_otp_timestamp: 0,
       },
       is_blocked: false,
       block_reason: nil,
+    }
+  end
+
+  def login_history_factory do
+    %Mithril.UserAPI.User.LoginHstr{
+      type: Mithril.Authorization.LoginHistory.type(:otp),
+      is_success: true,
+      time: ~N[2017-11-21 23:00:07],
     }
   end
 

@@ -184,10 +184,12 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
     end
 
     test "OTP timeouted", %{conn: conn} do
+      time = unixtime_to_naive(:os.system_time(:seconds) + 1)
       user = insert(:user, priv_settings: %PrivSettings{
         otp_error_counter: 0,
-        otp_send_counter: 3,
-        last_send_otp_timestamp: :os.system_time(:seconds) + 10
+        login_hstr: [
+          build(:login_history, time: time), build(:login_history, time: time), build(:login_history, time: time),
+        ],
       })
       insert(:authentication_factor, user_id: user.id)
       token = insert(:token, user_id: user.id, name: "access_token")
@@ -199,7 +201,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
         |> json_response(429)
         |> get_in(["error", "type"])
 
-        # check that token not expired after timed out OTP
+        # check that token not expired after request with timed out OTP
       assert "otp_timeout" ==
         conn
         |> put_req_header("authorization", "Bearer #{token.value}")
@@ -432,5 +434,11 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
 
   defp get_last_otp do
     List.first(OTP.list_otps)
+  end
+
+  defp unixtime_to_naive(time) do
+    time
+    |> DateTime.from_unix!()
+    |> DateTime.to_naive()
   end
 end
