@@ -25,10 +25,25 @@ defmodule Mithril.OAuth.TokenController do
     end
   end
 
+  def update_password(conn, attrs) do
+    with {:ok, user} <- attrs
+                        |> put_token_value(conn)
+                        |> TokenAPI.update_user_password() do
+      conn
+      |> render(Mithril.Web.UserView, "show.json", user: user)
+    end
+  end
+
   def create(conn, %{"token" => token_params}) do
     with {:ok, resp} <- token_params
                         |> put_token_value(conn)
                         |> Token.authorize() do
+      send_response(conn, resp, "show.json")
+    end
+  end
+
+  def create_change_pwd_token(conn, token_params) do
+    with {:ok, resp} <- Token.authorize(token_params) do
       send_response(conn, resp, "show.json")
     end
   end

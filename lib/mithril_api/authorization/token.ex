@@ -11,7 +11,7 @@ defmodule Mithril.Authorization.Token do
   alias Mithril.Authorization.GrantType.AccessToken2FA
 
   # TODO: rename grant_type to response_type
-  def authorize(%{"grant_type" => "password"} = params) do
+  def authorize(%{"grant_type" => grant_type} = params) when grant_type in ["password", "change_password"] do
     Password.authorize(params)
   end
 

@@ -181,7 +181,123 @@ defmodule Mithril.OAuth.TokenControllerTest do
     conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
     res = json_response(conn, 401)
     message = "The password expired for user: #{user.id}"
-    assert %{"message" => ^message, "type" => "password_expired"} = res["error"]
+
     System.put_env("PASSWORD_EXPIRATION_DAYS", to_string(default_expiration))
+
+    assert %{"message" => ^message, "type" => "password_expired"} = res["error"]
+  end
+
+  test "get change_password token when password has been expired", %{conn: conn} do
+    default_expiration = Confex.get_env(:mithril_api, :password)[:expiration]
+    System.put_env("PASSWORD_EXPIRATION_DAYS", "0")
+
+    allowed_scope = "user:change_password"
+    client_type = Mithril.Fixtures.create_client_type(%{scope: allowed_scope})
+    client = Mithril.Fixtures.create_client(%{
+      settings: %{"allowed_grant_types" => ["change_password", "password"]},
+      client_type_id: client_type.id
+    })
+    user = Mithril.Fixtures.create_user(%{password: "Secret_password1"})
+
+    request_payload = %{
+      "grant_type" => "change_password",
+      "email" => user.email,
+      "password" => "Secret_password1",
+      "client_id" => client.id,
+      "scope" => "user:change_password"
+    }
+
+    conn = post(conn, "/oauth/tokens/actions/change_password", Poison.encode!(request_payload))
+    resp = json_response(conn, 201)
+
+    System.put_env("PASSWORD_EXPIRATION_DAYS", to_string(default_expiration))
+
+    assert resp["data"]["details"]["client_id"] == client.id
+    assert resp["data"]["details"]["grant_type"] == "password"
+    assert resp["data"]["details"]["redirect_uri"] == client.redirect_uri
+    assert resp["data"]["user_id"] == user.id
+  end
+
+  test "get change_password token when password has not been expired", %{conn: conn} do
+    default_expiration = Confex.get_env(:mithril_api, :password)[:expiration]
+    default_2fa = Confex.get_env(:mithril_api, :"2fa")[:user_2fa_enabled?]
+
+    System.put_env("PASSWORD_EXPIRATION_DAYS", "180")
+    System.put_env("USER_2FA_ENABLED", "false")
+
+    allowed_scope = "user:change_password"
+    client_type = Mithril.Fixtures.create_client_type(%{scope: allowed_scope})
+    client = Mithril.Fixtures.create_client(%{
+      settings: %{"allowed_grant_types" => ["change_password", "password"]},
+      client_type_id: client_type.id
+    })
+    user = Mithril.Fixtures.create_user(%{password: "Secret_password1"})
+
+    request_payload = %{
+      "grant_type" => "change_password",
+      "email" => user.email,
+      "password" => "Secret_password1",
+      "client_id" => client.id,
+      "scope" => "user:change_password"
+    }
+
+    conn = post(conn, "/oauth/tokens/actions/change_password", Poison.encode!(request_payload))
+    resp = json_response(conn, 201)
+
+    System.put_env("PASSWORD_EXPIRATION_DAYS", to_string(default_expiration))
+    System.put_env("USER_2FA_ENABLED", to_string(default_2fa))
+
+    assert resp["data"]["details"]["client_id"] == client.id
+    assert resp["data"]["details"]["grant_type"] == "password"
+    assert resp["data"]["details"]["redirect_uri"] == client.redirect_uri
+    assert resp["data"]["details"]["scope"] == "user:change_password"
+    assert resp["data"]["user_id"] == user.id
+  end
+
+  test "update user password with change_password token", %{conn: conn} do
+    default_expiration = Confex.get_env(:mithril_api, :password)[:expiration]
+    default_2fa = Confex.get_env(:mithril_api, :"2fa")[:user_2fa_enabled?]
+
+    System.put_env("PASSWORD_EXPIRATION_DAYS", "0")
+    System.put_env("USER_2FA_ENABLED", "false")
+
+    allowed_scope = "user:change_password"
+    client_type = Mithril.Fixtures.create_client_type(%{scope: allowed_scope})
+    client = Mithril.Fixtures.create_client(%{
+      settings: %{"allowed_grant_types" => ["change_password", "password"]},
+      client_type_id: client_type.id
+    })
+    user = Mithril.Fixtures.create_user(%{password: "Secret_password1"})
+
+    request_payload = %{
+      "grant_type" => "change_password",
+      "email" => user.email,
+      "password" => "Secret_password1",
+      "client_id" => client.id,
+      "scope" => "user:change_password"
+    }
+
+    token_conn = post(conn, "/oauth/tokens/actions/change_password", Poison.encode!(request_payload))
+    token_resp = json_response(token_conn, 201)
+
+    System.put_env("PASSWORD_EXPIRATION_DAYS", to_string(default_expiration))
+
+    bearer = token_resp["data"]["value"]
+    update_pwd_request = %{ "user" => %{ "new_password" => "Qwerty123456" } }
+
+    upd_pwd_conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{bearer}")
+      |> post("/oauth/users/actions/update_password", Poison.encode!(update_pwd_request))
+
+    upd_pwd_resp = json_response(upd_pwd_conn, 200)
+
+    System.put_env("USER_2FA_ENABLED", to_string(default_2fa))
+
+    assert upd_pwd_resp["data"]["id"] == user.id
+    assert upd_pwd_resp["data"]["email"] == user.email
+
+    user = Mithril.UserAPI.get_user!(user.id)
+    assert Comeonin.Bcrypt.checkpw(update_pwd_request["user"]["new_password"], user.password)
   end
 end

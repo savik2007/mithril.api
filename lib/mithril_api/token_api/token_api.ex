@@ -126,6 +126,12 @@ defmodule Mithril.TokenAPI do
     end
   end
 
+  def update_user_password(%{"user" => user} = attrs) do
+    with  {:ok, token} <- validate_token(attrs["token_value"]),
+          {:ok, user} <- UserAPI.update_user_password(token.user_id, user["new_password"]),
+    do:   {:ok, user}
+  end
+
   defp validate_token(token_value) do
     with %Token{} = token <- get_token_by([value: token_value]),
          false <- expired?(token)
