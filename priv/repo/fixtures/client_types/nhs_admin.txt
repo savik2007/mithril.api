@@ -41,3 +41,5 @@ party_user:read
 person:reset_authentication_method
 program_medication:read
 program_medication:write
+user:approve_factor
+user:request_factor
