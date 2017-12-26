@@ -70,7 +70,7 @@ defmodule Mithril.Authorization.GrantType.Password do
 
   defp match_with_user_password(user, password) do
     if Comeonin.Bcrypt.checkpw(password, Map.get(user, :password, "")) do
-      LoginHistory.clear_failed_logins(user, LoginHistory.type(:password))
+      LoginHistory.clear_logins(user, LoginHistory.type(:password))
       {:ok, user}
     else
       LoginHistory.add_failed_login(user, LoginHistory.type(:password))
