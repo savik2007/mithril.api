@@ -30,6 +30,38 @@ defmodule Mithril.OAuth.TokenControllerTest do
     assert %{"message" => "User blocked.", "type" => "user_blocked"} == json_response(conn, 401)["error"]
   end
 
+  test "login user after request with invalid password", %{conn: conn} do
+    password = "Somepa$$word1"
+    user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt(password))
+    insert(:authentication_factor, user_id: user.id)
+    client_type = insert(:client_type, scope: "app:authorize")
+    client = insert(:client,
+      user_id: user.id,
+      client_type_id: client_type.id,
+      settings: %{"allowed_grant_types" => ["password"]}
+    )
+
+    request_payload = %{
+      token: %{
+        grant_type: "password",
+        email: user.email,
+        password: "invalid_password",
+        client_id: client.id,
+        scope: "app:authorize"
+      }
+    }
+    assert %{"message" => "Identity, password combination is wrong.", "type" => "access_denied"} ==
+             conn
+             |> post("/oauth/tokens", Poison.encode!(request_payload))
+             |> json_response(401)
+             |> Map.get("error")
+
+    data = request_payload |> put_in(~w(token password)a, password) |> Poison.encode!()
+    conn
+    |> post("/oauth/tokens", data)
+    |> json_response(201)
+  end
+
   test "successfully issues new 2FA access_token using password. Next step: send OTP", %{conn: conn} do
     allowed_scope = "app:authorize legal_entity:read legal_entity:write"
     password = "secret_password"
