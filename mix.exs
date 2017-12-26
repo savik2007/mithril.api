@@ -46,7 +46,7 @@ defmodule Mithril.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:distillery, "~> 1.4.1"},
+    [{:distillery, "~> 1.5", runtime: false},
      {:confex, "~> 3.2"},
      {:ecto, "~> 2.1"},
      {:postgrex, "~> 0.13.2"},

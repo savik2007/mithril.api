@@ -1,7 +1,7 @@
 defmodule Mithril.Ecto.Fixtures do
   @moduledoc false
 
-  def ensure_fixtures! do
+  def ensure_fixtures do
     queries =
       create_or_update_client_types_queries() ++ create_or_update_roles_queries()
 
