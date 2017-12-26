@@ -138,6 +138,13 @@ defmodule Mithril.UserAPI do
     end), 1)
   end
 
+  def update_user_password(user_id, password) do
+    with  user <- get_user(user_id),
+          changeset = user_changeset(user, %{password: password}),
+          {:ok, user} <- Repo.update(changeset),
+    do:   {:ok, user}
+  end
+
   defp get_password_hash(password) do
     Comeonin.Bcrypt.hashpwsalt(password)
   end
