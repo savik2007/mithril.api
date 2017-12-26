@@ -296,5 +296,8 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
     assert upd_pwd_resp["data"]["id"] == user.id
     assert upd_pwd_resp["data"]["email"] == user.email
+
+    user = Mithril.UserAPI.get_user!(user.id)
+    assert Comeonin.Bcrypt.checkpw(update_pwd_request["user"]["new_password"], user.password)
   end
 end
