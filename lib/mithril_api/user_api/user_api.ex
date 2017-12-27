@@ -86,8 +86,8 @@ defmodule Mithril.UserAPI do
 
   def merge_user_priv_settings(%User{priv_settings: priv_settings} = user, new_settings) when is_map(new_settings) do
     data = priv_settings
-           |> to_map()
            |> Map.merge(new_settings)
+           |> to_map()
     update_user_priv_settings(user, data)
   end
 
