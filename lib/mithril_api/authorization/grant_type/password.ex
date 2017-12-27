@@ -13,10 +13,14 @@ defmodule Mithril.Authorization.GrantType.Password do
   @request_apps "REQUEST_APPS"
   @request_factor "REQUEST_FACTOR"
 
+  @grant_type_password "password"
+  @grant_type_change_password "change_password"
+
   def next_step(:request_otp), do: @request_otp
   def next_step(:request_apps), do: @request_apps
 
   def authorize(attrs) do
+    grant_type = Map.get(attrs, "grant_type", @grant_type_password)
     with %Ecto.Changeset{valid?: true} <- changeset(attrs),
          client <- Mithril.ClientAPI.get_client_with_type(attrs["client_id"]),
          :ok <- validate_client(client),
@@ -24,10 +28,11 @@ defmodule Mithril.Authorization.GrantType.Password do
          {:ok, user} <- validate_user(user),
          :ok <- LoginHistory.check_failed_login(user, LoginHistory.type(:password)),
          {:ok, user} <- match_with_user_password(user, attrs["password"]),
-         :ok <- validate_user_password(user, attrs["grant_type"]),
-         :ok <- validate_token_scope(client.client_type.scope, attrs["scope"]),
+         :ok <- validate_user_password(user, grant_type),
+         :ok <- validate_token_scope_by_client(client.client_type.scope, attrs["scope"]),
+         :ok <- validate_token_scope_by_grant(grant_type, attrs["scope"]),
          factor <- Authentication.get_factor_by([user_id: user.id, is_active: true]),
-         {:ok, token} <- create_access_token(factor, user, client, attrs["scope"]),
+         {:ok, token} <- create_token_by_grant_type(factor, user, client, attrs["scope"], grant_type),
          {_, nil} <- Mithril.TokenAPI.deactivate_old_tokens(token),
          sms_send_response <- maybe_send_otp(user, factor, token),
          {:ok, next_step} <- map_next_step(sms_send_response)
@@ -36,7 +41,7 @@ defmodule Mithril.Authorization.GrantType.Password do
     end
   end
 
-  defp validate_user_password(_, "change_password"), do: :ok
+  defp validate_user_password(_, @grant_type_change_password), do: :ok
   defp validate_user_password(%User{id: id, password_set_at: password_set_at}, _grant_type) do
     expiration_seconds = Confex.get_env(:mithril_api, :password)[:expiration] * 60 * 60 * 24
     expire_date = NaiveDateTime.add(password_set_at, expiration_seconds, :second)
@@ -78,21 +83,24 @@ defmodule Mithril.Authorization.GrantType.Password do
     end
   end
 
-  defp validate_token_scope(client_scope, required_scope) do
+  defp validate_token_scope_by_client(client_scope, requested_scope) do
     allowed_scopes = String.split(client_scope, " ", trim: true)
-    required_scopes = String.split(required_scope, " ", trim: true)
-    if Mithril.Utils.List.subset?(allowed_scopes, required_scopes) do
-      :ok
-    else
-      Error.invalid_scope(allowed_scopes)
+    requested_scopes = String.split(requested_scope, " ", trim: true)
+    case Mithril.Utils.List.subset?(allowed_scopes, requested_scopes) do
+      true -> :ok
+      _ -> Error.invalid_scope(allowed_scopes)
     end
   end
 
-  defp create_access_token(%Factor{}, %User{} = user, client, scope) do
+  defp validate_token_scope_by_grant(@grant_type_change_password, "user:change_password"), do: :ok
+  defp validate_token_scope_by_grant(@grant_type_change_password, _), do: Error.invalid_scope(["user:change_password"])
+  defp validate_token_scope_by_grant(_, _requested_scope), do: :ok
+
+  defp create_token_by_grant_type(%Factor{}, %User{} = user, client, scope, grant_type) do
     data = %{
       user_id: user.id,
       details: %{
-        "grant_type" => "password",
+        "grant_type" => grant_type,
         "client_id" => client.id,
         "scope" => "", # 2FA access token requires no scopes
         "scope_request" => scope,
@@ -101,7 +109,7 @@ defmodule Mithril.Authorization.GrantType.Password do
     }
     Mithril.TokenAPI.create_2fa_access_token(data)
   end
-  defp create_access_token(_factor, %User{} = user, client, scope) do
+  defp create_token_by_grant_type(_factor, %User{} = user, client, scope, @grant_type_password) do
     data = %{
       user_id: user.id,
       details: %{
@@ -112,6 +120,18 @@ defmodule Mithril.Authorization.GrantType.Password do
       }
     }
     Mithril.TokenAPI.create_access_token(data)
+  end
+  defp create_token_by_grant_type(_factor, %User{} = user, client, scope, @grant_type_change_password) do
+    data = %{
+      user_id: user.id,
+      details: %{
+        "grant_type" => "change_password",
+        "client_id" => client.id,
+        "scope" => scope,
+        "redirect_uri" => client.redirect_uri
+      }
+    }
+    Mithril.TokenAPI.create_change_password_token(data)
   end
 
   defp maybe_send_otp(user, %Factor{} = factor, token), do: Authentication.send_otp(user, factor, token)
