@@ -1,7 +1,7 @@
 defmodule Mithril.Mixfile do
   use Mix.Project
 
-  @version "1.225.2"
+  @version "1.229.3"
 
   def project do
     [app: :mithril_api,
@@ -46,7 +46,7 @@ defmodule Mithril.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:distillery, "~> 1.4.1"},
+    [{:distillery, "~> 1.5", runtime: false},
      {:confex, "~> 3.2"},
      {:ecto, "~> 2.1"},
      {:postgrex, "~> 0.13.2"},

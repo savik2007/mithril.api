@@ -4,7 +4,7 @@ defmodule Mithril.ReleaseTasks do
 
   Example:
 
-      mithril_api/bin/mithril_api command Elixir.Mithril.ReleaseTasks migrate!
+      mithril_api/bin/mithril_api command Elixir.Mithril.ReleaseTasks migrate
   """
   alias Ecto.Migrator
 
@@ -23,7 +23,7 @@ defmodule Mithril.ReleaseTasks do
     Mithril.Repo
   ]
 
-  def migrate! do
+  def migrate do
     IO.puts "Loading mithril_api.."
     # Load the code for mithril_api, but don't start it
     :ok = Application.load(:mithril_api)

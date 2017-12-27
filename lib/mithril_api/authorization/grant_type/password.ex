@@ -24,7 +24,7 @@ defmodule Mithril.Authorization.GrantType.Password do
          {:ok, user} <- validate_user(user),
          :ok <- LoginHistory.check_failed_login(user, LoginHistory.type(:password)),
          {:ok, user} <- match_with_user_password(user, attrs["password"]),
-         :ok <- validate_user_password(user),
+         :ok <- validate_user_password(user, attrs["grant_type"]),
          :ok <- validate_token_scope(client.client_type.scope, attrs["scope"]),
          factor <- Authentication.get_factor_by([user_id: user.id, is_active: true]),
          {:ok, token} <- create_access_token(factor, user, client, attrs["scope"]),
@@ -36,7 +36,8 @@ defmodule Mithril.Authorization.GrantType.Password do
     end
   end
 
-  defp validate_user_password(%User{id: id, password_set_at: password_set_at}) do
+  defp validate_user_password(_, "change_password"), do: :ok
+  defp validate_user_password(%User{id: id, password_set_at: password_set_at}, _grant_type) do
     expiration_seconds = Confex.get_env(:mithril_api, :password)[:expiration] * 60 * 60 * 24
     expire_date = NaiveDateTime.add(password_set_at, expiration_seconds, :second)
     case NaiveDateTime.compare(expire_date, NaiveDateTime.utc_now()) do
