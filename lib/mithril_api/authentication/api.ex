@@ -9,7 +9,6 @@ defmodule Mithril.Authentication do
   alias Mithril.OTP.SMS
   alias Mithril.OTP.Schema, as: OTPSchema
   alias Mithril.Repo
-  alias Mithril.UserAPI
   alias Mithril.UserAPI.User
   alias Mithril.TokenAPI.Token
   alias Mithril.Authentication.{Factor, FactorSearch, OTPSearch}
