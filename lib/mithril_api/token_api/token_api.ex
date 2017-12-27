@@ -23,6 +23,7 @@ defmodule Mithril.TokenAPI do
   @refresh_token "refresh_token"
   @access_token "access_token"
   @access_token_2fa "2fa_access_token"
+  @change_password_token "change_password_token"
   @authorization_code "authorization_code"
 
   @type_field "request_authentication_factor_type"
@@ -85,6 +86,12 @@ defmodule Mithril.TokenAPI do
     |> Repo.insert()
   end
 
+  def create_change_password_token(attrs \\ %{}) do
+    %Token{}
+    |> change_password_token_changeset(attrs)
+    |> Repo.insert()
+  end
+
   def init_factor(attrs) do
     with :ok <- AccessToken2FA.validate_authorization_header(attrs),
          {:ok, token} <- validate_token(attrs["token_value"]),
@@ -128,7 +135,7 @@ defmodule Mithril.TokenAPI do
 
   def update_user_password(%{"user" => user} = attrs) do
     with  {:ok, token} <- validate_token(attrs["token_value"]),
-          {:ok, user} <- UserAPI.update_user_password(token.user_id, user["new_password"]),
+          {:ok, user} <- UserAPI.update_user_password(token.user_id, user["password"]),
     do:   {:ok, user}
   end
 
@@ -372,6 +379,10 @@ defmodule Mithril.TokenAPI do
 
   defp access_token_2fa_changeset(%Token{} = token, attrs) do
     token_changeset(token, attrs, :access, @access_token_2fa)
+  end
+
+  defp change_password_token_changeset(%Token{} = token, attrs) do
+    token_changeset(token, attrs, :access, @change_password_token)
   end
 
   defp authorization_code_changeset(%Token{} = token, attrs) do

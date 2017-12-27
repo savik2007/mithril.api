@@ -108,6 +108,15 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   defp otp_error(:reached_max_attempts), do: Error.otp_reached_max_attempts
   defp otp_error(_), do: Error.otp_invalid
 
+  defp create_access_token(%Token{details: %{"grant_type" => "change_password"} = details} = token) do
+    # changing 2FA token to change password token
+    # creates token with scope that stored in detais.scope_request
+    scope = Map.get(details, "scope_request", "user:change_password")
+    Mithril.TokenAPI.create_change_password_token(%{
+      user_id: token.user_id,
+      details: Map.put(details, "scope", scope)
+    })
+  end
   defp create_access_token(%Token{details: details} = token) do
     # changing 2FA token to access token
     # creates token with scope that stored in detais.scope_request
