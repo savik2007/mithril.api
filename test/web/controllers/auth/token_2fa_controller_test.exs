@@ -184,7 +184,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
     end
 
     test "OTP timeouted", %{conn: conn} do
-      time = unixtime_to_naive(:os.system_time(:seconds) + 1)
+      time = unixtime_to_naive(:os.system_time(:seconds) + 10)
       user = insert(:user, priv_settings: %PrivSettings{
         otp_error_counter: 0,
         login_hstr: [
