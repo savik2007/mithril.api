@@ -220,10 +220,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
   end
 
   describe "change password token flow" do
-    test "get change_password token when password has been expired", %{conn: conn} do
-      default_expiration = Confex.get_env(:mithril_api, :password)[:expiration]
-      System.put_env("PASSWORD_EXPIRATION_DAYS", "0")
-
+    setup %{conn: conn} do
       allowed_scope = "user:change_password"
       user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("Secret_password1"))
       client_type = insert(:client_type, scope: allowed_scope)
@@ -232,6 +229,12 @@ defmodule Mithril.OAuth.TokenControllerTest do
         client_type_id: client_type.id,
         settings: %{"allowed_grant_types" => ["change_password", "password"]}
       )
+      %{conn: conn, client: client, user: user}
+    end
+
+    test "get change_password token when password has been expired", %{conn: conn, client: client, user: user} do
+      default_expiration = Confex.get_env(:mithril_api, :password)[:expiration]
+      System.put_env("PASSWORD_EXPIRATION_DAYS", "0")
 
       request_payload = %{
         "token" => %{
@@ -257,21 +260,12 @@ defmodule Mithril.OAuth.TokenControllerTest do
       assert resp["data"]["name"] == "change_password_token"
     end
 
-    test "get change_password token when password has not been expired", %{conn: conn} do
+    test "get change_password token when password has not been expired", %{conn: conn, client: client, user: user} do
       default_expiration = Confex.get_env(:mithril_api, :password)[:expiration]
       default_2fa = Confex.get_env(:mithril_api, :"2fa")[:user_2fa_enabled?]
 
       System.put_env("PASSWORD_EXPIRATION_DAYS", "180")
       System.put_env("USER_2FA_ENABLED", "false")
-
-      allowed_scope = "user:change_password"
-      user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("Secret_password1"))
-      client_type = insert(:client_type, scope: allowed_scope)
-      client = insert(:client,
-        user_id: user.id,
-        client_type_id: client_type.id,
-        settings: %{"allowed_grant_types" => ["change_password", "password"]}
-      )
 
       request_payload = %{
         "token" => %{

@@ -125,8 +125,7 @@ defmodule Mithril.TokenAPI do
          %Factor{} = factor <- Authentication.get_factor_by!(where_factor),
          :ok <- AccessToken2FA.verify_otp(token.details[@factor_field], token, attrs["otp"], user),
          {:ok, _} <- Authentication.update_factor(factor, %{"factor" => token.details[@factor_field]}),
-         token_data <- prepare_token_data(token),
-         {:ok, token_2fa} <- create_access_token(token_data),
+         {:ok, token_2fa} <- create_token_by_grant_type(token),
          {_, nil} <- deactivate_old_tokens(token_2fa)
       do
       {:ok, token_2fa}
@@ -135,6 +134,7 @@ defmodule Mithril.TokenAPI do
 
   def update_user_password(%{"user" => user} = attrs) do
     with  {:ok, token} <- validate_token(attrs["token_value"]),
+          :ok <- validate_change_pwd_token(token),
           {:ok, user} <- UserAPI.update_user_password(token.user_id, user["password"]),
     do:   {:ok, user}
   end
@@ -149,6 +149,9 @@ defmodule Mithril.TokenAPI do
       nil -> Error.token_invalid
     end
   end
+
+  defp validate_change_pwd_token(%Token{name: @change_password_token}), do: :ok
+  defp validate_change_pwd_token(_), do: Error.token_invalid_type
 
   defp validate_approve_token(%Token{details: %{@factor_field => _, @type_field => _}}), do: :ok
   defp validate_approve_token(_), do: Error.access_denied("Invalid token type. Init factor at first")
@@ -165,10 +168,21 @@ defmodule Mithril.TokenAPI do
     [user_id: token.user_id, is_active: true, type: type]
   end
 
-  defp prepare_token_data(%Token{details: details} = token) do
+  defp create_token_by_grant_type(%Token{details: %{"grant_type" => "change_password"}} = token) do
+    token
+    |> prepare_token_data("user:change_password")
+    |> create_change_password_token()
+  end
+  defp create_token_by_grant_type(%Token{} = token) do
+    token
+    |> prepare_token_data("app:authorize")
+    |> create_access_token()
+  end
+
+  defp prepare_token_data(%Token{details: details} = token, default_scope) do
     # changing 2FA token to access token
     # creates token with scope that stored in detais.scope_request
-    scope = Map.get(details, "scope_request", "app:authorize")
+    scope = Map.get(details, "scope_request", default_scope)
     details =
       details
       |> Map.drop(["request_authentication_factor", "request_authentication_factor_type"])
