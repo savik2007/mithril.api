@@ -339,6 +339,7 @@ defmodule Mithril.TokenAPI do
       Token
       |> join(:inner, [t], u in User, t.user_id == u.id)
       |> where([t], t.name not in ["2fa_access_token", "change_password_token"])
+      |> where([t], t.expires_at >= ^:os.system_time(:seconds))
       |> where([t, u], fragment("now() >= ?", datetime_add(u.password_set_at, ^expiration_days, "day")))
 
     Multi.new()
