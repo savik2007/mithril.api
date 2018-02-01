@@ -11,7 +11,7 @@ defmodule Mithril.OTPTest do
       System.put_env("OTP_LENGTH", "4")
       key = "+380301112233"
       assert {:ok, %OTPSchema{key: ^key, code: code}} = OTP.initialize_otp(key)
-      assert 4 == code |> Integer.digits |> length
+      assert 4 == code |> Integer.digits() |> length
       System.put_env("OTP_LENGTH", "6")
     end
   end
@@ -59,7 +59,7 @@ defmodule Mithril.OTPTest do
   end
 
   test "cancel_expired_otps" do
-    expired_time = 1464096368 |> DateTime.from_unix!() |> DateTime.to_string()
+    expired_time = 1_464_096_368 |> DateTime.from_unix!() |> DateTime.to_string()
     insert(:otp, status: "CANCELED", active: false, code_expired_at: expired_time)
     %{id: expired_id1} = insert(:otp, code_expired_at: expired_time)
     %{id: expired_id2} = insert(:otp, code_expired_at: expired_time)
@@ -71,9 +71,10 @@ defmodule Mithril.OTPTest do
     OTP.update_otp(otp, %{code_expired_at: expired_time})
 
     OTP.cancel_expired_otps()
+
     otps =
       OTPSchema
-      |> where([status: "EXPIRED"])
+      |> where(status: "EXPIRED")
       |> Repo.all()
 
     Enum.each(otps, fn %{id: id} ->

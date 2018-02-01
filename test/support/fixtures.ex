@@ -1,7 +1,7 @@
 defmodule Mithril.Fixtures do
   def create_client(attrs \\ %{}) do
     {:ok, client} =
-      "some #{inspect :rand.normal()} client"
+      "some #{inspect(:rand.normal())} client"
       |> client_create_attrs(Map.get(attrs, :client_type_id))
       |> Map.merge(attrs)
       |> Mithril.ClientAPI.create_client()
@@ -47,7 +47,7 @@ defmodule Mithril.Fixtures do
 
   def role_attrs do
     %{
-      name: to_string(:rand.uniform),
+      name: to_string(:rand.uniform()),
       scope: "some scope"
     }
   end
@@ -76,10 +76,11 @@ defmodule Mithril.Fixtures do
 
   def client_type_attrs do
     %{
-      name: to_string(:rand.uniform),
+      name: to_string(:rand.uniform()),
       scope: "some scope"
     }
   end
+
   def client_type_attrs(name) do
     %{
       name: name,
@@ -89,13 +90,13 @@ defmodule Mithril.Fixtures do
 
   def user_create_attrs do
     %{
-      email: "some #{inspect :rand.normal()} email",
+      email: "some #{inspect(:rand.normal())} email",
       password: "Some password1",
       settings: %{}
     }
   end
 
-  def create_code_grant_token(client, user, scope \\ "app:authorize", expires_at \\ 2000000000) do
+  def create_code_grant_token(client, user, scope \\ "app:authorize", expires_at \\ 2_000_000_000) do
     Mithril.TokenAPI.create_token(%{
       details: %{
         scope_request: scope,
@@ -110,12 +111,12 @@ defmodule Mithril.Fixtures do
     })
   end
 
-  def create_refresh_token(client, user, expires_at \\ 2000000000) do
+  def create_refresh_token(client, user, expires_at \\ 2_000_000_000) do
     Mithril.TokenAPI.create_token(%{
       details: %{
         scope: "",
         client_id: client.id,
-        grant_type: "authorization_code",
+        grant_type: "authorization_code"
       },
       user_id: user.id,
       expires_at: expires_at,
@@ -124,12 +125,12 @@ defmodule Mithril.Fixtures do
     })
   end
 
-  def create_access_token(client, user, expires_at \\ 2000000000) do
+  def create_access_token(client, user, expires_at \\ 2_000_000_000) do
     Mithril.TokenAPI.create_access_token(%{
       details: %{
         scope: "legal_entity:read legal_entity:write",
         client_id: client.id,
-        grant_type: "refresh_token",
+        grant_type: "refresh_token"
       },
       user_id: user.id,
       expires_at: expires_at,

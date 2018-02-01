@@ -9,10 +9,13 @@ defmodule Mithril.OAuth.AppControllerTest do
 
   test "successfully approves new client request & issues a code grant", %{conn: conn} do
     client_type = Mithril.Fixtures.create_client_type(%{scope: "legal_entity:read legal_entity:write"})
-    client = Mithril.Fixtures.create_client(%{
-      redirect_uri: "http://some_host.com:3000/",
-      client_type_id: client_type.id
-    })
+
+    client =
+      Mithril.Fixtures.create_client(%{
+        redirect_uri: "http://some_host.com:3000/",
+        client_type_id: client_type.id
+      })
+
     user = Mithril.Fixtures.create_user()
     user_role = Mithril.Fixtures.create_role(%{scope: "legal_entity:read legal_entity:write"})
     Mithril.UserRoleAPI.create_user_role(%{user_id: user.id, role_id: user_role.id, client_id: client.id})
@@ -22,7 +25,7 @@ defmodule Mithril.OAuth.AppControllerTest do
       app: %{
         client_id: client.id,
         redirect_uri: redirect_uri,
-        scope: "legal_entity:read legal_entity:write",
+        scope: "legal_entity:read legal_entity:write"
       }
     }
 
@@ -48,7 +51,7 @@ defmodule Mithril.OAuth.AppControllerTest do
 
     assert "http://some_host.com:3000/path?code=#{result["value"]}&param=1" == header
 
-    app = Mithril.AppAPI.get_app_by([user_id: user.id, client_id: client.id])
+    app = Mithril.AppAPI.get_app_by(user_id: user.id, client_id: client.id)
 
     assert app.user_id == user.id
     assert app.client_id == client.id
@@ -57,11 +60,14 @@ defmodule Mithril.OAuth.AppControllerTest do
 
   test "successfully updates existing approval with more scopes", %{conn: conn} do
     client_type = Mithril.Fixtures.create_client_type(%{scope: "legal_entity:read legal_entity:write"})
-    client = Mithril.Fixtures.create_client(%{
-      redirect_uri: "http://some_host.com:3000/",
-      client_type_id: client_type.id
-    })
-    user   = Mithril.Fixtures.create_user()
+
+    client =
+      Mithril.Fixtures.create_client(%{
+        redirect_uri: "http://some_host.com:3000/",
+        client_type_id: client_type.id
+      })
+
+    user = Mithril.Fixtures.create_user()
     user_role = Mithril.Fixtures.create_role(%{scope: "legal_entity:read legal_entity:write"})
     Mithril.UserRoleAPI.create_user_role(%{user_id: user.id, role_id: user_role.id, client_id: client.id})
 
@@ -75,7 +81,7 @@ defmodule Mithril.OAuth.AppControllerTest do
       app: %{
         client_id: client.id,
         redirect_uri: client.redirect_uri,
-        scope: "legal_entity:write",
+        scope: "legal_entity:write"
       }
     }
 
@@ -89,7 +95,7 @@ defmodule Mithril.OAuth.AppControllerTest do
     assert result["name"] == "authorization_code"
     assert result["details"]["scope_request"] == "legal_entity:write"
 
-    app = Mithril.AppAPI.get_app_by([user_id: user.id, client_id: client.id])
+    app = Mithril.AppAPI.get_app_by(user_id: user.id, client_id: client.id)
 
     assert app.user_id == user.id
     assert app.client_id == client.id
@@ -104,7 +110,7 @@ defmodule Mithril.OAuth.AppControllerTest do
       app: %{
         client_id: client.id,
         redirect_uri: client.redirect_uri,
-        scope: "legal_entity:write",
+        scope: "legal_entity:write"
       }
     }
 
@@ -112,14 +118,15 @@ defmodule Mithril.OAuth.AppControllerTest do
       conn
       |> put_req_header("x-consumer-id", user.id)
       |> post("/oauth/apps/authorize", Poison.encode!(request))
+
     resp = json_response(conn, 401)
     assert %{"error" => %{"message" => "Authentication failed"}} = resp
   end
 
   test "incorrectly crafted body is still treated nicely", %{conn: conn} do
-    assert_error_sent 400, fn ->
+    assert_error_sent(400, fn ->
       post(conn, "/oauth/apps/authorize", Poison.encode!(%{"scope" => "legal_entity:read"}))
-    end
+    end)
   end
 
   test "errors are rendered as json", %{conn: conn} do
@@ -139,11 +146,13 @@ defmodule Mithril.OAuth.AppControllerTest do
   end
 
   test "returns error when redirect uri is not whitelisted", %{conn: conn} do
-    client = Mithril.Fixtures.create_client(%{
-      redirect_uri: "http://some_host.com:3000/",
-      priv_settings: %{"access_type" => @direct}
-    })
-    user   = Mithril.Fixtures.create_user()
+    client =
+      Mithril.Fixtures.create_client(%{
+        redirect_uri: "http://some_host.com:3000/",
+        priv_settings: %{"access_type" => @direct}
+      })
+
+    user = Mithril.Fixtures.create_user()
     user_role = Mithril.Fixtures.create_role(%{scope: "legal_entity:read legal_entity:write"})
     Mithril.UserRoleAPI.create_user_role(%{user_id: user.id, role_id: user_role.id, client_id: client.id})
     redirect_uri = "http://some_other_host.com:3000/path?param=1"
@@ -152,7 +161,7 @@ defmodule Mithril.OAuth.AppControllerTest do
       app: %{
         client_id: client.id,
         redirect_uri: redirect_uri,
-        scope: "legal_entity:read legal_entity:write",
+        scope: "legal_entity:read legal_entity:write"
       }
     }
 
@@ -180,7 +189,7 @@ defmodule Mithril.OAuth.AppControllerTest do
       app: %{
         client_id: client.id,
         redirect_uri: client.redirect_uri,
-        scope: "b c d",
+        scope: "b c d"
       }
     }
 
@@ -206,7 +215,7 @@ defmodule Mithril.OAuth.AppControllerTest do
       app: %{
         client_id: client.id,
         redirect_uri: client.redirect_uri,
-        scope: "b c d",
+        scope: "b c d"
       }
     }
 

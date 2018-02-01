@@ -16,12 +16,12 @@ defmodule Mithril.UserAPITest do
       login_hstr: [
         %{
           type: LoginHistory.type(:password),
-          time: NaiveDateTime.utc_now(),
+          time: NaiveDateTime.utc_now()
         },
         %{
           type: LoginHistory.type(:password),
-          time: NaiveDateTime.utc_now(),
-        },
+          time: NaiveDateTime.utc_now()
+        }
       ],
       otp_error_counter: 5,
       invalid: "field"
@@ -36,6 +36,7 @@ defmodule Mithril.UserAPITest do
 
   test "list_users/1 returns all users without search params" do
     user = fixture(:user)
+
     assert UserAPI.list_users(%{}) == %Page{
              entries: [user],
              page_number: 1,
@@ -47,6 +48,7 @@ defmodule Mithril.UserAPITest do
 
   test "list_users/1 returns all users with valid search params" do
     user = fixture(:user)
+
     assert UserAPI.list_users(%{"email" => user.email}) == %Page{
              entries: [user],
              page_number: 1,
@@ -58,12 +60,13 @@ defmodule Mithril.UserAPITest do
 
   test "list_users/1 returns empty list with invalid search params" do
     user = fixture(:user)
+
     assert UserAPI.list_users(%{"email" => user.email <> "111"}) == %Page{
              entries: [],
              page_number: 1,
              page_size: 50,
              total_entries: 0,
-             total_pages: 1,
+             total_pages: 1
            }
   end
 
@@ -77,10 +80,11 @@ defmodule Mithril.UserAPITest do
     assert user.email == "some email"
     assert String.length(user.password) == 60
     assert user.settings == %{}
+
     assert user.priv_settings == %Mithril.UserAPI.User.PrivSettings{
-      login_hstr: [],
-      otp_error_counter: 0
-    }
+             login_hstr: [],
+             otp_error_counter: 0
+           }
   end
 
   test "create_user/1 secures user password" do
@@ -100,10 +104,11 @@ defmodule Mithril.UserAPITest do
     assert user.email == "some updated email"
     assert String.length(user.password) == 60
     assert user.settings == %{}
+
     assert user.priv_settings == %Mithril.UserAPI.User.PrivSettings{
-      login_hstr: [],
-      otp_error_counter: 0
-    }
+             login_hstr: [],
+             otp_error_counter: 0
+           }
   end
 
   test "update_user_priv_settings/2 with valid data updates the user.priv_settings" do
@@ -121,16 +126,25 @@ defmodule Mithril.UserAPITest do
   end
 
   test "unblock/1 and refresh error counters" do
-    user = insert(:user, priv_settings: %{
-      login_hstr: [
-        %LoginHstr{type: LoginHistory.type(:password), time: NaiveDateTime.utc_now()},
-        %LoginHstr{type: LoginHistory.type(:password), time: NaiveDateTime.utc_now()},
-      ],
-      otp_error_counter: 3
-    })
-    assert %{priv_settings: %{
-      login_hstr: [%LoginHstr{}, %LoginHstr{}], otp_error_counter: 3
-    }} = UserAPI.get_user!(user.id)
+    user =
+      insert(
+        :user,
+        priv_settings: %{
+          login_hstr: [
+            %LoginHstr{type: LoginHistory.type(:password), time: NaiveDateTime.utc_now()},
+            %LoginHstr{type: LoginHistory.type(:password), time: NaiveDateTime.utc_now()}
+          ],
+          otp_error_counter: 3
+        }
+      )
+
+    assert %{
+             priv_settings: %{
+               login_hstr: [%LoginHstr{}, %LoginHstr{}],
+               otp_error_counter: 3
+             }
+           } = UserAPI.get_user!(user.id)
+
     assert {:ok, %User{}} = UserAPI.unblock_user(user)
     db_user = UserAPI.get_user!(user.id)
     assert %{login_hstr: [], otp_error_counter: 0} = db_user.priv_settings

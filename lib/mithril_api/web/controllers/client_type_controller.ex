@@ -5,7 +5,7 @@ defmodule Mithril.Web.ClientTypeController do
   alias Mithril.ClientTypeAPI.ClientType
   alias Scrivener.Page
 
-  action_fallback Mithril.Web.FallbackController
+  action_fallback(Mithril.Web.FallbackController)
 
   def index(conn, params) do
     with %Page{} = paging <- ClientTypeAPI.list_client_types(params) do
@@ -37,6 +37,7 @@ defmodule Mithril.Web.ClientTypeController do
 
   def delete(conn, %{"id" => id}) do
     client_type = ClientTypeAPI.get_client_type!(id)
+
     with {:ok, %ClientType{}} <- ClientTypeAPI.delete_client_type(client_type) do
       send_resp(conn, :no_content, "")
     end

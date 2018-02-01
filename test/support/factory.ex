@@ -6,15 +6,16 @@ defmodule Mithril.Factory do
   def token_factory do
     user = insert(:user)
     client = insert(:client)
+
     %Mithril.TokenAPI.Token{
       details: %{
         "scope" => "app:authorize",
         "client_id" => client.id,
         "grant_type" => "password",
-        "redirect_uri" => "http://localhost",
+        "redirect_uri" => "http://localhost"
       },
       user_id: user.id,
-      expires_at: 2000000000,
+      expires_at: 2_000_000_000,
       name: sequence("authorization_code-"),
       value: sequence("some_short_lived_code-")
     }
@@ -34,14 +35,14 @@ defmodule Mithril.Factory do
         "access_type" => Mithril.ClientAPI.access_type(:direct)
       },
       is_blocked: false,
-      block_reason: nil,
+      block_reason: nil
     }
   end
 
   def client_type_factory do
     %Mithril.ClientTypeAPI.ClientType{
-      name: to_string(:rand.uniform),
-      scope: "some scope",
+      name: to_string(:rand.uniform()),
+      scope: "some scope"
     }
   end
 
@@ -53,10 +54,10 @@ defmodule Mithril.Factory do
       settings: %{},
       priv_settings: %Mithril.UserAPI.User.PrivSettings{
         login_hstr: [],
-        otp_error_counter: 0,
+        otp_error_counter: 0
       },
       is_blocked: false,
-      block_reason: nil,
+      block_reason: nil
     }
   end
 
@@ -64,13 +65,13 @@ defmodule Mithril.Factory do
     %Mithril.UserAPI.User.LoginHstr{
       type: Mithril.Authorization.LoginHistory.type(:otp),
       is_success: true,
-      time: ~N[2017-11-21 23:00:07],
+      time: ~N[2017-11-21 23:00:07]
     }
   end
 
   def role_factory do
     %Mithril.RoleAPI.Role{
-      name: to_string(:rand.uniform),
+      name: to_string(:rand.uniform()),
       scope: "some scope"
     }
   end
@@ -88,7 +89,7 @@ defmodule Mithril.Factory do
       type: Mithril.Authentication.type(:sms),
       factor: "+380901112233",
       is_active: true,
-      user_id: insert(:user).id,
+      user_id: insert(:user).id
     }
   end
 

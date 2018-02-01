@@ -35,6 +35,7 @@ defmodule Mithril.TokenAPITest do
 
   test "list_tokens/1 returns all tokens" do
     token = fixture(:token)
+
     assert TokenAPI.list_tokens(%{}) == %Page{
              entries: [token],
              page_number: 1,
@@ -107,11 +108,13 @@ defmodule Mithril.TokenAPITest do
       cid1 = UUID.generate()
       cid2 = UUID.generate()
       cid3 = UUID.generate()
+
       details = %{
         "scope" => "app:authorize",
         "grant_type" => "password",
-        "redirect_uri" => "http://localhost",
+        "redirect_uri" => "http://localhost"
       }
+
       token1 = insert(:token, user_id: user_id1, name: "access_token", details: Map.put(details, "client_id", cid1))
       token2 = insert(:token, user_id: user_id1, name: "2fa_access_token", details: Map.put(details, "client_id", cid1))
       token3 = insert(:token, user_id: user_id1, name: "access_token", details: Map.put(details, "client_id", cid2))
@@ -126,12 +129,15 @@ defmodule Mithril.TokenAPITest do
       assert token1.id
              |> TokenAPI.get_token!()
              |> TokenAPI.expired?()
+
       assert token2.id
              |> TokenAPI.get_token!()
              |> TokenAPI.expired?()
+
       assert token3.id
              |> TokenAPI.get_token!()
              |> TokenAPI.expired?()
+
       # token for different user
       refute token4.id
              |> TokenAPI.get_token!()
@@ -145,14 +151,17 @@ defmodule Mithril.TokenAPITest do
       refute token1.id
              |> TokenAPI.get_token!()
              |> TokenAPI.expired?()
+
       # old user token expired
       assert token2.id
              |> TokenAPI.get_token!()
              |> TokenAPI.expired?()
+
       # different client
       refute token3.id
              |> TokenAPI.get_token!()
              |> TokenAPI.expired?()
+
       # different user
       refute token4.id
              |> TokenAPI.get_token!()
@@ -160,11 +169,11 @@ defmodule Mithril.TokenAPITest do
     end
 
     test "deactivate_old_password_tokens" do
-      %{id: user_id} = insert(:user,
-        password_set_at: NaiveDateTime.add(NaiveDateTime.utc_now(), -100 * 24 * 60 * 60, :second)
-      )
+      %{id: user_id} =
+        insert(:user, password_set_at: NaiveDateTime.add(NaiveDateTime.utc_now(), -100 * 24 * 60 * 60, :second))
+
       token = insert(:token, user_id: user_id)
-      assert token.expires_at == 2000000000
+      assert token.expires_at == 2_000_000_000
       TokenAPI.deactivate_old_password_tokens()
       token = Repo.get(Token, token.id)
       assert token.expires_at <= :os.system_time(:seconds)

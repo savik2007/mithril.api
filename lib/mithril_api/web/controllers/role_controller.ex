@@ -5,7 +5,7 @@ defmodule Mithril.Web.RoleController do
   alias Mithril.RoleAPI.Role
   alias Scrivener.Page
 
-  action_fallback Mithril.Web.FallbackController
+  action_fallback(Mithril.Web.FallbackController)
 
   def index(conn, params) do
     with %Page{} = paging <- RoleAPI.list_roles(params) do
@@ -37,6 +37,7 @@ defmodule Mithril.Web.RoleController do
 
   def delete(conn, %{"id" => id}) do
     role = RoleAPI.get_role!(id)
+
     with {:ok, %Role{}} <- RoleAPI.delete_role(role) do
       send_resp(conn, :no_content, "")
     end

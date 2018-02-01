@@ -11,21 +11,25 @@ defmodule Mithril.OAuth.TokenControllerTest do
     password = "Somepa$$word1"
     user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt(password), is_blocked: true)
     client_type = insert(:client_type, scope: "app:authorize")
-    client = insert(:client,
-      user_id: user.id,
-      client_type_id: client_type.id,
-      settings: %{"allowed_grant_types" => ["password"]}
-    )
+
+    client =
+      insert(
+        :client,
+        user_id: user.id,
+        client_type_id: client_type.id,
+        settings: %{"allowed_grant_types" => ["password"]}
+      )
 
     request_payload = %{
-      "token": %{
-        "grant_type": "password",
-        "email": user.email,
-        "password": password,
-        "client_id": client.id,
-        "scope": "app:authorize"
+      token: %{
+        grant_type: "password",
+        email: user.email,
+        password: password,
+        client_id: client.id,
+        scope: "app:authorize"
       }
     }
+
     conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
     assert %{"message" => "User blocked.", "type" => "user_blocked"} == json_response(conn, 401)["error"]
   end
@@ -35,11 +39,14 @@ defmodule Mithril.OAuth.TokenControllerTest do
     user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt(password))
     insert(:authentication_factor, user_id: user.id)
     client_type = insert(:client_type, scope: "app:authorize")
-    client = insert(:client,
-      user_id: user.id,
-      client_type_id: client_type.id,
-      settings: %{"allowed_grant_types" => ["password"]}
-    )
+
+    client =
+      insert(
+        :client,
+        user_id: user.id,
+        client_type_id: client_type.id,
+        settings: %{"allowed_grant_types" => ["password"]}
+      )
 
     request_payload = %{
       token: %{
@@ -50,6 +57,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
         scope: "app:authorize"
       }
     }
+
     assert %{"message" => "Identity, password combination is wrong.", "type" => "access_denied"} ==
              conn
              |> post("/oauth/tokens", Poison.encode!(request_payload))
@@ -57,6 +65,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
              |> Map.get("error")
 
     data = request_payload |> put_in(~w(token password)a, password) |> Poison.encode!()
+
     conn
     |> post("/oauth/tokens", data)
     |> json_response(201)
@@ -67,20 +76,24 @@ defmodule Mithril.OAuth.TokenControllerTest do
     password = "secret_password"
     user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt(password))
     client_type = insert(:client_type, scope: allowed_scope)
-    client = insert(:client,
-      user_id: user.id,
-      client_type_id: client_type.id,
-      settings: %{"allowed_grant_types" => ["password"]}
-    )
+
+    client =
+      insert(
+        :client,
+        user_id: user.id,
+        client_type_id: client_type.id,
+        settings: %{"allowed_grant_types" => ["password"]}
+      )
+
     insert(:authentication_factor, user_id: user.id)
 
     request_payload = %{
-      "token": %{
-        "grant_type": "password",
-        "email": user.email,
-        "password": password,
-        "client_id": client.id,
-        "scope": "app:authorize"
+      token: %{
+        grant_type: "password",
+        email: user.email,
+        password: password,
+        client_id: client.id,
+        scope: "app:authorize"
       }
     }
 
@@ -104,7 +117,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
   test "successfully issues new access_token using code_grant", %{conn: conn} do
     client = Mithril.Fixtures.create_client()
-    user   = Mithril.Fixtures.create_user(%{password: "Secret_password1"})
+    user = Mithril.Fixtures.create_user(%{password: "Secret_password1"})
 
     Mithril.AppAPI.create_app(%{
       user_id: user.id,
@@ -115,7 +128,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
     {:ok, code_grant} = Mithril.Fixtures.create_code_grant_token(client, user, "legal_entity:read")
 
     request_payload = %{
-      "token": %{
+      token: %{
         "grant_type" => "authorization_code",
         "client_id" => client.id,
         "client_secret" => client.secret,
@@ -139,9 +152,9 @@ defmodule Mithril.OAuth.TokenControllerTest do
   end
 
   test "incorrectly crafted body is still treated nicely", %{conn: conn} do
-    assert_error_sent 400, fn ->
+    assert_error_sent(400, fn ->
       post(conn, "/oauth/tokens", Poison.encode!(%{"scope" => "legal_entity:read"}))
-    end
+    end)
   end
 
   test "errors are rendered as json", %{conn: conn} do
@@ -160,19 +173,22 @@ defmodule Mithril.OAuth.TokenControllerTest do
   test "expire old password tokens", %{conn: conn} do
     allowed_scope = "app:authorize"
     client_type = Mithril.Fixtures.create_client_type(%{scope: allowed_scope})
-    client = Mithril.Fixtures.create_client(%{
-      settings: %{"allowed_grant_types" => ["password"]},
-      client_type_id: client_type.id
-    })
+
+    client =
+      Mithril.Fixtures.create_client(%{
+        settings: %{"allowed_grant_types" => ["password"]},
+        client_type_id: client_type.id
+      })
+
     user = Mithril.Fixtures.create_user(%{password: "Secret_password1"})
 
     request_payload = %{
-      "token": %{
-        "grant_type": "password",
-        "email": user.email,
-        "password": "Secret_password1",
-        "client_id": client.id,
-        "scope": "app:authorize"
+      token: %{
+        grant_type: "password",
+        email: user.email,
+        password: "Secret_password1",
+        client_id: client.id,
+        scope: "app:authorize"
       }
     }
 
@@ -181,7 +197,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
     conn2 = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
     assert json_response(conn2, 201)
 
-    now = DateTime.to_unix(DateTime.utc_now)
+    now = DateTime.to_unix(DateTime.utc_now())
     assert expires_at > now
 
     %{expires_at: expires_at} = Repo.get!(Token, token1_id)
@@ -194,19 +210,22 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
     allowed_scope = "app:authorize"
     client_type = Mithril.Fixtures.create_client_type(%{scope: allowed_scope})
-    client = Mithril.Fixtures.create_client(%{
-      settings: %{"allowed_grant_types" => ["password"]},
-      client_type_id: client_type.id
-    })
+
+    client =
+      Mithril.Fixtures.create_client(%{
+        settings: %{"allowed_grant_types" => ["password"]},
+        client_type_id: client_type.id
+      })
+
     user = Mithril.Fixtures.create_user(%{password: "Secret_password1"})
 
     request_payload = %{
-      "token": %{
-        "grant_type": "password",
-        "email": user.email,
-        "password": "Secret_password1",
-        "client_id": client.id,
-        "scope": "app:authorize"
+      token: %{
+        grant_type: "password",
+        email: user.email,
+        password: "Secret_password1",
+        client_id: client.id,
+        scope: "app:authorize"
       }
     }
 
@@ -224,11 +243,15 @@ defmodule Mithril.OAuth.TokenControllerTest do
       allowed_scope = "user:change_password"
       user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("Secret_password1"))
       client_type = insert(:client_type, scope: allowed_scope)
-      client = insert(:client,
-        user_id: user.id,
-        client_type_id: client_type.id,
-        settings: %{"allowed_grant_types" => ["change_password", "password"]}
-      )
+
+      client =
+        insert(
+          :client,
+          user_id: user.id,
+          client_type_id: client_type.id,
+          settings: %{"allowed_grant_types" => ["change_password", "password"]}
+        )
+
       %{conn: conn, client: client, user: user}
     end
 

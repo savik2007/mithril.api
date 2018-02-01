@@ -38,23 +38,27 @@ defmodule Mithril.ClientAPI do
   def get_client(id), do: Repo.get(Client, id)
 
   def get_client_with_type(id),
-      do: id
-          |> query_client_with_type()
-          |> Repo.one()
+    do:
+      id
+      |> query_client_with_type()
+      |> Repo.one()
 
   def get_client_with_type!(id),
-      do: id
-          |> query_client_with_type()
-          |> Repo.one!()
+    do:
+      id
+      |> query_client_with_type()
+      |> Repo.one!()
 
   defp query_client_with_type(id) do
-    from c in Client,
-         left_join: ct in assoc(c, :client_type),
-         on: ct.id == c.client_type_id,
-         where: c.id == ^id,
-         preload: [
-           client_type: ct
-         ]
+    from(
+      c in Client,
+      left_join: ct in assoc(c, :client_type),
+      on: ct.id == c.client_type_id,
+      where: c.id == ^id,
+      preload: [
+        client_type: ct
+      ]
+    )
   end
 
   def get_client_by(attrs), do: Repo.get_by(Client, attrs)
@@ -104,8 +108,8 @@ defmodule Mithril.ClientAPI do
 
   def refresh_secret(%Client{} = client) do
     client
-    |> change(%{secret: SecureRandom.urlsafe_base64})
-    |> Repo.update
+    |> change(%{secret: SecureRandom.urlsafe_base64()})
+    |> Repo.update()
   end
 
   defp client_changeset(%ClientSearch{} = client, attrs) do
@@ -113,6 +117,7 @@ defmodule Mithril.ClientAPI do
     |> cast(attrs, ~w(name user_id is_blocked)a)
     |> set_like_attributes([:name])
   end
+
   defp client_changeset(%Client{} = client, attrs) do
     client
     |> cast(attrs, @fields_required ++ @fields_optional)
@@ -126,20 +131,21 @@ defmodule Mithril.ClientAPI do
   end
 
   defp validate_priv_settings(changeset) do
-    validate_change changeset, :priv_settings, fn :priv_settings, priv_settings ->
+    validate_change(changeset, :priv_settings, fn :priv_settings, priv_settings ->
       case Map.get(priv_settings, "access_type") do
         nil -> [priv_settings: "access_type required."]
         @access_type_direct -> []
         @access_type_broker -> []
         _ -> [priv_settings: "access_type is invalid."]
       end
-    end
+    end)
   end
 
   defp put_secret(changeset) do
     case fetch_field(changeset, :secret) do
       {:data, nil} ->
-        put_change(changeset, :secret, SecureRandom.urlsafe_base64)
+        put_change(changeset, :secret, SecureRandom.urlsafe_base64())
+
       _ ->
         changeset
     end

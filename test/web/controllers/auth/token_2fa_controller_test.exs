@@ -12,11 +12,15 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
     allowed_scope = "app:authorize legal_entity:read"
     user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt(@password))
     client_type = insert(:client_type, scope: allowed_scope)
-    client = insert(:client,
-      user_id: user.id,
-      client_type_id: client_type.id,
-      settings: %{"allowed_grant_types" => ["password"]}
-    )
+
+    client =
+      insert(
+        :client,
+        user_id: user.id,
+        client_type_id: client_type.id,
+        settings: %{"allowed_grant_types" => ["password"]}
+      )
+
     conn = put_req_header(conn, "accept", "application/json")
 
     {:ok, conn: conn, user: user, client: client}
@@ -26,12 +30,14 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
     insert(:authentication_factor, user_id: user.id, factor: nil)
     token = authorize(user.email, client.id)
     conn = put_req_header(conn, "authorization", "Bearer #{token.value}")
+
     request_payload = %{
-      "token": %{
-        "grant_type": "authorize_2fa_access_token",
-        "otp": 1234
+      token: %{
+        grant_type: "authorize_2fa_access_token",
+        otp: 1234
       }
     }
+
     conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
     json_response(conn, 409)
   end
@@ -45,15 +51,19 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       {:ok, conn: conn, token: token, otp: get_last_otp().code, user: user, client: client}
     end
 
-    test "successfully issues new access_token using 2fa_access_token",
-         %{conn: conn, otp: otp, client: client, user: user} do
-
+    test "successfully issues new access_token using 2fa_access_token", %{
+      conn: conn,
+      otp: otp,
+      client: client,
+      user: user
+    } do
       request_payload = %{
-        "token": %{
-          "grant_type": "authorize_2fa_access_token",
-          "otp": otp
+        token: %{
+          grant_type: "authorize_2fa_access_token",
+          otp: otp
         }
       }
+
       conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
       resp = json_response(conn, 201)
 
@@ -75,28 +85,34 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
 
     test "invalid token", %{conn: conn, otp: otp} do
       request_payload = %{
-        "token": %{
-          "grant_type": "authorize_2fa_access_token",
-          "otp": otp
+        token: %{
+          grant_type: "authorize_2fa_access_token",
+          otp: otp
         }
       }
-      conn = conn
-             |> put_req_header("authorization", "Bearer a")
-             |> post("/oauth/tokens", Poison.encode!(request_payload))
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer a")
+        |> post("/oauth/tokens", Poison.encode!(request_payload))
+
       result = json_response(conn, 401)["error"]
       assert "token_invalid" == result["type"]
     end
 
     test "authorization header not set", %{conn: conn, otp: otp} do
       request_payload = %{
-        "token": %{
-          "grant_type": "authorize_2fa_access_token",
-          "otp": otp
+        token: %{
+          grant_type: "authorize_2fa_access_token",
+          otp: otp
         }
       }
-      conn = conn
-             |> delete_req_header("authorization")
-             |> post("/oauth/tokens", Poison.encode!(request_payload))
+
+      conn =
+        conn
+        |> delete_req_header("authorization")
+        |> post("/oauth/tokens", Poison.encode!(request_payload))
+
       result = json_response(conn, 401)["error"]
       assert "Authorization header required." == result["message"]
     end
@@ -104,37 +120,40 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
     test "expire old password tokens", %{conn: conn} do
       allowed_scope = "app:authorize"
       client_type = Mithril.Fixtures.create_client_type(%{scope: allowed_scope})
-      client = Mithril.Fixtures.create_client(
-        %{
+
+      client =
+        Mithril.Fixtures.create_client(%{
           settings: %{
             "allowed_grant_types" => ["password"]
           },
           client_type_id: client_type.id
-        }
-      )
+        })
+
       user = Mithril.Fixtures.create_user(%{password: "Secret_password1"})
 
       request_payload = %{
-        "token": %{
-          "grant_type": "password",
-          "email": user.email,
-          "password": "Secret_password1",
-          "client_id": client.id,
-          "scope": "app:authorize"
+        token: %{
+          grant_type: "password",
+          email: user.email,
+          password: "Secret_password1",
+          client_id: client.id,
+          scope: "app:authorize"
         }
       }
 
       conn1 = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
+
       %{
         "data" => %{
           "id" => token1_id,
           "expires_at" => expires_at
         }
       } = json_response(conn1, 201)
+
       conn2 = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
       assert json_response(conn2, 201)
 
-      now = DateTime.to_unix(DateTime.utc_now)
+      now = DateTime.to_unix(DateTime.utc_now())
       assert expires_at > now
 
       %{expires_at: expires_at} = Repo.get!(Token, token1_id)
@@ -143,18 +162,18 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
   end
 
   describe "set factor (init factor)" do
-
     setup %{conn: conn, user: user, client: client} do
       insert(:authentication_factor, user_id: user.id)
       token = authorize(user.email, client.id)
       conn1 = put_req_header(conn, "authorization", "Bearer #{token.value}")
 
       request_payload = %{
-        "token": %{
-          "grant_type": "authorize_2fa_access_token",
-          "otp": get_last_otp().code
+        token: %{
+          grant_type: "authorize_2fa_access_token",
+          otp: get_last_otp().code
         }
       }
+
       conn2 = post(conn1, "/oauth/tokens", Poison.encode!(request_payload))
       token = json_response(conn2, 201)["data"]["value"]
 
@@ -163,7 +182,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
     end
 
     test "success create token for changing factor", %{conn: conn, user: user} do
-      conn1 = post conn, oauth2_token_path(conn, :init_factor), %{type: "SMS", factor: "+380881002030"}
+      conn1 = post(conn, oauth2_token_path(conn, :init_factor), %{type: "SMS", factor: "+380881002030"})
       token = json_response(conn1, 201)["data"]
 
       assert token["name"] == "2fa_access_token"
@@ -173,45 +192,53 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       refute Map.has_key?(token, "details")
 
       # token expired
-      conn2 = post conn, oauth2_token_path(conn, :init_factor), %{type: "SMS", factor: "+380881002030"}
+      conn2 = post(conn, oauth2_token_path(conn, :init_factor), %{type: "SMS", factor: "+380881002030"})
       assert "Token expired" = json_response(conn2, 401)["error"]["message"]
     end
 
     test "invalid type", %{conn: conn} do
-      conn = post conn, oauth2_token_path(conn, :init_factor), %{type: 123, factor: "+380881002030"}
+      conn = post(conn, oauth2_token_path(conn, :init_factor), %{type: 123, factor: "+380881002030"})
       assert err = hd(json_response(conn, 422)["error"]["invalid"])
       assert "$.type" == err["entry"]
     end
 
     test "OTP timeouted", %{conn: conn} do
       time = unixtime_to_naive(:os.system_time(:seconds) + 10)
-      user = insert(:user, priv_settings: %PrivSettings{
-        otp_error_counter: 0,
-        login_hstr: [
-          build(:login_history, time: time), build(:login_history, time: time), build(:login_history, time: time),
-        ],
-      })
+
+      user =
+        insert(
+          :user,
+          priv_settings: %PrivSettings{
+            otp_error_counter: 0,
+            login_hstr: [
+              build(:login_history, time: time),
+              build(:login_history, time: time),
+              build(:login_history, time: time)
+            ]
+          }
+        )
+
       insert(:authentication_factor, user_id: user.id)
       token = insert(:token, user_id: user.id, name: "access_token")
 
       assert "otp_timeout" ==
-        conn
-        |> put_req_header("authorization", "Bearer #{token.value}")
-        |> post(oauth2_token_path(conn, :init_factor), Poison.encode!(%{type: "SMS", factor: "+380881002030"}))
-        |> json_response(429)
-        |> get_in(["error", "type"])
+               conn
+               |> put_req_header("authorization", "Bearer #{token.value}")
+               |> post(oauth2_token_path(conn, :init_factor), Poison.encode!(%{type: "SMS", factor: "+380881002030"}))
+               |> json_response(429)
+               |> get_in(["error", "type"])
 
-        # check that token not expired after request with timed out OTP
+      # check that token not expired after request with timed out OTP
       assert "otp_timeout" ==
-        conn
-        |> put_req_header("authorization", "Bearer #{token.value}")
-        |> post(oauth2_token_path(conn, :init_factor), Poison.encode!(%{type: "SMS", factor: "+380881002030"}))
-        |> json_response(429)
-        |> get_in(["error", "type"])
+               conn
+               |> put_req_header("authorization", "Bearer #{token.value}")
+               |> post(oauth2_token_path(conn, :init_factor), Poison.encode!(%{type: "SMS", factor: "+380881002030"}))
+               |> json_response(429)
+               |> get_in(["error", "type"])
     end
 
     test "invalid factor", %{conn: conn} do
-      conn = post conn, oauth2_token_path(conn, :init_factor), %{type: "SMS", factor: "Skywalker"}
+      conn = post(conn, oauth2_token_path(conn, :init_factor), %{type: "SMS", factor: "Skywalker"})
       assert err = hd(json_response(conn, 422)["error"]["invalid"])
       assert "$.factor" == err["entry"]
     end
@@ -220,7 +247,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       token = insert(:token, user_id: user.id, name: "2fa_access_token")
       conn = put_req_header(conn, "authorization", "Bearer #{token.value}")
 
-      conn = post conn, oauth2_token_path(conn, :init_factor), %{type: "SMS", factor: "+380881002030"}
+      conn = post(conn, oauth2_token_path(conn, :init_factor), %{type: "SMS", factor: "+380881002030"})
       assert "token_invalid_type" == json_response(conn, 401)["error"]["type"]
     end
   end
@@ -235,7 +262,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
     end
 
     test "success create token for first init factor", %{conn: conn, user: user} do
-      conn = post conn, oauth2_token_path(conn, :init_factor), %{type: "SMS", factor: "+380885002030"}
+      conn = post(conn, oauth2_token_path(conn, :init_factor), %{type: "SMS", factor: "+380885002030"})
       token = json_response(conn, 201)["data"]
 
       assert token["name"] == "2fa_access_token"
@@ -247,7 +274,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       token = insert(:token, user_id: user.id, name: "access_token")
       conn = put_req_header(conn, "authorization", "Bearer #{token.value}")
 
-      conn = post conn, oauth2_token_path(conn, :init_factor), %{type: "SMS", factor: "+380881002030"}
+      conn = post(conn, oauth2_token_path(conn, :init_factor), %{type: "SMS", factor: "+380881002030"})
       assert "token_invalid_type" == json_response(conn, 401)["error"]["type"]
     end
   end
@@ -258,7 +285,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       token = authorize(user.email, client.id)
 
       conn1 = put_req_header(conn, "authorization", "Bearer #{token.value}")
-      conn2 = post conn1, oauth2_token_path(conn1, :init_factor), %{type: "SMS", factor: "+380885002030"}
+      conn2 = post(conn1, oauth2_token_path(conn1, :init_factor), %{type: "SMS", factor: "+380885002030"})
       token = json_response(conn2, 201)["data"]
 
       conn = put_req_header(conn, "authorization", "Bearer #{token["value"]}")
@@ -267,7 +294,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
     end
 
     test "success", %{conn: conn, user: user, otp: otp} do
-      conn = post conn, oauth2_token_path(conn, :approve_factor), %{otp: otp}
+      conn = post(conn, oauth2_token_path(conn, :approve_factor), %{otp: otp})
       token = json_response(conn, 201)["data"]
 
       assert "access_token" == token["name"]
@@ -279,7 +306,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
     end
 
     test "invalid OTP", %{conn: conn} do
-      conn = post conn, oauth2_token_path(conn, :approve_factor), %{otp: 100200}
+      conn = post(conn, oauth2_token_path(conn, :approve_factor), %{otp: 100_200})
       json_response(conn, 401)
       assert %{"type" => "otp_invalid"} = json_response(conn, 401)["error"]
     end
@@ -289,7 +316,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       |> OTP.get_otp_by!()
       |> OTP.update_otp(%{code_expired_at: "2010-11-27T12:40:13"})
 
-      conn = post conn, oauth2_token_path(conn, :approve_factor), %{otp: 100200}
+      conn = post(conn, oauth2_token_path(conn, :approve_factor), %{otp: 100_200})
       json_response(conn, 401)
       assert %{"type" => "otp_expired"} = json_response(conn, 401)["error"]
     end
@@ -304,8 +331,9 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
         scope_request: "app:authorize",
         client_id: client.id,
         grant_type: "password",
-        redirect_uri: "http://localhost",
+        redirect_uri: "http://localhost"
       }
+
       token = insert(:token, user_id: user.id, name: "2fa_access_token", details: details)
       conn = put_req_header(conn, "authorization", "Bearer #{token.value}")
 
@@ -314,10 +342,11 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
 
     test "successfully refresh 2fa_access_token", %{conn: conn, client: client, user: user} do
       request_payload = %{
-        "token": %{
-          "grant_type": "refresh_2fa_access_token",
+        token: %{
+          grant_type: "refresh_2fa_access_token"
         }
       }
+
       conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
       resp = json_response(conn, 201)
 
@@ -341,11 +370,13 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
     test "invalid token type", %{conn: conn, user: user} do
       token = insert(:token, user_id: user.id, name: "access_token")
       conn = put_req_header(conn, "authorization", "Bearer #{token.value}")
+
       request_payload = %{
-        "token": %{
-          "grant_type": "refresh_2fa_access_token",
+        token: %{
+          grant_type: "refresh_2fa_access_token"
         }
       }
+
       conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
       assert "Invalid token type" == json_response(conn, 401)["error"]["message"]
     end
@@ -355,11 +386,13 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
     insert(:authentication_factor, user_id: user.id, factor: nil)
     token = authorize(user.email, client.id)
     conn = put_req_header(conn, "authorization", "Bearer #{token.value}")
+
     request_payload = %{
-      "token": %{
-        "grant_type": "refresh_2fa_access_token",
+      token: %{
+        grant_type: "refresh_2fa_access_token"
       }
     }
+
     conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
     json_response(conn, 409)
   end
@@ -375,45 +408,49 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
 
     setup %{conn: conn, user: user, client: client} do
       insert(:authentication_factor, user_id: user.id)
+
       details = %{
         scope: "app:authorize",
         client_id: client.id,
         grant_type: "password",
-        redirect_uri: "http://localhost",
+        redirect_uri: "http://localhost"
       }
+
       token = insert(:token, user_id: user.id, name: "2fa_access_token", details: details)
       conn = put_req_header(conn, "authorization", "Bearer #{token.value}")
 
       {:ok, port, ref} = start_microservices(Microservices)
       System.put_env("OTP_ENDPOINT", "http://localhost:#{port}")
       System.put_env("SMS_ENABLED", "true")
-      on_exit fn ->
+
+      on_exit(fn ->
         System.delete_env("OTP_ENDPOINT")
         System.put_env("SMS_ENABLED", "false")
         stop_microservices(ref)
-      end
+      end)
 
       {:ok, conn: conn, user: user, client: client}
     end
 
     test "refresh 2FA factor", %{conn: conn} do
       request_payload = %{
-        "token": %{
-          "grant_type": "refresh_2fa_access_token",
+        token: %{
+          grant_type: "refresh_2fa_access_token"
         }
       }
+
       conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
       json_response(conn, 503)
     end
 
     test "login via password", %{conn: conn, user: user, client: client} do
       request_payload = %{
-        "token": %{
-          "grant_type": "password",
-          "email": user.email,
-          "password": @password,
-          "client_id": client.id,
-          "scope": "app:authorize"
+        token: %{
+          grant_type: "password",
+          email: user.email,
+          password: @password,
+          client_id: client.id,
+          scope: "app:authorize"
         }
       }
 
@@ -423,17 +460,19 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
   end
 
   defp authorize(email, client_id, password \\ @password) do
-    {:ok, %{token: token}} = PasswordGrantType.authorize(%{
-      "email" => email,
-      "password" => password,
-      "client_id" => client_id,
-      "scope" => "app:authorize legal_entity:read",
-    })
+    {:ok, %{token: token}} =
+      PasswordGrantType.authorize(%{
+        "email" => email,
+        "password" => password,
+        "client_id" => client_id,
+        "scope" => "app:authorize legal_entity:read"
+      })
+
     token
   end
 
   defp get_last_otp do
-    List.first(OTP.list_otps)
+    List.first(OTP.list_otps())
   end
 
   defp unixtime_to_naive(time) do

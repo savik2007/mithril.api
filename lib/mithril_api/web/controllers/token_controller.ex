@@ -5,7 +5,7 @@ defmodule Mithril.Web.TokenController do
   alias Mithril.TokenAPI.Token
   alias Scrivener.Page
 
-  action_fallback Mithril.Web.FallbackController
+  action_fallback(Mithril.Web.FallbackController)
 
   def index(conn, params) do
     with %Page{} = paging <- TokenAPI.list_tokens(params) do
@@ -55,6 +55,7 @@ defmodule Mithril.Web.TokenController do
 
   def delete(conn, %{"id" => id}) do
     token = TokenAPI.get_token!(id)
+
     with {:ok, %Token{}} <- TokenAPI.delete_token(token) do
       send_resp(conn, :no_content, "")
     end
@@ -67,9 +68,10 @@ defmodule Mithril.Web.TokenController do
   end
 
   def delete_by_user_ids(conn, %{"user_ids" => ids}) do
-    with {_, nil} <- ids
-                     |> String.split(",")
-                     |> TokenAPI.delete_tokens_by_user_ids() do
+    with {_, nil} <-
+           ids
+           |> String.split(",")
+           |> TokenAPI.delete_tokens_by_user_ids() do
       send_resp(conn, :no_content, "")
     end
   end

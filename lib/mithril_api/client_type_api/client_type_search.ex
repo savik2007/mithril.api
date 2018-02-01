@@ -4,7 +4,7 @@ defmodule Mithril.ClientAPI.ClientTypeSearch do
   use Ecto.Schema
 
   schema "client_type_search" do
-    field :name, :string
-    field :scope, :string
+    field(:name, :string)
+    field(:scope, :string)
   end
 end

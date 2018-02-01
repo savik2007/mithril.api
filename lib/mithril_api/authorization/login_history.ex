@@ -50,6 +50,7 @@ defmodule Mithril.Authorization.LoginHistory do
 
   def filter_by_period(%LoginHstr{time: time}, max_logins_period) do
     period_start = NaiveDateTime.add(NaiveDateTime.utc_now(), -max_logins_period * 60, :second)
+
     case NaiveDateTime.compare(time, period_start) do
       :lt -> false
       _ -> true
@@ -80,8 +81,9 @@ defmodule Mithril.Authorization.LoginHistory do
       %{
         "type" => type,
         "is_success" => is_success,
-        "time" => NaiveDateTime.utc_now(),
-      } | Enum.slice(logins, 0, max_items - 1)
+        "time" => NaiveDateTime.utc_now()
+      }
+      | Enum.slice(logins, 0, max_items - 1)
     ]
   end
 

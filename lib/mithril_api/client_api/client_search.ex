@@ -4,8 +4,8 @@ defmodule Mithril.ClientAPI.ClientSearch do
   use Ecto.Schema
 
   schema "client_search" do
-    field :name, :string
-    field :user_id, Ecto.UUID
-    field :is_blocked, :boolean
+    field(:name, :string)
+    field(:user_id, Ecto.UUID)
+    field(:is_blocked, :boolean)
   end
 end

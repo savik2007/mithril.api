@@ -87,26 +87,28 @@ defmodule Mithril.ClientAPITest do
   end
 
   test "updating non-existent client results in creating a new client (idempotency)" do
-    user        = Mithril.Fixtures.create_user()
+    user = Mithril.Fixtures.create_user()
     client_type = Mithril.Fixtures.create_client_type()
-    client_id   = Ecto.UUID.generate()
+    client_id = Ecto.UUID.generate()
 
-    {:ok, client} = ClientAPI.edit_client(client_id, %{
-      name: "some updated name",
-      user_id: user.id,
-      client_type_id: client_type.id,
-      priv_settings: %{"access_type" => @broker},
-      redirect_uri: "https://localhost",
-      settings: %{}
-    })
+    {:ok, client} =
+      ClientAPI.edit_client(client_id, %{
+        name: "some updated name",
+        user_id: user.id,
+        client_type_id: client_type.id,
+        priv_settings: %{"access_type" => @broker},
+        redirect_uri: "https://localhost",
+        settings: %{}
+      })
 
     assert client_id == client.id
 
     initial_secret = client.secret
 
-    {:ok, client} = ClientAPI.edit_client(client_id, %{
-      secret: "attempt to update secret"
-    })
+    {:ok, client} =
+      ClientAPI.edit_client(client_id, %{
+        secret: "attempt to update secret"
+      })
 
     # secret did not change
     assert initial_secret == client.secret

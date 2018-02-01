@@ -4,15 +4,16 @@ defmodule Mithril.Search do
   """
 
   defmacro __using__(_) do
-    quote  do
+    quote do
       import Ecto.{Query, Changeset}, warn: false
 
       alias Mithril.Paging
       alias Mithril.Repo
 
       def set_like_attributes(%Ecto.Changeset{valid?: false} = changeset, _like_fields), do: changeset
+
       def set_like_attributes(%Ecto.Changeset{valid?: true, changes: changes} = changeset, like_fields) do
-        Enum.reduce(changes, changeset, fn({key, value}, changeset) ->
+        Enum.reduce(changes, changeset, fn {key, value}, changeset ->
           case key in like_fields do
             true -> put_change(changeset, key, {value, :like})
             _ -> changeset
@@ -31,10 +32,9 @@ defmodule Mithril.Search do
       end
 
       def get_search_query(entity, changes) when map_size(changes) > 0 do
-        params = Enum.filter(changes, fn({key, value}) -> !is_tuple(value) end)
+        params = Enum.filter(changes, fn {key, value} -> !is_tuple(value) end)
 
-        q = from e in entity,
-          where: ^params
+        q = from(e in entity, where: ^params)
 
         Enum.reduce(changes, q, fn
           {key, {value, :like}}, query ->
@@ -50,9 +50,10 @@ defmodule Mithril.Search do
             query
         end)
       end
-      def get_search_query(entity, _changes), do: from e in entity
 
-      defoverridable [get_search_query: 2]
+      def get_search_query(entity, _changes), do: from(e in entity)
+
+      defoverridable get_search_query: 2
     end
   end
 end

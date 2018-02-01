@@ -21,6 +21,7 @@ defmodule Mithril.Authorization.App do
     |> update_or_create_app()
     |> create_token()
   end
+
   def grant(_) do
     message = "Request must include at least client_id, redirect_uri and scopes parameters."
     Error.invalid_request(message)
@@ -34,6 +35,7 @@ defmodule Mithril.Authorization.App do
   end
 
   defp find_user({:error, _} = err), do: err
+
   defp find_user(%{"user_id" => user_id, "client" => %{id: client_id}} = params) do
     case Mithril.UserAPI.get_full_user(user_id, client_id) do
       nil -> Error.invalid_user("User not found.")
@@ -42,6 +44,7 @@ defmodule Mithril.Authorization.App do
   end
 
   defp validate_redirect_uri({:error, _} = err), do: err
+
   defp validate_redirect_uri(%{"client" => client, "redirect_uri" => redirect_uri} = params) do
     if Regex.match?(RedirectUriChecker.generate_redirect_uri_regexp(client.redirect_uri), redirect_uri) do
       params
@@ -52,9 +55,11 @@ defmodule Mithril.Authorization.App do
   end
 
   defp validate_client_scope({:error, _} = err), do: err
+
   defp validate_client_scope(%{"client" => %{client_type: %{scope: client_type_scope}}, "scope" => scope} = params) do
     allowed_scopes = String.split(client_type_scope, " ", trim: true)
     requested_scopes = String.split(scope, " ", trim: true)
+
     if Mithril.Utils.List.subset?(allowed_scopes, requested_scopes) do
       params
     else
@@ -64,9 +69,11 @@ defmodule Mithril.Authorization.App do
   end
 
   defp validate_user_scope({:error, _} = err), do: err
+
   defp validate_user_scope(%{"user" => %{roles: user_roles}, "scope" => scope} = params) do
-    allowed_scopes = user_roles |> Enum.map_join(" ", &(&1.scope)) |> String.split(" ", trim: true)
+    allowed_scopes = user_roles |> Enum.map_join(" ", & &1.scope) |> String.split(" ", trim: true)
     requested_scopes = String.split(scope, " ", trim: true)
+
     if Mithril.Utils.List.subset?(allowed_scopes, requested_scopes) do
       params
     else
@@ -76,13 +83,15 @@ defmodule Mithril.Authorization.App do
   end
 
   defp update_or_create_app({:error, _} = err), do: err
+
   defp update_or_create_app(%{"user" => user, "client_id" => client_id, "scope" => scope} = params) do
     app =
-      case Mithril.AppAPI.get_app_by([user_id: user.id, client_id: client_id]) do
+      case Mithril.AppAPI.get_app_by(user_id: user.id, client_id: client_id) do
         nil ->
           {:ok, app} = Mithril.AppAPI.create_app(%{user_id: user.id, client_id: client_id, scope: scope})
 
           app
+
         app ->
           aggregated_scopes = String.split(scope, " ", trim: true) ++ String.split(app.scope, " ", trim: true)
           aggregated_scope = aggregated_scopes |> Enum.uniq() |> Enum.join(" ")
@@ -94,6 +103,7 @@ defmodule Mithril.Authorization.App do
   end
 
   defp create_token({:error, _} = err), do: err
+
   defp create_token(%{"user" => user, "client" => client, "redirect_uri" => redirect_uri, "scope" => scope} = params) do
     {:ok, token} =
       Mithril.TokenAPI.create_authorization_code(%{

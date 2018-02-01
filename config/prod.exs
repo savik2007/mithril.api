@@ -33,11 +33,11 @@ config :mithril_api, Mithril.Web.Endpoint,
   load_from_system_env: true,
   http: [
     port: {:system, "PORT", "80"},
-    protocol_options: [max_keepalive: 1_000_000],
+    protocol_options: [max_keepalive: 1_000_000]
   ],
-  url:  [
+  url: [
     host: {:system, "HOST", "localhost"},
-    port: {:system, "PORT", "80"},
+    port: {:system, "PORT", "80"}
   ],
   secret_key_base: {:system, "SECRET_KEY"},
   debug_errors: false,

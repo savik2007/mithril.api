@@ -51,7 +51,8 @@ defmodule Mithril.Web.ConnCase do
     {:ok, port_string} = :inet.port(port)
     :erlang.port_close(port)
     ref = make_ref()
-    {:ok, _pid} = Plug.Adapters.Cowboy.http module, [], port: port_string, ref: ref # TODO: only 1 worker here
+    # TODO: only 1 worker here
+    {:ok, _pid} = Plug.Adapters.Cowboy.http(module, [], port: port_string, ref: ref)
     {:ok, port_string, ref}
   end
 

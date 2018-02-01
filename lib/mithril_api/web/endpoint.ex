@@ -7,29 +7,33 @@ defmodule Mithril.Web.Endpoint do
 
   # Allow acceptance tests to run in concurrent mode
   if Application.get_env(:mithril_api, :sql_sandbox) do
-    plug Phoenix.Ecto.SQL.Sandbox
+    plug(Phoenix.Ecto.SQL.Sandbox)
   end
 
-  plug Plug.RequestId
-  plug EView.Plugs.Idempotency
-  plug Plug.LoggerJSON, level: Logger.level
+  plug(Plug.RequestId)
+  plug(EView.Plugs.Idempotency)
+  plug(Plug.LoggerJSON, level: Logger.level())
 
-  plug EView
+  plug(EView)
 
-  plug Plug.Parsers,
+  plug(
+    Plug.Parsers,
     parsers: [:json],
     pass: ["application/json"],
     json_decoder: Poison
+  )
 
-  plug Plug.MethodOverride
-  plug Plug.Head
+  plug(Plug.MethodOverride)
+  plug(Plug.Head)
 
-  plug Plug.Session,
+  plug(
+    Plug.Session,
     store: :cookie,
     key: "_trump_key",
     signing_salt: "signing_salt"
+  )
 
-  plug MithrilWeb.Router
+  plug(MithrilWeb.Router)
 
   @doc """
   Dynamically loads configuration from the system environment
