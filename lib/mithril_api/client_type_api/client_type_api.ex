@@ -116,6 +116,7 @@ defmodule Mithril.ClientTypeAPI do
     client_type
     |> cast(attrs, [:name, :scope])
     |> validate_required([:name, :scope])
+    |> unique_constraint(:name)
   end
 
   defp client_type_changeset(%ClientTypeSearch{} = client_type, attrs) do
