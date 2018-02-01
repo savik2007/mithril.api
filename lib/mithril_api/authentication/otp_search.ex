@@ -7,8 +7,8 @@ defmodule Mithril.Authentication.OTPSearch do
 
   @primary_key false
   schema "otp_search" do
-    field :key, StringLike
-    field :status, :string
-    field :active, :boolean
+    field(:key, StringLike)
+    field(:status, :string)
+    field(:active, :boolean)
   end
 end

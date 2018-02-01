@@ -4,7 +4,7 @@ defmodule Mithril.Web.UserRoleController do
   alias Mithril.UserRoleAPI
   alias Mithril.UserRoleAPI.UserRole
 
-  action_fallback Mithril.Web.FallbackController
+  action_fallback(Mithril.Web.FallbackController)
 
   def index(conn, params) do
     with user_roles <- UserRoleAPI.list_user_roles(params) do
@@ -30,6 +30,7 @@ defmodule Mithril.Web.UserRoleController do
 
   def delete(conn, %{"id" => id}) do
     user_role = UserRoleAPI.get_user_role!(id)
+
     with {:ok, %UserRole{}} <- UserRoleAPI.delete_user_role(user_role) do
       send_resp(conn, :no_content, "")
     end

@@ -25,6 +25,7 @@ defmodule Mithril.Web.AuthenticationFactorView do
     masked = String.replace(factor, ~r/(?<=\+\d{5})\d{5}/, "*****")
     Map.put(fields, :factor, masked)
   end
+
   defp mask_factor(fields) do
     fields
   end

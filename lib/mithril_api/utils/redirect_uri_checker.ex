@@ -4,8 +4,8 @@ defmodule Mithril.Utils.RedirectUriChecker do
   def generate_redirect_uri_regexp(redirect_uri) do
     ~r/\/$/
     |> Regex.replace(redirect_uri, "")
-    |> Regex.escape
+    |> Regex.escape()
     |> Kernel.<>("((\/.*)|(\\?.*))?$")
-    |> Regex.compile!
+    |> Regex.compile!()
   end
 end

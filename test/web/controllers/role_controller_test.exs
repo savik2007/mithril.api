@@ -10,7 +10,7 @@ defmodule Mithril.Web.RoleControllerTest do
 
   def fixture(:role, params \\ %{}) do
     params = Map.merge(@create_attrs, params)
-    params = if Map.has_key?(params, :name), do: params, else: Map.put(params, :name, to_string(:rand.uniform))
+    params = if Map.has_key?(params, :name), do: params, else: Map.put(params, :name, to_string(:rand.uniform()))
     {:ok, role} = RoleAPI.create_role(params)
     role
   end
@@ -24,7 +24,7 @@ defmodule Mithril.Web.RoleControllerTest do
       fixture(:role, %{name: "admin"})
       fixture(:role, %{name: "administrator"})
       fixture(:role, %{name: "user"})
-      conn = get conn, role_path(conn, :index), %{name: "admin"}
+      conn = get(conn, role_path(conn, :index), %{name: "admin"})
       assert 1 == length(json_response(conn, 200)["data"])
     end
 
@@ -33,7 +33,7 @@ defmodule Mithril.Web.RoleControllerTest do
       fixture(:role)
       fixture(:role)
       fixture(:role)
-      conn = get conn, role_path(conn, :index)
+      conn = get(conn, role_path(conn, :index))
       assert 3 == length(json_response(conn, 200)["data"])
     end
 
@@ -41,7 +41,7 @@ defmodule Mithril.Web.RoleControllerTest do
       fixture(:role)
       fixture(:role)
       fixture(:role)
-      conn = get conn, role_path(conn, :index), %{page_size: 2}
+      conn = get(conn, role_path(conn, :index), %{page_size: 2})
       assert 2 == length(json_response(conn, 200)["data"])
     end
 
@@ -50,7 +50,7 @@ defmodule Mithril.Web.RoleControllerTest do
       fixture(:role)
       fixture(:role)
       role = fixture(:role)
-      conn = get conn, role_path(conn, :index), %{page_size: 2, page: 2}
+      conn = get(conn, role_path(conn, :index), %{page_size: 2, page: 2})
       resp = json_response(conn, 200)["data"]
       assert 1 == length(resp)
       assert role.id == Map.get(hd(resp), "id")
@@ -62,84 +62,90 @@ defmodule Mithril.Web.RoleControllerTest do
       fixture(:role, %{scope: "employee:read employee:write"})
       fixture(:role, %{scope: "employee:read employee:write"})
       scopes = ~w(employee:read employee:write)
-      conn = get conn, role_path(conn, :index), %{scope: Enum.join(scopes, ",")}
+      conn = get(conn, role_path(conn, :index), %{scope: Enum.join(scopes, ",")})
       resp = json_response(conn, 200)["data"]
 
       assert 2 == length(resp)
+
       assert Enum.all?(resp, fn client_type ->
-        client_type["scope"]
-        |> String.split(" ")
-        |> MapSet.new()
-        |> MapSet.intersection(MapSet.new(scopes))
-        |> Enum.empty?
-        |> Kernel.!
-      end)
+               client_type["scope"]
+               |> String.split(" ")
+               |> MapSet.new()
+               |> MapSet.intersection(MapSet.new(scopes))
+               |> Enum.empty?()
+               |> Kernel.!()
+             end)
     end
   end
 
   test "creates role and renders role when data is valid", %{conn: conn} do
-    conn = post conn, role_path(conn, :create), role: Map.put(@create_attrs, :name, "some name")
+    conn = post(conn, role_path(conn, :create), role: Map.put(@create_attrs, :name, "some name"))
     assert %{"id" => id} = json_response(conn, 201)["data"]
 
-    conn = get conn, role_path(conn, :show, id)
+    conn = get(conn, role_path(conn, :show, id))
+
     assert json_response(conn, 200)["data"] == %{
-      "id" => id,
-      "name" => "some name",
-      "scope" => "some scope",
-    }
+             "id" => id,
+             "name" => "some name",
+             "scope" => "some scope"
+           }
   end
 
   test "creates same role twice", %{conn: conn} do
-    conn1 = post conn, role_path(conn, :create), role: Map.put(@create_attrs, :name, "some name")
+    conn1 = post(conn, role_path(conn, :create), role: Map.put(@create_attrs, :name, "some name"))
     assert %{"id" => id} = json_response(conn1, 201)["data"]
 
-    conn = get conn, role_path(conn, :show, id)
-    assert json_response(conn, 200)["data"] == %{
-      "id" => id,
-      "name" => "some name",
-      "scope" => "some scope",
-    }
+    conn = get(conn, role_path(conn, :show, id))
 
-    conn2 = post conn, role_path(conn, :create), role: Map.put(@create_attrs, :name, "some name")
+    assert json_response(conn, 200)["data"] == %{
+             "id" => id,
+             "name" => "some name",
+             "scope" => "some scope"
+           }
+
+    conn2 = post(conn, role_path(conn, :create), role: Map.put(@create_attrs, :name, "some name"))
+
     assert %{
-      "error" => %{
-        "invalid" => [
-          %{"rules" => [%{"description" => "has already been taken"}]}
-        ]
-      }
-    } = json_response(conn2, 422)
+             "error" => %{
+               "invalid" => [
+                 %{"rules" => [%{"description" => "has already been taken"}]}
+               ]
+             }
+           } = json_response(conn2, 422)
   end
 
   test "does not create role and renders errors when data is invalid", %{conn: conn} do
-    conn = post conn, role_path(conn, :create), role: @invalid_attrs
+    conn = post(conn, role_path(conn, :create), role: @invalid_attrs)
     assert json_response(conn, 422)["errors"] != %{}
   end
 
   test "updates chosen role and renders role when data is valid", %{conn: conn} do
     %Role{id: id} = role = fixture(:role)
-    conn = put conn, role_path(conn, :update, role), role: @update_attrs
+    conn = put(conn, role_path(conn, :update, role), role: @update_attrs)
     assert %{"id" => ^id} = json_response(conn, 200)["data"]
 
-    conn = get conn, role_path(conn, :show, id)
+    conn = get(conn, role_path(conn, :show, id))
+
     assert json_response(conn, 200)["data"] == %{
-      "id" => id,
-      "name" => "some updated name",
-      "scope" => "some updated scope",
-    }
+             "id" => id,
+             "name" => "some updated name",
+             "scope" => "some updated scope"
+           }
   end
 
   test "does not update chosen role and renders errors when data is invalid", %{conn: conn} do
     role = fixture(:role)
-    conn = put conn, role_path(conn, :update, role), role: @invalid_attrs
+    conn = put(conn, role_path(conn, :update, role), role: @invalid_attrs)
     assert json_response(conn, 422)["errors"] != %{}
   end
 
   test "deletes chosen role", %{conn: conn} do
     role = fixture(:role)
-    conn = delete conn, role_path(conn, :delete, role)
+    conn = delete(conn, role_path(conn, :delete, role))
     assert response(conn, 204)
-    assert_error_sent 404, fn ->
-      get conn, role_path(conn, :show, role)
-    end
+
+    assert_error_sent(404, fn ->
+      get(conn, role_path(conn, :show, role))
+    end)
   end
 end

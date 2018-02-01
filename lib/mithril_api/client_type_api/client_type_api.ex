@@ -28,6 +28,7 @@ defmodule Mithril.ClientTypeAPI do
   def get_search_query(entity, %{scope: scopes} = changes) do
     super(entity, Map.put(changes, :scope, {String.split(scopes, ","), :intersect}))
   end
+
   def get_search_query(entity, changes), do: super(entity, changes)
 
   @doc """

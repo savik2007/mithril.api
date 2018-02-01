@@ -4,9 +4,9 @@ defmodule Mithril.AppAPI.App do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "apps" do
-    field :scope, :string
-    field :user_id, :binary_id
-    field :client_id, :binary_id
+    field(:scope, :string)
+    field(:user_id, :binary_id)
+    field(:client_id, :binary_id)
 
     timestamps()
   end

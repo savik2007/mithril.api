@@ -13,18 +13,21 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
   setup do
     user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("super$ecre7"))
     client_type = insert(:client_type, scope: "app:authorize legal_entity:read legal_entity:write")
-    client = insert(
-      :client,
-      user_id: user.id,
-      redirect_uri: "http://localhost",
-      client_type_id: client_type.id,
-      settings: %{
-        "allowed_grant_types" => ["password"]
-      },
-      priv_settings: %{
-        "access_type" => @direct
-      }
-    )
+
+    client =
+      insert(
+        :client,
+        user_id: user.id,
+        redirect_uri: "http://localhost",
+        client_type_id: client_type.id,
+        settings: %{
+          "allowed_grant_types" => ["password"]
+        },
+        priv_settings: %{
+          "access_type" => @direct
+        }
+      )
+
     factor_value = "+380331002030"
     factor = insert(:authentication_factor, user_id: user.id, factor: factor_value)
     role = insert(:role, scope: "legal_entity:read legal_entity:write")
@@ -43,11 +46,11 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
         "grant_type" => "authorize_2fa_access_token",
         "otp" => "invalid type"
       }
+
       assert %Ecto.Changeset{valid?: false} = AccessToken2FA.authorize(data)
     end
 
-    test "other access token deactivated when 2fa access token authorized",
-         %{token: token_2fa, user: user, otp: otp} do
+    test "other access token deactivated when 2fa access token authorized", %{token: token_2fa, user: user, otp: otp} do
       details = %{"client_id" => token_2fa.details["client_id"]}
       access_token = insert(:token, user_id: user.id, name: "access_token", details: details)
 
@@ -60,6 +63,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
         "grant_type" => "authorize_2fa_access_token",
         "otp" => otp.code
       }
+
       assert {:ok, %{token: new_access_token}} = AccessToken2FA.authorize(data)
       refute TokenAPI.expired?(new_access_token)
 
@@ -69,19 +73,21 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
     end
 
     test "authentication factor not found for user" do
-
     end
 
     test "reached max OTP error", %{token: token_2fa, user: user, otp: otp} do
       user_otp_error_max = Confex.get_env(:mithril_api, :"2fa")[:user_otp_error_max]
+
       data = %{
         "token_value" => token_2fa.value,
         "grant_type" => "authorize_2fa_access_token",
         "otp" => 9999
       }
+
       for _ <- 1..(user_otp_error_max - 1) do
         assert {:error, {:access_denied, %{type: "otp_invalid"}}} = AccessToken2FA.authorize(data)
       end
+
       # user have last attempt for success login
       refute UserAPI.get_user!(user.id).is_blocked
 
@@ -92,7 +98,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
       assert user_otp_error_max == db_user.priv_settings.otp_error_counter
 
       # check that User is blocked and his token expired
-      assert {:error, {:access_denied,  %{message: "User blocked.", type: "user_blocked"}}} =
+      assert {:error, {:access_denied, %{message: "User blocked.", type: "user_blocked"}}} =
                data
                |> Map.put("otp", otp.code)
                |> AccessToken2FA.authorize()
@@ -104,9 +110,11 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
         "grant_type" => "authorize_2fa_access_token",
         "otp" => 9999
       }
+
       for _ <- 1..2 do
         assert {:error, {:access_denied, %{type: "otp_invalid"}}} = AccessToken2FA.authorize(data)
       end
+
       db_user = UserAPI.get_user!(user.id)
       refute db_user.is_blocked
       assert 2 == db_user.priv_settings.otp_error_counter
@@ -127,7 +135,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
       assert {:ok, %{token: token}} = AccessToken2FA.refresh(%{"token_value" => token_2fa.value})
       # generated new OTP
       otp_key = Authentication.generate_key(token, factor.factor)
-      assert %OTPSchema{active: true} = OTP.get_otp_by!([key: otp_key])
+      assert %OTPSchema{active: true} = OTP.get_otp_by!(key: otp_key)
     end
 
     test "user blocked", %{token: token_2fa, user: user} do
@@ -139,8 +147,6 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
     end
 
     test "authentication factor not found for user" do
-
     end
   end
-
 end

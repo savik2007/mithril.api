@@ -28,6 +28,7 @@ defmodule Mithril.UserAPI do
 
     super(entity, changes)
   end
+
   def get_search_query(entity, changes) do
     super(entity, changes)
   end
@@ -37,14 +38,17 @@ defmodule Mithril.UserAPI do
   def get_user_by(attrs), do: Repo.get_by(User, attrs)
 
   def get_full_user(user_id, client_id) do
-    query = from u in User,
-                 left_join: ur in assoc(u, :user_roles),
-                 left_join: r in assoc(ur, :role),
-                 preload: [
-                   roles: r
-                 ],
-                 where: ur.user_id == ^user_id,
-                 where: ur.client_id == ^client_id
+    query =
+      from(
+        u in User,
+        left_join: ur in assoc(u, :user_roles),
+        left_join: r in assoc(ur, :role),
+        preload: [
+          roles: r
+        ],
+        where: ur.user_id == ^user_id,
+        where: ur.client_id == ^client_id
+      )
 
     Repo.one(query)
   end
@@ -55,15 +59,17 @@ defmodule Mithril.UserAPI do
         otp_error_counter: 0
       }
     }
+
     user_changeset = user_changeset(user, attrs)
-    Multi.new
+
+    Multi.new()
     |> Multi.insert(:user, user_changeset)
     |> Multi.run(:authentication_factors, &create_user_factor(&1, attrs))
     |> Repo.transaction()
     |> case do
-         {:ok, %{user: user}} -> {:ok, user}
-         {:error, _, err, _} -> {:error, err}
-       end
+      {:ok, %{user: user}} -> {:ok, user}
+      {:error, _, err, _} -> {:error, err}
+    end
   end
 
   defp create_user_factor(%{user: user}, attrs) do
@@ -85,9 +91,11 @@ defmodule Mithril.UserAPI do
   end
 
   def merge_user_priv_settings(%User{priv_settings: priv_settings} = user, new_settings) when is_map(new_settings) do
-    data = priv_settings
-           |> Map.merge(new_settings)
-           |> to_map()
+    data =
+      priv_settings
+      |> Map.merge(new_settings)
+      |> to_map()
+
     update_user_priv_settings(user, data)
   end
 
@@ -109,12 +117,14 @@ defmodule Mithril.UserAPI do
     TokenAPI.deactivate_tokens_by_user(user)
     resp
   end
+
   def expire_user_tokens(err) do
     err
   end
 
   def unblock_user(%User{} = user, reason \\ nil) do
     attrs = %{is_blocked: false, block_reason: reason, priv_settings: %{login_hstr: [], otp_error_counter: 0}}
+
     user
     |> cast(attrs, [:is_blocked, :block_reason])
     |> cast_embed(:priv_settings, with: &priv_settings_changeset/2)
@@ -126,23 +136,26 @@ defmodule Mithril.UserAPI do
   end
 
   def change_user_password(%User{} = user, user_params) do
-    elem(Repo.transaction(fn ->
-      changeset =
-      user
-      |> user_changeset(user_params)
-      |> validate_required([:current_password])
-      |> validate_changed(:password)
-      |> validate_passwords_match(:password, :current_password)
+    elem(
+      Repo.transaction(fn ->
+        changeset =
+          user
+          |> user_changeset(user_params)
+          |> validate_required([:current_password])
+          |> validate_changed(:password)
+          |> validate_passwords_match(:password, :current_password)
 
-    Repo.update(changeset)
-    end), 1)
+        Repo.update(changeset)
+      end),
+      1
+    )
   end
 
   def update_user_password(user_id, password) do
-    with  user <- get_user(user_id),
-          changeset = user_changeset(user, %{password: password}),
-          {:ok, user} <- Repo.update(changeset),
-    do:   {:ok, user}
+    with user <- get_user(user_id),
+         changeset = user_changeset(user, %{password: password}),
+         {:ok, user} <- Repo.update(changeset),
+         do: {:ok, user}
   end
 
   defp get_password_hash(password) do
@@ -155,11 +168,14 @@ defmodule Mithril.UserAPI do
     |> validate_required([:email, :password])
     |> unique_constraint(:email)
     |> validate_length(:password, min: 12)
-    |> validate_format(:password, ~r/^(?=.*[a-zа-яёїієґ])(?=.*[A-ZА-ЯЁЇIЄҐ])(?=.*\d)/,
+    |> validate_format(
+      :password,
+      ~r/^(?=.*[a-zа-яёїієґ])(?=.*[A-ZА-ЯЁЇIЄҐ])(?=.*\d)/,
       message: "Password does not meet complexity requirements"
     )
     |> put_password(user)
   end
+
   defp user_changeset(%UserSearch{} = user_role, attrs) do
     cast(user_role, attrs, UserSearch.__schema__(:fields))
   end
@@ -172,6 +188,7 @@ defmodule Mithril.UserAPI do
 
   defp put_password(changeset, %User{} = user) do
     password = get_change(changeset, :password)
+
     if password do
       changeset
       |> put_change(:password, get_password_hash(password))
@@ -183,6 +200,7 @@ defmodule Mithril.UserAPI do
   end
 
   defp validate_previous_passwords(changeset, %User{id: nil}, _), do: changeset
+
   defp validate_previous_passwords(changeset, %User{id: id}, password) do
     previous_passwords =
       PasswordHistory
@@ -190,9 +208,10 @@ defmodule Mithril.UserAPI do
       |> order_by([ph], asc: ph.id)
       |> Repo.all()
 
-    already_used = Enum.any?(previous_passwords, fn previous_password ->
-      Comeonin.Bcrypt.checkpw(password, previous_password.password)
-    end)
+    already_used =
+      Enum.any?(previous_passwords, fn previous_password ->
+        Comeonin.Bcrypt.checkpw(password, previous_password.password)
+      end)
 
     if already_used do
       add_error(changeset, :password, "This password has been used recently. Try another one")
@@ -202,6 +221,7 @@ defmodule Mithril.UserAPI do
         |> hd()
         |> Repo.delete()
       end
+
       changeset
     end
   end
@@ -214,7 +234,7 @@ defmodule Mithril.UserAPI do
   end
 
   defp validate_passwords_match(changeset, field1, field2) do
-    validate_change changeset, field1, :password, fn _, _new_value ->
+    validate_change(changeset, field1, :password, fn _, _new_value ->
       %{data: data} = changeset
       field1_hash = Map.get(data, field1)
 
@@ -224,11 +244,14 @@ defmodule Mithril.UserAPI do
       else
         :error ->
           []
+
         false ->
-          [{field2,
-            {"#{to_string(field1)} does not match password in field #{to_string(field2)}", [validation: :password]}}]
+          [
+            {field2,
+             {"#{to_string(field1)} does not match password in field #{to_string(field2)}", [validation: :password]}}
+          ]
       end
-    end
+    end)
   end
 
   defp do_update(user, attrs) do
@@ -243,12 +266,15 @@ defmodule Mithril.UserAPI do
     |> Enum.map(&to_map/1)
     |> Enum.into(%{})
   end
+
   defp to_map({key, list}) when is_list(list) do
     {key, Enum.map(list, &to_map/1)}
   end
-  defp to_map({key, %_{} = value})  do
+
+  defp to_map({key, %_{} = value}) do
     {key, Map.from_struct(value)}
   end
+
   defp to_map(field) do
     field
   end

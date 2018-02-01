@@ -11,8 +11,6 @@ defmodule Mithril.Web.ClientTypeView do
   end
 
   def render("client_type.json", %{client_type: client_type}) do
-    %{id: client_type.id,
-      name: client_type.name,
-      scope: client_type.scope}
+    %{id: client_type.id, name: client_type.name, scope: client_type.scope}
   end
 end

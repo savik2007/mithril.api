@@ -4,7 +4,7 @@ defmodule Mithril.Web.OTPController do
   alias Mithril.Authentication
   alias Scrivener.Page
 
-  action_fallback Mithril.Web.FallbackController
+  action_fallback(Mithril.Web.FallbackController)
 
   def index(conn, params) do
     with %Page{} = paging <- Authentication.list_otps(params) do
