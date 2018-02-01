@@ -96,6 +96,12 @@ defmodule Mithril.Web.ClientTypeControllerTest do
            }
   end
 
+  test "can't create client_type that already exists", %{conn: conn} do
+    insert(:client_type, name: "some name")
+    conn = post(conn, client_type_path(conn, :create), client_type: Map.put(@create_attrs, :name, "some name"))
+    assert json_response(conn, 422)
+  end
+
   test "does not create client_type and renders errors when data is invalid", %{conn: conn} do
     conn = post(conn, client_type_path(conn, :create), client_type: @invalid_attrs)
     assert json_response(conn, 422)["errors"] != %{}
