@@ -35,14 +35,16 @@ defmodule Mithril.UserAPITest do
   end
 
   test "list_users/1 returns all users without search params" do
+    # System User already inserted in DB by means of migration
+    system_user = UserAPI.get_user!("4261eacf-8008-4e62-899f-de1e2f7065f0")
     user = fixture(:user)
 
     assert UserAPI.list_users(%{}) == %Page{
-             entries: [user],
+             entries: [system_user, user],
              page_number: 1,
              page_size: 50,
              total_pages: 1,
-             total_entries: 1
+             total_entries: 2
            }
   end
 

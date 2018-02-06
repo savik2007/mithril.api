@@ -25,8 +25,13 @@ defmodule Mithril.Web.UserControllerTest do
     fixture(:user, %{email: "1", password: "Password1234", settings: %{}})
     fixture(:user, %{email: "2", password: "Password2234", settings: %{}})
     fixture(:user, %{email: "3", password: "Password3234", settings: %{}})
+
     conn = get(conn, user_path(conn, :index))
-    assert 3 == length(json_response(conn, 200)["data"])
+
+    # System User already inserted in DB by means of migration
+    [users_count] = Repo.all(from(u in User, select: count(u.id)))
+
+    assert users_count == length(json_response(conn, 200)["data"])
   end
 
   test "does not list all entries on index when limit is set", %{conn: conn} do
@@ -38,10 +43,13 @@ defmodule Mithril.Web.UserControllerTest do
   end
 
   test "does not list all entries on index when starting_after is set", %{conn: conn} do
+    # System User already inserted in DB by means of migration
     fixture(:user, %{email: "1", password: "Password1234", settings: %{}})
     fixture(:user, %{email: "2", password: "Password2234", settings: %{}})
     fixture(:user, %{email: "3", password: "Password3234", settings: %{}})
-    conn = get(conn, user_path(conn, :index), %{page_size: 2, page: 2})
+    fixture(:user, %{email: "4", password: "Password4234", settings: %{}})
+
+    conn = get(conn, user_path(conn, :index), %{page_size: 2, page: 3})
     resp = json_response(conn, 200)["data"]
     assert 1 == length(resp)
   end
@@ -188,7 +196,7 @@ defmodule Mithril.Web.UserControllerTest do
              "settings" => %{}
            } = json_response(conn, 200)["data"]
 
-    user = Repo.one(User)
+    user = UserAPI.get_user!(id)
     refute password_set_at == user.password_set_at
   end
 
