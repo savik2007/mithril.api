@@ -25,6 +25,7 @@ defmodule Mithril.Web.UserView do
         expires_at: expires_at
       }
     }
+
     user
     |> Map.take(@fields)
     |> Map.put(:urgent, urgent)

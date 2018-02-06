@@ -4,10 +4,10 @@ defmodule Mithril.ClientTypeAPI.ClientType do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "client_types" do
-    field :name, :string
-    field :scope, :string
+    field(:name, :string)
+    field(:scope, :string)
 
-    has_many :clients, Mithril.ClientAPI.Client
+    has_many(:clients, Mithril.ClientAPI.Client)
 
     timestamps()
   end

@@ -6,12 +6,15 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
 
   test "client successfully obtain an access_token API calls", %{conn: conn} do
     client_type = Mithril.Fixtures.create_client_type(%{scope: "app:authorize legal_entity:read legal_entity:write"})
-    client = Mithril.Fixtures.create_client(%{
-      redirect_uri: "http://localhost",
-      client_type_id: client_type.id,
-      settings: %{"allowed_grant_types" => ["password"]},
-      priv_settings: %{"access_type" => @direct}
-    })
+
+    client =
+      Mithril.Fixtures.create_client(%{
+        redirect_uri: "http://localhost",
+        client_type_id: client_type.id,
+        settings: %{"allowed_grant_types" => ["password"]},
+        priv_settings: %{"access_type" => @direct}
+      })
+
     user = Mithril.Fixtures.create_user(%{password: "Super$ecre71"})
     user_role = Mithril.Fixtures.create_role(%{scope: "legal_entity:read legal_entity:write"})
     Mithril.UserRoleAPI.create_user_role(%{user_id: user.id, role_id: user_role.id, client_id: client.id})
@@ -19,11 +22,11 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
     # 1. User is presented a user-agent and logs in
     login_request_body = %{
       "token" => %{
-        "grant_type": "password",
-        "email": user.email,
-        "password": "Super$ecre71",
-        "client_id": client.id,
-        "scope": "app:authorize"
+        grant_type: "password",
+        email: user.email,
+        password: "Super$ecre71",
+        client_id: client.id,
+        scope: "app:authorize"
       }
     }
 
@@ -37,11 +40,12 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
     # converts login_response["data"]["value"] into user_id
     # and puts it in as "x-consumer-id" header
     scope = "legal_entity:read legal_entity:write"
+
     approval_request_body = %{
       "app" => %{
-        "client_id": client.id,
-        "redirect_uri": client.redirect_uri,
-        "scope": scope
+        client_id: client.id,
+        redirect_uri: client.redirect_uri,
+        scope: scope
       }
     }
 
@@ -68,12 +72,12 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
     # client issues an access_token request
     tokens_request_body = %{
       "token" => %{
-        "grant_type": "authorization_code",
-        "client_id": client.id,
-        "client_secret": client.secret,
-        "code": code_grant,
-        "scope": scope,
-        "redirect_uri": client.redirect_uri
+        grant_type: "authorization_code",
+        client_id: client.id,
+        client_secret: client.secret,
+        code: code_grant,
+        scope: scope,
+        redirect_uri: client.redirect_uri
       }
     }
 
@@ -82,7 +86,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       |> put_req_header("accept", "application/json")
       |> post("/oauth/tokens", Poison.encode!(tokens_request_body))
       |> Map.get(:resp_body)
-      |> Poison.decode!
+      |> Poison.decode!()
 
     assert tokens_response["data"]["name"] == "access_token"
     assert tokens_response["data"]["value"]
@@ -102,24 +106,28 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
     setup %{conn: conn} do
       user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("super$ecre7"))
       client_type = insert(:client_type, scope: "app:authorize legal_entity:read legal_entity:write")
-      client = insert(
-        :client,
-        user_id: user.id,
-        redirect_uri: "http://localhost",
-        client_type_id: client_type.id,
-        settings: %{"allowed_grant_types" => ["password"]},
-        priv_settings: %{"access_type" => @direct}
-      )
+
+      client =
+        insert(
+          :client,
+          user_id: user.id,
+          redirect_uri: "http://localhost",
+          client_type_id: client_type.id,
+          settings: %{"allowed_grant_types" => ["password"]},
+          priv_settings: %{"access_type" => @direct}
+        )
+
       insert(:authentication_factor, user_id: user.id)
       role = insert(:role, scope: "legal_entity:read legal_entity:write")
       insert(:user_role, user_id: user.id, role_id: role.id, client_id: client.id)
 
       {:ok, port, ref} = start_microservices(Microservices)
       System.put_env("OTP_ENDPOINT", "http://localhost:#{port}")
-      on_exit fn ->
+
+      on_exit(fn ->
         System.delete_env("OTP_ENDPOINT")
         stop_microservices(ref)
-      end
+      end)
 
       %{conn: conn, user: user, client: client}
     end
@@ -127,18 +135,20 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
     test "happy path", %{conn: conn, user: user, client: client} do
       login_request_body = %{
         "token" => %{
-          "grant_type": "password",
-          "email": user.email,
-          "password": "super$ecre7",
-          "client_id": client.id,
-          "scope": "app:authorize legal_entity:read"
+          grant_type: "password",
+          email: user.email,
+          password: "super$ecre7",
+          client_id: client.id,
+          scope: "app:authorize legal_entity:read"
         }
       }
+
       # 1. Create 2FA access token, that requires OTP confirmation
       resp =
         conn
         |> post("/oauth/tokens", Poison.encode!(login_request_body))
         |> json_response(201)
+
       assert "REQUEST_OTP" == resp["urgent"]["next_step"]
       assert "2fa_access_token" == resp["data"]["name"]
       assert "" == resp["data"]["details"]["scope"]
@@ -147,8 +157,8 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
 
       # OTP code will sent by third party. Let's get it from DB
       otp =
-        OTP.list_otps
-        |> List.first
+        OTP.list_otps()
+        |> List.first()
         |> Map.get(:code)
 
       # 2. Verify OTP code and change 2FA access token to access token
@@ -160,6 +170,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
           "otp" => otp
         }
       }
+
       resp =
         conn
         |> put_req_header("authorization", "Bearer #{otp_token_value}")
@@ -177,9 +188,9 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       # and puts it in as "x-consumer-id" header
       approval_request_body = %{
         "app" => %{
-          "client_id": client.id,
-          "redirect_uri": client.redirect_uri,
-          "scope": "legal_entity:read legal_entity:write"
+          client_id: client.id,
+          redirect_uri: client.redirect_uri,
+          scope: "legal_entity:read legal_entity:write"
         }
       }
 
@@ -203,12 +214,12 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       # client issues an access_token request
       tokens_request_body = %{
         "token" => %{
-          "grant_type": "authorization_code",
-          "client_id": client.id,
-          "client_secret": client.secret,
-          "code": code_grant,
-          "scope": "legal_entity:read legal_entity:write",
-          "redirect_uri": client.redirect_uri
+          grant_type: "authorization_code",
+          client_id: client.id,
+          client_secret: client.secret,
+          code: code_grant,
+          scope: "legal_entity:read legal_entity:write",
+          redirect_uri: client.redirect_uri
         }
       }
 
@@ -217,7 +228,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
         |> put_req_header("accept", "application/json")
         |> post("/oauth/tokens", Poison.encode!(tokens_request_body))
         |> Map.get(:resp_body)
-        |> Poison.decode!
+        |> Poison.decode!()
 
       assert tokens_response["data"]["name"] == "access_token"
       assert tokens_response["data"]["value"]
@@ -231,6 +242,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
           "otp" => 123
         }
       }
+
       conn
       |> post("/oauth/tokens", Poison.encode!(otp_request_body))
       |> json_response(401)
@@ -239,13 +251,14 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
     test "invalid OTP", %{conn: conn, user: user, client: client} do
       login_request_body = %{
         "token" => %{
-          "grant_type": "password",
-          "email": user.email,
-          "password": "super$ecre7",
-          "client_id": client.id,
-          "scope": "app:authorize"
+          grant_type: "password",
+          email: user.email,
+          password: "super$ecre7",
+          client_id: client.id,
+          scope: "app:authorize"
         }
       }
+
       # 1. Create 2FA access token, that requires OTP confirmation
       otp_token_value =
         conn
@@ -262,12 +275,13 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
           "otp" => 0
         }
       }
+
       assert "otp_invalid" ==
-        conn
-        |> put_req_header("authorization", "Bearer #{otp_token_value}")
-        |> post("/oauth/tokens", Poison.encode!(otp_request_body))
-        |> json_response(401)
-        |> get_in(~w(error type))
+               conn
+               |> put_req_header("authorization", "Bearer #{otp_token_value}")
+               |> post("/oauth/tokens", Poison.encode!(otp_request_body))
+               |> json_response(401)
+               |> get_in(~w(error type))
     end
   end
 end

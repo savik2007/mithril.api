@@ -27,10 +27,12 @@ defmodule Mithril.Web.ClientControllerTest do
 
   def fixture(:client, name \\ "some_name", client_type_params \\ %{}) do
     %{id: client_type_id} = Mithril.Fixtures.create_client_type(client_type_params)
+
     {:ok, client} =
       name
       |> Mithril.Fixtures.client_create_attrs(client_type_id)
       |> ClientAPI.create_client()
+
     client
   end
 
@@ -42,7 +44,7 @@ defmodule Mithril.Web.ClientControllerTest do
     fixture(:client, "john")
     fixture(:client, "simon")
     fixture(:client, "monica")
-    conn = get conn, client_path(conn, :index), %{name: "mon"}
+    conn = get(conn, client_path(conn, :index), %{name: "mon"})
     assert 2 == length(json_response(conn, 200)["data"])
   end
 
@@ -50,7 +52,7 @@ defmodule Mithril.Web.ClientControllerTest do
     fixture(:client, "john")
     fixture(:client, "simon")
     fixture(:client, "monica")
-    conn = get conn, client_path(conn, :index), %{user_id: "111", name: "mon"}
+    conn = get(conn, client_path(conn, :index), %{user_id: "111", name: "mon"})
     resp = json_response(conn, 422)
     assert Map.has_key?(resp, "error")
     error = resp["error"]
@@ -65,7 +67,7 @@ defmodule Mithril.Web.ClientControllerTest do
     fixture(:client)
     fixture(:client)
     fixture(:client)
-    conn = get conn, client_path(conn, :index)
+    conn = get(conn, client_path(conn, :index))
     assert 3 == length(json_response(conn, 200)["data"])
   end
 
@@ -73,7 +75,7 @@ defmodule Mithril.Web.ClientControllerTest do
     fixture(:client)
     fixture(:client)
     fixture(:client)
-    conn = get conn, client_path(conn, :index), %{page_size: 2}
+    conn = get(conn, client_path(conn, :index), %{page_size: 2})
     assert 2 == length(json_response(conn, 200)["data"])
   end
 
@@ -81,7 +83,7 @@ defmodule Mithril.Web.ClientControllerTest do
     fixture(:client)
     fixture(:client)
     client = fixture(:client)
-    conn = get conn, client_path(conn, :index), %{page_size: 2, page: 2}
+    conn = get(conn, client_path(conn, :index), %{page_size: 2, page: 2})
     resp = json_response(conn, 200)["data"]
     assert 1 == length(resp)
     assert client.id == Map.get(hd(resp), "id")
@@ -90,11 +92,13 @@ defmodule Mithril.Web.ClientControllerTest do
   test "search clients by name", %{conn: conn} do
     name = "search_name"
     fixture(:client)
-    {:ok, _} = name
-               |> Mithril.Fixtures.client_create_attrs()
-               |> ClientAPI.create_client()
 
-    conn = get conn, client_path(conn, :index, [name: name])
+    {:ok, _} =
+      name
+      |> Mithril.Fixtures.client_create_attrs()
+      |> ClientAPI.create_client()
+
+    conn = get(conn, client_path(conn, :index, name: name))
     resp = json_response(conn, 200)
 
     assert Map.has_key?(resp, "paging")
@@ -105,7 +109,8 @@ defmodule Mithril.Web.ClientControllerTest do
   test "show client details", %{conn: conn} do
     client = fixture(:client, "some name", %{name: "some_kind_of_client"})
 
-    conn = get conn, client_details_path(conn, :details, client.id)
+    conn = get(conn, client_details_path(conn, :details, client.id))
+
     assert %{
              "id" => client.id,
              "name" => client.name,
@@ -117,13 +122,14 @@ defmodule Mithril.Web.ClientControllerTest do
              "is_blocked" => false,
              "block_reason" => nil,
              "inserted_at" => NaiveDateTime.to_iso8601(client.inserted_at),
-             "updated_at" => NaiveDateTime.to_iso8601(client.updated_at),
+             "updated_at" => NaiveDateTime.to_iso8601(client.updated_at)
            } == json_response(conn, 200)["data"]
   end
 
   test "show client", %{conn: conn} do
     client = fixture(:client, "some name", %{name: "some_kind_of_client"})
-    conn = get conn, client_path(conn, :show, client.id)
+    conn = get(conn, client_path(conn, :show, client.id))
+
     assert %{
              "id" => client.id,
              "name" => client.name,
@@ -137,17 +143,18 @@ defmodule Mithril.Web.ClientControllerTest do
              "is_blocked" => false,
              "block_reason" => nil,
              "inserted_at" => NaiveDateTime.to_iso8601(client.inserted_at),
-             "updated_at" => NaiveDateTime.to_iso8601(client.updated_at),
+             "updated_at" => NaiveDateTime.to_iso8601(client.updated_at)
            } == json_response(conn, 200)["data"]
   end
 
   test "creates client and renders client when data is valid", %{conn: conn} do
     attrs = Mithril.Fixtures.client_create_attrs()
-    conn = post conn, client_path(conn, :create), client: attrs
+    conn = post(conn, client_path(conn, :create), client: attrs)
     assert %{"id" => id} = json_response(conn, 201)["data"]
 
     name = attrs.name
-    conn = get conn, client_path(conn, :show, id)
+    conn = get(conn, client_path(conn, :show, id))
+
     assert %{
              "id" => ^id,
              "name" => ^name,
@@ -158,35 +165,34 @@ defmodule Mithril.Web.ClientControllerTest do
   end
 
   test "does not create client and renders errors when data is invalid", %{conn: conn} do
-    conn = post conn, client_path(conn, :create), client: @invalid_attrs
+    conn = post(conn, client_path(conn, :create), client: @invalid_attrs)
     assert json_response(conn, 422)["errors"] != %{}
   end
 
   test "put new client with id", %{conn: conn} do
     %Client{client_type_id: client_type_id, user_id: user_id} = fixture(:client)
 
-    update_attrs = Map.merge(
-      @update_attrs,
-      %{
+    update_attrs =
+      Map.merge(@update_attrs, %{
         client_type_id: client_type_id,
         user_id: user_id
-      }
-    )
+      })
 
     id = UUID.generate()
-    conn = put conn, client_path(conn, :update, %Client{id: id}), client: update_attrs
+    conn = put(conn, client_path(conn, :update, %Client{id: id}), client: update_attrs)
     assert %{"id" => ^id} = json_response(conn, 200)["data"]
 
-    conn = get conn, client_path(conn, :show, id)
+    conn = get(conn, client_path(conn, :show, id))
     assert %{"id" => ^id} = json_response(conn, 200)["data"]
   end
 
   test "updates chosen client and renders client when data is valid", %{conn: conn} do
     %Client{id: id, secret: secret} = client = fixture(:client)
-    conn = put conn, client_path(conn, :update, client), client: @update_attrs
+    conn = put(conn, client_path(conn, :update, client), client: @update_attrs)
     assert %{"id" => ^id} = json_response(conn, 200)["data"]
 
-    conn = get conn, client_path(conn, :show, id)
+    conn = get(conn, client_path(conn, :show, id))
+
     assert %{
              "id" => ^id,
              "name" => "some updated name",
@@ -197,28 +203,29 @@ defmodule Mithril.Web.ClientControllerTest do
              },
              "is_blocked" => false,
              "block_reason" => nil,
-             "settings" => %{},
+             "settings" => %{}
            } = json_response(conn, 200)["data"]
   end
 
   test "does not update chosen client and renders errors when data is invalid", %{conn: conn} do
     client = fixture(:client)
-    conn = put conn, client_path(conn, :update, client), client: @invalid_attrs
+    conn = put(conn, client_path(conn, :update, client), client: @invalid_attrs)
     assert json_response(conn, 422)["errors"] != %{}
   end
 
   test "deletes chosen client", %{conn: conn} do
     client = fixture(:client)
-    conn = delete conn, client_path(conn, :delete, client)
+    conn = delete(conn, client_path(conn, :delete, client))
     assert response(conn, 204)
-    assert_error_sent 404, fn ->
-      get conn, client_path(conn, :show, client)
-    end
+
+    assert_error_sent(404, fn ->
+      get(conn, client_path(conn, :show, client))
+    end)
   end
 
   test "refresh client secret", %{conn: conn} do
     %{id: id, secret: old_secret} = fixture(:client)
-    conn = patch conn, client_refresh_secret_path(conn, :refresh_secret, id)
+    conn = patch(conn, client_refresh_secret_path(conn, :refresh_secret, id))
     resp = json_response(conn, 200)
 
     %{secret: new_secret} = Repo.one(Client)

@@ -28,6 +28,7 @@ defmodule Mithril.ClientTypeAPI do
   def get_search_query(entity, %{scope: scopes} = changes) do
     super(entity, Map.put(changes, :scope, {String.split(scopes, ","), :intersect}))
   end
+
   def get_search_query(entity, changes), do: super(entity, changes)
 
   @doc """
@@ -115,6 +116,7 @@ defmodule Mithril.ClientTypeAPI do
     client_type
     |> cast(attrs, [:name, :scope])
     |> validate_required([:name, :scope])
+    |> unique_constraint(:name)
   end
 
   defp client_type_changeset(%ClientTypeSearch{} = client_type, attrs) do

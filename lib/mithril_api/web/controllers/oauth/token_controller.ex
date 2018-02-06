@@ -5,20 +5,22 @@ defmodule Mithril.OAuth.TokenController do
   alias Mithril.TokenAPI
   alias Mithril.Web.TokenView
 
-  action_fallback Mithril.Web.FallbackController
+  action_fallback(Mithril.Web.FallbackController)
 
   def init_factor(conn, attrs) do
-    with {:ok, resp} <- attrs
-                         |> put_token_value(conn)
-                         |> TokenAPI.init_factor() do
+    with {:ok, resp} <-
+           attrs
+           |> put_token_value(conn)
+           |> TokenAPI.init_factor() do
       send_response(conn, resp, "token-without-details.json")
     end
   end
 
   def approve_factor(conn, attrs) do
-    with {:ok, token} <- attrs
-                         |> put_token_value(conn)
-                         |> TokenAPI.approve_factor() do
+    with {:ok, token} <-
+           attrs
+           |> put_token_value(conn)
+           |> TokenAPI.approve_factor() do
       conn
       |> put_status(:created)
       |> render(TokenView, "show.json", token: token)
@@ -26,18 +28,20 @@ defmodule Mithril.OAuth.TokenController do
   end
 
   def update_password(conn, attrs) do
-    with {:ok, user} <- attrs
-                        |> put_token_value(conn)
-                        |> TokenAPI.update_user_password() do
+    with {:ok, user} <-
+           attrs
+           |> put_token_value(conn)
+           |> TokenAPI.update_user_password() do
       conn
       |> render(Mithril.Web.UserView, "show.json", user: user)
     end
   end
 
   def create(conn, %{"token" => token_params}) do
-    with {:ok, resp} <- token_params
-                        |> put_token_value(conn)
-                        |> Token.authorize() do
+    with {:ok, resp} <-
+           token_params
+           |> put_token_value(conn)
+           |> Token.authorize() do
       send_response(conn, resp, "show.json")
     end
   end
@@ -55,6 +59,7 @@ defmodule Mithril.OAuth.TokenController do
     |> assign(:urgent, urgent)
     |> render(TokenView, view, token: token)
   end
+
   defp send_response(conn, token, view) do
     conn
     |> put_status(:created)

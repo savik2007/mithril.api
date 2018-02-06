@@ -11,8 +11,6 @@ defmodule Mithril.Web.RoleView do
   end
 
   def render("role.json", %{role: role}) do
-    %{id: role.id,
-      name: role.name,
-      scope: role.scope}
+    %{id: role.id, name: role.name, scope: role.scope}
   end
 end

@@ -12,9 +12,9 @@ defmodule Ecto.CommaParamsUUID do
     |> String.split(",")
     |> valid_uuid_params?()
     |> case do
-         true  -> {:ok, {String.split(string, ","), :in}}
-         false -> :error
-       end
+      true -> {:ok, {String.split(string, ","), :in}}
+      false -> :error
+    end
   end
 
   def cast(_), do: :error
@@ -25,10 +25,10 @@ defmodule Ecto.CommaParamsUUID do
   def dump(_), do: :error
 
   def valid_uuid_params?(comma_params) do
-    Enum.reduce_while(comma_params, true, fn (i, acc) ->
+    Enum.reduce_while(comma_params, true, fn i, acc ->
       case UUID.cast(i) do
         {:ok, _} -> {:cont, acc}
-        _        -> {:halt, false}
+        _ -> {:halt, false}
       end
     end)
   end

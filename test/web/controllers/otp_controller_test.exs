@@ -14,21 +14,21 @@ defmodule Mithril.Web.OTPControllerTest do
 
   describe "list otps" do
     test "search by token", %{conn: conn, token: token} do
-      conn = get conn, otp_path(conn, :index), %{key: token}
+      conn = get(conn, otp_path(conn, :index), %{key: token})
       data = json_response(conn, 200)["data"]
       assert 1 == length(data)
       assert 1234 == hd(data)["code"]
     end
 
     test "search by status", %{conn: conn} do
-      conn = get conn, otp_path(conn, :index), %{status: "CANCELED"}
+      conn = get(conn, otp_path(conn, :index), %{status: "CANCELED"})
       data = json_response(conn, 200)["data"]
       assert 1 == length(data)
       assert 2345 == hd(data)["code"]
     end
 
     test "search by active", %{conn: conn} do
-      conn = get conn, otp_path(conn, :index), %{active: false}
+      conn = get(conn, otp_path(conn, :index), %{active: false})
       data = json_response(conn, 200)["data"]
       assert 1 == length(data)
       assert 3456 == hd(data)["code"]

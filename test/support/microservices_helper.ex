@@ -5,8 +5,8 @@ defmodule MicroservicesHelper do
     quote do
       use Plug.Router
 
-      plug :match
-      plug :dispatch
+      plug(:match)
+      plug(:dispatch)
     end
   end
 end

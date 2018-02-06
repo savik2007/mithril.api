@@ -7,7 +7,7 @@ defmodule Mithril.Web.AuthenticationFactorController do
   alias Mithril.Authentication.Factor
   alias Scrivener.Page
 
-  action_fallback Mithril.Web.FallbackController
+  action_fallback(Mithril.Web.FallbackController)
 
   def index(conn, params) do
     with %Page{} = paging <- Authentication.list_factors(params) do
@@ -16,7 +16,7 @@ defmodule Mithril.Web.AuthenticationFactorController do
   end
 
   def show(conn, %{"id" => id, "user_id" => user_id}) do
-    factor = Authentication.get_factor_by!([id: id, user_id: user_id])
+    factor = Authentication.get_factor_by!(id: id, user_id: user_id)
     render(conn, "show.json", factor: factor)
   end
 
@@ -30,7 +30,7 @@ defmodule Mithril.Web.AuthenticationFactorController do
   end
 
   def disable(conn, %{"id" => id, "user_id" => user_id}) do
-    with %Factor{is_active: true} = factor <- Authentication.get_factor_by!([id: id, user_id: user_id]),
+    with %Factor{is_active: true} = factor <- Authentication.get_factor_by!(id: id, user_id: user_id),
          {:ok, %Factor{} = factor} <- Authentication.update_factor(factor, %{"is_active" => false}) do
       render(conn, "show.json", factor: factor)
     else
@@ -40,7 +40,7 @@ defmodule Mithril.Web.AuthenticationFactorController do
   end
 
   def enable(conn, %{"id" => id, "user_id" => user_id}) do
-    with %Factor{is_active: false} = factor <- Authentication.get_factor_by!([id: id, user_id: user_id]),
+    with %Factor{is_active: false} = factor <- Authentication.get_factor_by!(id: id, user_id: user_id),
          {:ok, %Factor{} = factor} <- Authentication.update_factor(factor, %{"is_active" => true}) do
       render(conn, "show.json", factor: factor)
     else
@@ -50,7 +50,7 @@ defmodule Mithril.Web.AuthenticationFactorController do
   end
 
   def reset(conn, %{"id" => id, "user_id" => user_id}) do
-    factor = Authentication.get_factor_by!([id: id, user_id: user_id, is_active: true])
+    factor = Authentication.get_factor_by!(id: id, user_id: user_id, is_active: true)
 
     with {:ok, %Factor{} = factor} <- Authentication.update_factor(factor, %{"factor" => nil}) do
       render(conn, "show.json", factor: factor)

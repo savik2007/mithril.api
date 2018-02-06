@@ -10,6 +10,7 @@ defmodule Mithril.Scheduler do
 
   def create_jobs do
     config = get_config()
+
     __MODULE__.new_job()
     |> Job.set_name(:token_expiration)
     |> Job.set_overlap(false)

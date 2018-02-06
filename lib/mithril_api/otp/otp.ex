@@ -27,7 +27,7 @@ defmodule Mithril.OTP do
       [%Mithril.OTP.Schema{}]
 
   """
-  @spec list_otps :: [OTPSchema.t] | []
+  @spec list_otps :: [OTPSchema.t()] | []
   def list_otps do
     Repo.all(OTPSchema)
   end
@@ -46,7 +46,7 @@ defmodule Mithril.OTP do
       ** (Ecto.NoResultsError)
 
   """
-  @spec get_otp(id :: String.t) :: OTPSchema.t | nil | no_return
+  @spec get_otp(id :: String.t()) :: OTPSchema.t() | nil | no_return
   def get_otp(id), do: Repo.get(OTPSchema, id)
   def get_otp!(id), do: Repo.get!(OTPSchema, id)
 
@@ -60,7 +60,7 @@ defmodule Mithril.OTP do
       iex> get_otp_by!(123)
       %Mithril.OTP.Schema
   """
-  @spec get_otp_by!(params :: Keyword.t) :: OTPSchema.t | []
+  @spec get_otp_by!(params :: Keyword.t()) :: OTPSchema.t() | []
   def get_otp_by!(params) do
     OTPSchema
     |> order_by(desc: :inserted_at)
@@ -80,14 +80,14 @@ defmodule Mithril.OTP do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec create_otp(attrs :: %{}) :: {:ok, OTPSchema.t} | {:error, Ecto.Changeset.t}
+  @spec create_otp(attrs :: %{}) :: {:ok, OTPSchema.t()} | {:error, Ecto.Changeset.t()}
   def create_otp(attrs \\ %{}) do
     %OTPSchema{}
     |> changeset(attrs)
     |> Repo.insert()
   end
 
-  @spec initialize_otp(key :: String.t) :: {:ok, OTPSchema.t} | {:error, Ecto.Changeset.t}
+  @spec initialize_otp(key :: String.t()) :: {:ok, OTPSchema.t()} | {:error, Ecto.Changeset.t()}
   def initialize_otp(key) do
     deactivate_otps(key)
     attrs = initialize_attrs(key)
@@ -97,68 +97,67 @@ defmodule Mithril.OTP do
     |> Repo.insert()
   end
 
-  @spec initialize_attrs(key :: String.t) :: %{}
+  @spec initialize_attrs(key :: String.t()) :: %{}
   defp initialize_attrs(key) do
     otp_length = Confex.get_env(:mithril_api, :"2fa")[:otp_length]
+
     %{
       "key" => key,
       "code" => generate_otp_code(otp_length),
       "status" => @status_new,
-      "code_expired_at" => get_code_expiration_time(),
+      "code_expired_at" => get_code_expiration_time()
     }
   end
 
-  @spec verify(otp :: %{key: String.t}, code :: Integer.t) :: tuple()
+  @spec verify(otp :: %{key: String.t()}, code :: Integer.t()) :: tuple()
   def verify(key, code) do
-    otp = get_otp_by!([key: key, status: @status_new])
+    otp = get_otp_by!(key: key, status: @status_new)
 
     with :ok <- verify_expiration_time(otp),
          :ok <- verify_max_attemps(otp),
-         :ok <- verify_code(otp, code)
-
-      do
+         :ok <- verify_code(otp, code) do
       otp_completed(otp)
-
     else
       error -> otp_does_not_completed(otp, error)
     end
   end
 
-  @spec verify_expiration_time(otp :: OTPSchema.t) :: atom()
+  @spec verify_expiration_time(otp :: OTPSchema.t()) :: atom()
   defp verify_expiration_time(%OTPSchema{code_expired_at: code_expired_at}) do
-    if Timex.before?(Timex.now, code_expired_at),
-       do: :ok,
-       else: :expired
+    if Timex.before?(Timex.now(), code_expired_at),
+      do: :ok,
+      else: :expired
   end
 
-  @spec verify_max_attemps(otp :: OTPSchema.t) :: atom()
+  @spec verify_max_attemps(otp :: OTPSchema.t()) :: atom()
   defp verify_max_attemps(%OTPSchema{attempts_count: attempts_count}) do
     if attempts_count < Confex.get_env(:mithril_api, :"2fa")[:otp_max_attempts],
-       do: :ok,
-       else: :reached_max_attempts
+      do: :ok,
+      else: :reached_max_attempts
   end
 
-  @spec verify_code(otp :: OTPSchema.t, code :: Integer.t) :: atom()
+  @spec verify_code(otp :: OTPSchema.t(), code :: Integer.t()) :: atom()
   defp verify_code(%OTPSchema{} = otp, code) do
     if otp.code == code,
-       do: :ok,
-       else: :invalid_code
+      do: :ok,
+      else: :invalid_code
   end
 
-  @spec otp_completed(otp :: OTPSchema.t) :: tuple()
+  @spec otp_completed(otp :: OTPSchema.t()) :: tuple()
   defp otp_completed(%OTPSchema{} = otp) do
     otp
     |> update_otp(%{status: @status_verified, active: false, attempts_count: otp.attempts_count + 1})
     |> Tuple.append(:verified)
   end
 
-  @spec otp_does_not_completed(otp :: OTPSchema.t, error :: atom) :: tuple()
+  @spec otp_does_not_completed(otp :: OTPSchema.t(), error :: atom) :: tuple()
   defp otp_does_not_completed(%OTPSchema{} = otp, error) do
-    attrs = case error do
-      :invalid_code -> %{attempts_count: otp.attempts_count + 1}
-      :expired -> %{status: @status_expired, active: false}
-      _ -> %{status: @status_unverified, active: false}
-    end
+    attrs =
+      case error do
+        :invalid_code -> %{attempts_count: otp.attempts_count + 1}
+        :expired -> %{status: @status_expired, active: false}
+        _ -> %{status: @status_unverified, active: false}
+      end
 
     otp
     |> update_otp(attrs)
@@ -177,22 +176,25 @@ defmodule Mithril.OTP do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec update_otp(otp :: OTPSchema.t, %{}) :: {:ok, OTPSchema.t} | {:error, Ecto.Changeset.t}
+  @spec update_otp(otp :: OTPSchema.t(), %{}) :: {:ok, OTPSchema.t()} | {:error, Ecto.Changeset.t()}
   def update_otp(%OTPSchema{} = otp, attrs) do
     otp
     |> changeset(attrs)
     |> Repo.update()
   end
 
-  @spec changeset(otp :: OTPSchema.t, %{}) :: Ecto.Changeset.t
+  @spec changeset(otp :: OTPSchema.t(), %{}) :: Ecto.Changeset.t()
   defp changeset(%OTPSchema{} = otp, attrs) do
     otp
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> validate_inclusion(
-         :status,
-         [@status_new, @status_verified, @status_unverified, @status_completed, @status_expired]
-       )
+    |> validate_inclusion(:status, [
+      @status_new,
+      @status_verified,
+      @status_unverified,
+      @status_completed,
+      @status_expired
+    ])
   end
 
   @spec generate_otp_code(number_length :: pos_integer()) :: pos_integer()
@@ -203,11 +205,11 @@ defmodule Mithril.OTP do
     |> String.to_integer()
   end
 
-  @spec get_code_expiration_time :: String.t
-  defp get_code_expiration_time, do:
-    DateTime.to_iso8601(Timex.shift(Timex.now, seconds: Confex.get_env(:mithril_api, :"2fa")[:otp_ttl]))
+  @spec get_code_expiration_time :: String.t()
+  defp get_code_expiration_time,
+    do: DateTime.to_iso8601(Timex.shift(Timex.now(), seconds: Confex.get_env(:mithril_api, :"2fa")[:otp_ttl]))
 
-  @spec deactivate_otps(key :: String.t) :: {integer, nil | [term]} | no_return
+  @spec deactivate_otps(key :: String.t()) :: {integer, nil | [term]} | no_return
   defp deactivate_otps(key) do
     data = [status: @status_canceled]
 
@@ -223,7 +225,7 @@ defmodule Mithril.OTP do
 
     OTPSchema
     |> where(active: true)
-    |> where([o], o.code_expired_at < ^Timex.now)
+    |> where([o], o.code_expired_at < ^Timex.now())
     |> Repo.update_all(set: data)
   end
 end

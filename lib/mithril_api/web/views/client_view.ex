@@ -36,7 +36,7 @@ defmodule Mithril.Web.ClientView do
 
   def render("details.json", %{client: client, client_type_name: client_type_name}) do
     client
-    |> Map.take(Enum.reject(@fields, fn(x) -> x in ~w(secret priv_settings)a end))
+    |> Map.take(Enum.reject(@fields, fn x -> x in ~w(secret priv_settings)a end))
     |> Map.put(:client_type_name, client_type_name)
   end
 end

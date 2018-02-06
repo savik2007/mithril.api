@@ -21,14 +21,16 @@ defmodule Mithril.Authentication.APITest do
         "type" => Authentication.type(:sms),
         "factor" => "+380901002030"
       }
+
       assert {:ok, %Factor{}} = Authentication.create_factor(data)
     end
 
     test "success without factor", %{user: user} do
       data = %{
         "user_id" => user.id,
-        "type" => Authentication.type(:sms),
+        "type" => Authentication.type(:sms)
       }
+
       assert {:ok, %Factor{}} = Authentication.create_factor(data)
     end
 
@@ -38,14 +40,16 @@ defmodule Mithril.Authentication.APITest do
         "type" => Authentication.type(:sms),
         "factor" => "+380881002030"
       }
-      assert  {:ok, %Factor{factor: nil}} = Authentication.create_factor(data)
+
+      assert {:ok, %Factor{factor: nil}} = Authentication.create_factor(data)
     end
 
     test "invalid type", %{user: user} do
       data = %{
         "user_id" => user.id,
-        "type" => "INVALID",
+        "type" => "INVALID"
       }
+
       assert {:error, %Changeset{valid?: false, errors: [type: _]}} = Authentication.create_factor(data)
     end
 
@@ -55,6 +59,7 @@ defmodule Mithril.Authentication.APITest do
         "type" => Authentication.type(:sms),
         "factor" => "+380901002030"
       }
+
       assert {:ok, %Factor{}} = Authentication.create_factor(data)
       assert {:error, %Changeset{valid?: false, errors: [user_id: _]}} = Authentication.create_factor(data)
     end
@@ -65,6 +70,7 @@ defmodule Mithril.Authentication.APITest do
         "type" => Authentication.type(:sms),
         "factor" => "+380901002030"
       }
+
       assert {:error, %Changeset{valid?: false, errors: [user: _]}} = Authentication.create_factor(data)
     end
   end
@@ -135,18 +141,27 @@ defmodule Mithril.Authentication.APITest do
   describe "OTP requests limit" do
     setup do
       System.put_env("OTP_SEND_TIMEOUT", "30")
-      on_exit fn ->
+
+      on_exit(fn ->
         System.put_env("OTP_SEND_TIMEOUT", "0")
-      end
+      end)
     end
 
     test "timed out and reached max send attempts" do
       time = unixtime_to_naive(:os.system_time(:seconds))
-      user = insert(:user, priv_settings: %PrivSettings{
-        login_hstr: [
-          build(:login_history, time: time), build(:login_history, time: time), build(:login_history, time: time),
-        ],
-      })
+
+      user =
+        insert(
+          :user,
+          priv_settings: %PrivSettings{
+            login_hstr: [
+              build(:login_history, time: time),
+              build(:login_history, time: time),
+              build(:login_history, time: time)
+            ]
+          }
+        )
+
       factor = insert(:authentication_factor, user_id: user.id)
       token = insert(:token, user_id: user.id)
 
@@ -155,11 +170,18 @@ defmodule Mithril.Authentication.APITest do
 
     test "timed out but NOT reached max send attempts" do
       time = unixtime_to_naive(:os.system_time(:seconds))
-      user = insert(:user, priv_settings: %PrivSettings{
-        login_hstr: [
-          build(:login_history, time: time), build(:login_history, time: time)
-        ],
-      })
+
+      user =
+        insert(
+          :user,
+          priv_settings: %PrivSettings{
+            login_hstr: [
+              build(:login_history, time: time),
+              build(:login_history, time: time)
+            ]
+          }
+        )
+
       factor = insert(:authentication_factor, user_id: user.id)
       token = insert(:token, user_id: user.id)
 
@@ -170,11 +192,18 @@ defmodule Mithril.Authentication.APITest do
     end
 
     test "NOT timed out but reached max send attempts" do
-      user = insert(:user, priv_settings: %PrivSettings{
-        login_hstr: [
-          build(:login_history), build(:login_history), build(:login_history)
-        ]
-      })
+      user =
+        insert(
+          :user,
+          priv_settings: %PrivSettings{
+            login_hstr: [
+              build(:login_history),
+              build(:login_history),
+              build(:login_history)
+            ]
+          }
+        )
+
       factor = insert(:authentication_factor, user_id: user.id)
       token = insert(:token, user_id: user.id)
 
@@ -190,11 +219,16 @@ defmodule Mithril.Authentication.APITest do
     end
 
     test "NOT timed out and NOT reached max send attempts" do
-      user = insert(:user, priv_settings: %PrivSettings{
-        login_hstr: [
-          build(:login_history)
-        ]
-      })
+      user =
+        insert(
+          :user,
+          priv_settings: %PrivSettings{
+            login_hstr: [
+              build(:login_history)
+            ]
+          }
+        )
+
       factor = insert(:authentication_factor, user_id: user.id)
       token = insert(:token, user_id: user.id)
 
@@ -210,9 +244,14 @@ defmodule Mithril.Authentication.APITest do
     end
 
     test "reach max send attempts" do
-      user = insert(:user, priv_settings: %PrivSettings{
-        otp_error_counter: 0,
-      })
+      user =
+        insert(
+          :user,
+          priv_settings: %PrivSettings{
+            otp_error_counter: 0
+          }
+        )
+
       factor = insert(:authentication_factor, user_id: user.id)
       token = insert(:token, user_id: user.id)
 
@@ -220,6 +259,7 @@ defmodule Mithril.Authentication.APITest do
         db_user = UserAPI.get_user!(user.id)
         assert :ok = Authentication.send_otp(db_user, factor, token)
       end
+
       db_user = UserAPI.get_user!(user.id)
       assert {:error, :otp_timeout} = Authentication.send_otp(db_user, factor, token)
 

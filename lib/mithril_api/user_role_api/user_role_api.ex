@@ -16,29 +16,34 @@ defmodule Mithril.UserRoleAPI do
   end
 
   defp search_user_roles(%Ecto.Changeset{valid?: false} = changeset), do: {:error, changeset}
+
   defp search_user_roles(%Ecto.Changeset{valid?: true} = changeset) do
     UserRole
     |> query_where(changeset.changes)
     |> join(:left, [ur], r in assoc(ur, :role))
     |> join(:left, [ur, r], c in assoc(ur, :client))
-    |> preload([ur, r, c], [role: r, client: c])
+    |> preload([ur, r, c], role: r, client: c)
     |> Repo.all()
   end
 
   def query_where(entity, changes) do
-    params = Enum.filter(changes, fn({_key, value}) -> !is_tuple(value) end)
+    params = Enum.filter(changes, fn {_key, value} -> !is_tuple(value) end)
     q = where(entity, ^params)
 
-    Enum.reduce(changes, q, fn({_key, val}, query) ->
+    Enum.reduce(changes, q, fn {_key, val}, query ->
       case val do
         # ToDo: hardcoded db_field :user_id. It's not good
-        {value, :in} -> where(query, [r], field(r, :user_id) in ^value)
-        _ -> query
+        {value, :in} ->
+          where(query, [r], field(r, :user_id) in ^value)
+
+        _ ->
+          query
       end
     end)
   end
 
-  def get_user_role!(id), do: Repo.get!(UserRole, id) # get_by
+  # get_by
+  def get_user_role!(id), do: Repo.get!(UserRole, id)
 
   def create_user_role(attrs \\ %{}) do
     %UserRole{}
@@ -51,10 +56,14 @@ defmodule Mithril.UserRoleAPI do
   end
 
   def delete_user_roles_by_params(%{"user_id" => user_id, "role_name" => role_name}) do
-    query = from u in UserRole,
-      inner_join: r in Role, on: [id: u.role_id],
-      where: u.user_id == ^user_id,
-      where: r.name == ^role_name
+    query =
+      from(
+        u in UserRole,
+        inner_join: r in Role,
+        on: [id: u.role_id],
+        where: u.user_id == ^user_id,
+        where: r.name == ^role_name
+      )
 
     Repo.delete_all(query)
   end
@@ -63,13 +72,13 @@ defmodule Mithril.UserRoleAPI do
     %UserRoleSearch{}
     |> user_role_changeset(params)
     |> case do
-         %Ecto.Changeset{valid?: true, changes: changes} ->
-           changes = Map.to_list(changes)
-           UserRole |> where([ur], ^changes) |> Repo.delete_all()
+      %Ecto.Changeset{valid?: true, changes: changes} ->
+        changes = Map.to_list(changes)
+        UserRole |> where([ur], ^changes) |> Repo.delete_all()
 
-         changeset
-          -> changeset
-       end
+      changeset ->
+        changeset
+    end
   end
 
   defp user_role_changeset(%UserRole{} = user_role, attrs) do

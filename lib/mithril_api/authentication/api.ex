@@ -38,17 +38,17 @@ defmodule Mithril.Authentication do
 
   def send_otp(%User{} = user, %Factor{factor: value} = factor, %Token{} = token)
       when is_binary(value) and byte_size(value) > 0 do
-
     with :ok <- LoginHistory.check_sent_otps(user),
-         otp <- token
-                |> generate_key(value)
-                |> OTP.initialize_otp(),
-         _   <- LoginHistory.add_login(user, LoginHistory.type(:otp), true),
-         :ok <- maybe_send_otp(otp, factor)
-      do
-        :ok
+         otp <-
+           token
+           |> generate_key(value)
+           |> OTP.initialize_otp(),
+         _ <- LoginHistory.add_login(user, LoginHistory.type(:otp), true),
+         :ok <- maybe_send_otp(otp, factor) do
+      :ok
     end
   end
+
   def send_otp(_user, %Factor{}, _token) do
     {:error, :factor_not_set}
   end
@@ -64,11 +64,13 @@ defmodule Mithril.Authentication do
     case SMS.send(factor, generate_message(code), "2FA") do
       {:ok, _} ->
         :ok
+
       err ->
         Logger.error("Cannot send 2FA SMS with error: #{inspect(err)}")
         {:error, :sms_not_sent}
     end
   end
+
   defp send_otp_by_factor(err, _) do
     Logger.error("Cannot initialize_otp with error: #{inspect(err)}")
     {:error, :sms_not_sent}
@@ -77,11 +79,13 @@ defmodule Mithril.Authentication do
   def verify_otp(%Factor{factor: value}, %Token{} = token, otp) when is_binary(value) do
     verify_otp(value, token, otp)
   end
+
   def verify_otp(value, %Token{} = token, otp) when is_binary(value) and byte_size(value) > 1 do
     token
     |> generate_key(value)
     |> OTP.verify(otp)
   end
+
   def verify_otp(_value, _token, _otp) do
     {:error, :factor_not_set}
   end
@@ -95,6 +99,7 @@ defmodule Mithril.Authentication do
     |> Integer.to_string()
     |> generate_message()
   end
+
   def generate_message(code) do
     code_mask = "<otp.code>"
     sms_template = Confex.get_env(:mithril_api, :"2fa")[:otp_sms_template]
@@ -108,24 +113,28 @@ defmodule Mithril.Authentication do
   defp valid_sms_template?(sms_template, code_mask) when is_binary(sms_template) do
     String.contains?(sms_template, code_mask)
   end
+
   defp valid_sms_template?(_, _) do
     false
   end
 
   def get_factor!(id),
-      do: Factor
-          |> Repo.get!(id)
-          |> Repo.preload(:user)
+    do:
+      Factor
+      |> Repo.get!(id)
+      |> Repo.preload(:user)
 
   def get_factor_by(params),
-      do: Factor
-          |> Repo.get_by(params)
-          |> Repo.preload(:user)
+    do:
+      Factor
+      |> Repo.get_by(params)
+      |> Repo.preload(:user)
 
   def get_factor_by!(params),
-      do: Factor
-          |> Repo.get_by!(params)
-          |> Repo.preload(:user)
+    do:
+      Factor
+      |> Repo.get_by!(params)
+      |> Repo.preload(:user)
 
   def list_factors(params \\ %{}) do
     %FactorSearch{}
@@ -170,36 +179,35 @@ defmodule Mithril.Authentication do
   end
 
   def validate_factor_format(changeset) do
-    validate_change changeset, :factor, fn :factor, factor ->
+    validate_change(changeset, :factor, fn :factor, factor ->
       changeset
       |> fetch_field(:type)
       |> case do
-           :error -> :error
-           {_, value} -> value
-         end
+        :error -> :error
+        {_, value} -> value
+      end
       |> validate_factor_format(factor)
-    end
+    end)
   end
 
   defp validate_factor_format(@type_sms, nil) do
     []
   end
+
   defp validate_factor_format(@type_sms, value) do
     case value =~ ~r/^\+380[0-9]{9}$/ do
       true -> []
       false -> [factor: "invalid phone"]
     end
   end
+
   defp validate_factor_format(_, _) do
     []
   end
 
-  defp preload_references({:ok, factor}),
-       do: {:ok, preload_references(factor)}
+  defp preload_references({:ok, factor}), do: {:ok, preload_references(factor)}
 
-  defp preload_references(%Factor{} = factor),
-       do: Repo.preload(factor, :user)
+  defp preload_references(%Factor{} = factor), do: Repo.preload(factor, :user)
 
-  defp preload_references(err),
-       do: err
+  defp preload_references(err), do: err
 end

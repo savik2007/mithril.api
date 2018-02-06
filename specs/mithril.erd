@@ -1,0 +1,122 @@
+[apps]
+id | uuid | not null
+scope | varchar 
+user_id | uuid | not null
+client_id | uuid | not null
+inserted_at | timestamp | not null
+updated_at | timestamp | not null
+
+[authentication_factors]
+id | uuid | not null
+type | varchar | not null
+factor | varchar 
+is_active | boolean
+user_id | uuid 
+inserted_at | timestamp | not null
+updated_at | timestamp | not null
+
+[client_types]
+id | uuid | not null
+name | varchar 
+scope | varchar 
+inserted_at | timestamp | not null
+updated_at | timestamp | not null
+
+[clients]
+id | uuid | not null
+name | varchar 
+secret | varchar 
+redirect_uri | varchar 
+settings | jsonb
+priv_settings | jsonb  
+user_id | uuid
+inserted_at | timestamp | not null
+updated_at | timestamp | not null
+client_type_id | uuid | not null
+is_blocked | boolean | not null
+block_reason | varchar 
+
+[clients_block_reason_hstr]
+id | bigint | not null
+legal_entity_id | uuid | not null
+is_blocked | boolean | not null
+block_reason | varchar 
+inserted_at | timestamp | not null
+
+[otp]
+id | uuid | not null
+key | varchar | not null
+code | integer | not null
+code_expired_at | timestamp | not null
+status | varchar | not null
+attempts_count | integer 
+inserted_at | timestamp | not null
+active | boolean
+
+[password_hstr]
+id | bigint | not null
+user_id | uuid | not null
+password | varchar | not null
+inserted_at | timestamp | not null
+
+[roles]
+id | uuid | not null
+name | varchar
+scope | varchar
+inserted_at | timestamp | not null
+updated_at | timestamp | not null
+
+[tokens]
+id | uuid | not null
+name | varchar
+value | varchar
+expires_at | integer
+details | jsonb  
+user_id | uuid
+inserted_at | timestamp 
+updated_at | timestamp | not null
+
+[user_roles]
+id | uuid | not null
+user_id | uuid
+role_id | uuid
+client_id | uuid
+inserted_at | timestamp | not null
+updated_at | timestamp | not null
+
+[users]
+id | uuid | not null
+email | varchar
+password | varchar
+settings | jsonb
+priv_settings | jsonb  
+inserted_at | timestamp | not null
+updated_at | timestamp | not null
+is_blocked | boolean | not null
+block_reason | varchar 
+password_set_at | timestamp | not null
+
+(mithril)
+apps
+authentication_factors
+client_types
+clients
+clients_block_reason_hstr
+otp
+password_hstr
+roles
+tokens
+user_roles
+users
+
+
+apps 1--+ users
+apps 1--+ clients
+authentication_factors 1--+ users
+clients 1--+ client_types
+clients_block_reason_hstr 1--+ clients
+password_hstr 1--+ users
+tokens 1--+ users
+user_roles 1--+ users
+user_roles 1--+ roles
+user_roles 1--+ clients

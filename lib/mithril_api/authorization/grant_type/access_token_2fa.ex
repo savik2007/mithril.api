@@ -22,8 +22,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
          :ok <- check_factor_value(factor),
          :ok <- verify_otp(factor, token_2fa, params["otp"], user),
          {:ok, token} <- create_access_token(token_2fa),
-         {_, nil} <- TokenAPI.deactivate_old_tokens(token)
-      do
+         {_, nil} <- TokenAPI.deactivate_old_tokens(token) do
       {:ok, %{token: token, urgent: %{next_step: Password.next_step(:request_apps)}}}
     end
   end
@@ -38,9 +37,8 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
          :ok <- check_factor_value(factor),
          {:ok, token} <- create_2fa_access_token(token_2fa),
          :ok <- Authentication.send_otp(user, factor, token),
-         {_, nil} <- TokenAPI.deactivate_old_tokens(token)
-      do
-        {:ok, %{token: token, urgent: %{next_step: Password.next_step(:request_otp)}}}
+         {_, nil} <- TokenAPI.deactivate_old_tokens(token) do
+      {:ok, %{token: token, urgent: %{next_step: Password.next_step(:request_otp)}}}
     else
       {:error, :otp_timeout} -> Error.otp_timeout()
       {:error, :sms_not_sent} -> {:error, {:service_unavailable, "SMS not sent. Try later"}}
@@ -60,18 +58,19 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   def validate_authorization_header(_), do: Error.access_denied("Authorization header required.")
 
   defp get_token(token_value) do
-    case TokenAPI.get_token_by([value: token_value]) do
+    case TokenAPI.get_token_by(value: token_value) do
       %Token{} = token -> {:ok, token}
-      _ -> Error.token_invalid
+      _ -> Error.token_invalid()
     end
   end
 
   defp validate_token(%Token{name: "2fa_access_token"} = token) do
     case TokenAPI.expired?(token) do
-      true -> Error.token_expired
+      true -> Error.token_expired()
       _ -> {:ok, token}
     end
   end
+
   defp validate_token(%Token{}) do
     {:error, {:access_denied, "Invalid token type"}}
   end
@@ -81,14 +80,16 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   def validate_user(_), do: {:error, {:access_denied, "User not found."}}
 
   defp get_auth_factor_by_user_id(user_id) do
-    case Authentication.get_factor_by([user_id: user_id, is_active: true]) do
+    case Authentication.get_factor_by(user_id: user_id, is_active: true) do
       %Factor{} = factor -> factor
       _ -> {:error, %{conflict: "Not found authentication factor for user."}}
     end
   end
+
   defp check_factor_value(%Factor{factor: factor}) when is_binary(factor) and byte_size(factor) > 0 do
     :ok
   end
+
   defp check_factor_value(_) do
     {:error, {:conflict, "Factor not set"}}
   end
@@ -98,29 +99,34 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
       {_, _, :verified} ->
         set_otp_error_counter(user, 0)
         :ok
+
       {_, _, err_type} ->
         increase_otp_error_counter_or_block_user(user)
         otp_error(err_type)
     end
   end
-  defp otp_error(:expired), do: Error.otp_expired
-  defp otp_error(:invalid_code), do: Error.otp_invalid
-  defp otp_error(:reached_max_attempts), do: Error.otp_reached_max_attempts
-  defp otp_error(_), do: Error.otp_invalid
+
+  defp otp_error(:expired), do: Error.otp_expired()
+  defp otp_error(:invalid_code), do: Error.otp_invalid()
+  defp otp_error(:reached_max_attempts), do: Error.otp_reached_max_attempts()
+  defp otp_error(_), do: Error.otp_invalid()
 
   defp create_access_token(%Token{details: %{"grant_type" => "change_password"} = details} = token) do
     # changing 2FA token to change password token
     # creates token with scope that stored in detais.scope_request
     scope = Map.get(details, "scope_request", "user:change_password")
+
     Mithril.TokenAPI.create_change_password_token(%{
       user_id: token.user_id,
       details: Map.put(details, "scope", scope)
     })
   end
+
   defp create_access_token(%Token{details: details} = token) do
     # changing 2FA token to access token
     # creates token with scope that stored in detais.scope_request
     scope = Map.get(details, "scope_request", "app:authorize")
+
     Mithril.TokenAPI.create_access_token(%{
       user_id: token.user_id,
       details: Map.put(details, "scope", scope)
@@ -138,10 +144,12 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
     otp_error_max = Confex.get_env(:mithril_api, :"2fa")[:user_otp_error_max]
     otp_error = priv_settings.otp_error_counter + 1
     set_otp_error_counter(user, otp_error)
+
     if otp_error_max <= otp_error do
       UserAPI.block_user(user, "Passed invalid OTP more than USER_OTP_ERROR_MAX")
     end
   end
+
   defp set_otp_error_counter(%User{} = user, counter) do
     UserAPI.merge_user_priv_settings(user, %{otp_error_counter: counter})
   end

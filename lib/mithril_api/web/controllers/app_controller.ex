@@ -5,7 +5,7 @@ defmodule Mithril.Web.AppController do
   alias Mithril.AppAPI.App
   alias Scrivener.Page
 
-  action_fallback Mithril.Web.FallbackController
+  action_fallback(Mithril.Web.FallbackController)
 
   def index(conn, params) do
     with %Page{} = paging <- AppAPI.list_apps(params) do
@@ -37,6 +37,7 @@ defmodule Mithril.Web.AppController do
 
   def delete(conn, %{"id" => id}) do
     app = AppAPI.get_app!(id)
+
     with {:ok, %App{}} <- AppAPI.delete_app(app) do
       send_resp(conn, :no_content, "")
     end

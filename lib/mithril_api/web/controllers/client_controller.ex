@@ -5,7 +5,7 @@ defmodule Mithril.Web.ClientController do
   alias Mithril.ClientAPI.Client
   alias Scrivener.Page
 
-  action_fallback Mithril.Web.FallbackController
+  action_fallback(Mithril.Web.FallbackController)
 
   def index(conn, params) do
     with %Page{} = paging <- ClientAPI.list_clients(params) do
@@ -40,6 +40,7 @@ defmodule Mithril.Web.ClientController do
 
   def delete(conn, %{"id" => id}) do
     client = ClientAPI.get_client!(id)
+
     with {:ok, %Client{}} <- ClientAPI.delete_client(client) do
       send_resp(conn, :no_content, "")
     end
@@ -47,6 +48,7 @@ defmodule Mithril.Web.ClientController do
 
   def refresh_secret(conn, %{"client_id" => id}) do
     client = ClientAPI.get_client!(id)
+
     with {:ok, %Client{} = client} <- ClientAPI.refresh_secret(client) do
       render(conn, "show.json", client: client)
     end

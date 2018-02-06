@@ -16,6 +16,7 @@ defmodule Mithril.UserRoleAPITest do
       |> fixture()
       |> Repo.preload(:client)
       |> Repo.preload(:role)
+
     assert [^user_role] = UserRoleAPI.list_user_roles(%{"user_id" => user_role.user_id})
   end
 

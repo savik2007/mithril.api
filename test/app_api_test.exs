@@ -10,7 +10,7 @@ defmodule Mithril.AppAPITest do
   @invalid_attrs %{scope: nil}
 
   def fixture(:app, attrs \\ @create_attrs) do
-    user  = Mithril.Fixtures.create_user()
+    user = Mithril.Fixtures.create_user()
     client = Mithril.Fixtures.create_client()
 
     attrs = Map.merge(attrs, %{user_id: user.id, client_id: client.id})
@@ -29,7 +29,7 @@ defmodule Mithril.AppAPITest do
   end
 
   test "create_app/1 with valid data creates a app" do
-    user  = Mithril.Fixtures.create_user()
+    user = Mithril.Fixtures.create_user()
     client = Mithril.Fixtures.create_client()
 
     attrs = Map.merge(@create_attrs, %{user_id: user.id, client_id: client.id})

@@ -10,13 +10,15 @@ defmodule Mithril.RoleAPI.ClientTest do
     %{id: user_id} = insert(:user)
     %{id: client_type_id} = insert(:client_type)
 
-    assert {:ok, client} = ClientAPI.create_client(%{
-      name: "MSP",
-      user_id: user_id,
-      redirect_uri: "http://example.com",
-      settings: %{},
-      client_type_id: client_type_id
-    })
+    assert {:ok, client} =
+             ClientAPI.create_client(%{
+               name: "MSP",
+               user_id: user_id,
+               redirect_uri: "http://example.com",
+               settings: %{},
+               client_type_id: client_type_id
+             })
+
     assert %Client{priv_settings: %{"access_type" => "BROKER"}} = client
   end
 end
