@@ -66,18 +66,18 @@ defmodule Mithril.Mixfile do
       {:quantum, ">= 2.1.0"},
       {:plug_logger_json, "~> 0.5"},
       {:ex_machina, ">= 1.0.0", only: [:dev, :test]},
-      {:excoveralls, ">= 0.5.0", only: [:dev, :test]},
-      {:credo, ">= 0.5.1", only: [:dev, :test]}
+      {:excoveralls, "~> 0.8.0", only: [:dev, :test]},
+      {:credo, "~> 0.9.0-rc3", only: [:dev, :test]}
     ]
   end
 
   # Settings for publishing in Hex package manager:
   defp package do
     [
-      contributors: ["Nebo #15"],
-      maintainers: ["Nebo #15"],
+      contributors: ["Edenlab"],
+      maintainers: ["Edenlab"],
       licenses: ["LISENSE.md"],
-      links: %{github: "https://github.com/Nebo15/trump.api"},
+      links: %{github: "https://github.com/edenlabllc/mithril.api"},
       files: ~w(lib LICENSE.md mix.exs README.md)
     ]
   end
