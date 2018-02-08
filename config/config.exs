@@ -51,7 +51,7 @@ config :mithril_api, :password,
 
 config :mithril_api, :"2fa",
   user_2fa_enabled?: {:system, :boolean, "USER_2FA_ENABLED", true},
-  sms_enabled?: {:system, :boolean, "SMS_ENABLED", false},
+  sms_enabled?: {:system, :boolean, "SMS_ENABLED", true},
   # minutes
   otp_send_timeout: {:system, :integer, "OTP_SEND_TIMEOUT", 1},
   otp_send_counter_max: {:system, :integer, "OTP_SEND_COUNTER_MAX", 3},
