@@ -5,6 +5,7 @@ defmodule Mithril.OTP.SMS do
   use Confex, otp_app: :mithril_api
   alias Mithril.ResponseDecoder
 
+  @behaviour Mithril.OTP.SMSBehaviour
   @filter_headers ["content-length", "Content-Length"]
 
   def process_url(url), do: config()[:endpoint] <> url

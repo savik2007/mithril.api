@@ -1,8 +1,15 @@
 defmodule Mithril.Acceptance.ChangePasswordFlowTest do
   use Mithril.Web.ConnCase
+
+  import Mox
+
   alias Mithril.OTP
+  alias Mithril.OTP.SMSMock
 
   @direct Mithril.ClientAPI.access_type(:direct)
+
+  # For Mox lib. Make sure mocks are verified when the test exits
+  setup :verify_on_exit!
 
   describe "change password flow without 2fa" do
     setup %{conn: conn} do
@@ -109,14 +116,6 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
   end
 
   describe "change password flow with 2fa" do
-    defmodule Microservices do
-      use MicroservicesHelper
-
-      Plug.Router.post "/sms/send" do
-        Plug.Conn.send_resp(conn, 200, Poison.encode!(%{"data" => "sms sent"}))
-      end
-    end
-
     setup %{conn: conn} do
       user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("super$ecre7"))
       client_type = insert(:client_type, scope: "user:change_password")
@@ -134,18 +133,17 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
       role = insert(:role, scope: "legal_entity:read legal_entity:write")
       insert(:user_role, user_id: user.id, role_id: role.id, client_id: client.id)
 
-      {:ok, port, ref} = start_microservices(Microservices)
-      System.put_env("OTP_ENDPOINT", "http://localhost:#{port}")
+      System.put_env("SMS_ENABLED", "true")
 
       on_exit(fn ->
-        System.delete_env("OTP_ENDPOINT")
-        stop_microservices(ref)
+        System.put_env("SMS_ENABLED", "false")
       end)
 
       %{conn: conn, user: user, client: client}
     end
 
     test "happy path", %{conn: conn, user: user, client: client} do
+      expect(SMSMock, :send, 2, fn _phone_number, _body, _type -> {:ok, %{"meta" => %{"code" => 200}}} end)
       insert(:authentication_factor, user_id: user.id)
 
       change_password_body = %{
@@ -233,6 +231,7 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
     end
 
     test "happy path with request factor", %{conn: conn, user: user, client: client} do
+      expect(SMSMock, :send, 2, fn _phone_number, _body, _type -> {:ok, %{"meta" => %{"code" => 200}}} end)
       insert(:authentication_factor, user_id: user.id, factor: nil)
 
       change_password_body = %{

@@ -53,7 +53,7 @@ defmodule Mithril.Mixfile do
       {:ecto, "~> 2.1"},
       {:postgrex, "~> 0.13.2"},
       {:cowboy, "~> 1.1"},
-      {:httpoison, "~> 0.13.0"},
+      {:httpoison, "~> 1.0"},
       {:poison, "~> 3.1"},
       {:phoenix, "~> 1.3.0"},
       {:eview, "~> 0.12.2"},
@@ -65,9 +65,10 @@ defmodule Mithril.Mixfile do
       {:timex, "~> 3.1"},
       {:quantum, ">= 2.1.0"},
       {:plug_logger_json, "~> 0.5"},
+      {:mox, "~> 0.3", only: :test},
       {:ex_machina, ">= 1.0.0", only: [:dev, :test]},
       {:excoveralls, "~> 0.8.0", only: [:dev, :test]},
-      {:credo, "~> 0.9.0-rc3", only: [:dev, :test]}
+      {:credo, ">= 0.0.0", only: [:dev, :test]}
     ]
   end
 

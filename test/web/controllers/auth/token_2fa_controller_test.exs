@@ -1,12 +1,18 @@
 defmodule Mithril.OAuth.Token2FAControllerTest do
   use Mithril.Web.ConnCase
 
+  import Mox
+
   alias Mithril.OTP
+  alias Mithril.OTP.SMSMock
   alias Mithril.TokenAPI.Token
   alias Mithril.UserAPI.User.PrivSettings
   alias Mithril.Authorization.GrantType.Password, as: PasswordGrantType
 
   @password "Somepa$$word1"
+
+  # For Mox lib. Make sure mocks are verified when the test exits
+  setup :verify_on_exit!
 
   setup %{conn: conn} do
     allowed_scope = "app:authorize legal_entity:read"
@@ -398,14 +404,6 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
   end
 
   describe "SMS not send" do
-    defmodule Microservices do
-      use MicroservicesHelper
-
-      Plug.Router.post "/sms/send" do
-        Plug.Conn.send_resp(conn, 500, Poison.encode!(%{"error" => "smth wrng"}))
-      end
-    end
-
     setup %{conn: conn, user: user, client: client} do
       insert(:authentication_factor, user_id: user.id)
 
@@ -419,14 +417,11 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       token = insert(:token, user_id: user.id, name: "2fa_access_token", details: details)
       conn = put_req_header(conn, "authorization", "Bearer #{token.value}")
 
-      {:ok, port, ref} = start_microservices(Microservices)
-      System.put_env("OTP_ENDPOINT", "http://localhost:#{port}")
+      expect(SMSMock, :send, fn _phone_number, _body, _type -> {:error, %{"meta" => %{"code" => 500}}} end)
       System.put_env("SMS_ENABLED", "true")
 
       on_exit(fn ->
-        System.delete_env("OTP_ENDPOINT")
         System.put_env("SMS_ENABLED", "false")
-        stop_microservices(ref)
       end)
 
       {:ok, conn: conn, user: user, client: client}

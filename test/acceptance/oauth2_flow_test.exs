@@ -1,8 +1,15 @@
 defmodule Mithril.Acceptance.Oauth2FlowTest do
   use Mithril.Web.ConnCase
+
+  import Mox
+
   alias Mithril.OTP
+  alias Mithril.OTP.SMSMock
 
   @direct Mithril.ClientAPI.access_type(:direct)
+
+  # For Mox lib. Make sure mocks are verified when the test exits
+  setup :verify_on_exit!
 
   test "client successfully obtain an access_token API calls", %{conn: conn} do
     client_type = Mithril.Fixtures.create_client_type(%{scope: "app:authorize legal_entity:read legal_entity:write"})
@@ -95,14 +102,6 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
   end
 
   describe "2fa flow" do
-    defmodule Microservices do
-      use MicroservicesHelper
-
-      Plug.Router.post "/sms/send" do
-        Plug.Conn.send_resp(conn, 200, Poison.encode!(%{"data" => "sms sent"}))
-      end
-    end
-
     setup %{conn: conn} do
       user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("super$ecre7"))
       client_type = insert(:client_type, scope: "app:authorize legal_entity:read legal_entity:write")
@@ -121,18 +120,18 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       role = insert(:role, scope: "legal_entity:read legal_entity:write")
       insert(:user_role, user_id: user.id, role_id: role.id, client_id: client.id)
 
-      {:ok, port, ref} = start_microservices(Microservices)
-      System.put_env("OTP_ENDPOINT", "http://localhost:#{port}")
+      System.put_env("SMS_ENABLED", "true")
 
       on_exit(fn ->
-        System.delete_env("OTP_ENDPOINT")
-        stop_microservices(ref)
+        System.put_env("SMS_ENABLED", "false")
       end)
 
       %{conn: conn, user: user, client: client}
     end
 
     test "happy path", %{conn: conn, user: user, client: client} do
+      expect(SMSMock, :send, fn _phone_number, _body, _type -> {:ok, %{"meta" => %{"code" => 200}}} end)
+
       login_request_body = %{
         "token" => %{
           grant_type: "password",
@@ -249,6 +248,8 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
     end
 
     test "invalid OTP", %{conn: conn, user: user, client: client} do
+      expect(SMSMock, :send, fn _phone_number, _body, _type -> {:ok, %{"meta" => %{"code" => 200}}} end)
+
       login_request_body = %{
         "token" => %{
           grant_type: "password",
