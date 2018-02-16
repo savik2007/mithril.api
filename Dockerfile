@@ -9,8 +9,6 @@ WORKDIR /app
 
 ENV MIX_ENV=prod
 
-RUN apk add musl-dev gcc
-
 RUN mix do \
       local.hex --force, \
       local.rebar --force, \
@@ -18,7 +16,7 @@ RUN mix do \
       deps.compile, \
       release
 
-FROM alpine:3.7
+FROM alpine:edge
 
 ARG APP_NAME
 ARG APP_VERSION
