@@ -1,6 +1,6 @@
 #!/bin/bash
 if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
-	  if [ "$TRAVIS_BRANCH" == "$RELEASE_BRANCH" ]; then
+	  if [ "$TRAVIS_BRANCH" == "$TRUNK_BRANCH" ]; then
 ## install kubectl
 			curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
 			chmod +x ./kubectl
@@ -16,22 +16,19 @@ if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
 			git clone https://$GITHUB_TOKEN@github.com/edenlabllc/ehealth.charts.git
 			cd ehealth.charts
 #get version and project name
-			PROJECT_NAME=$(sed -n 's/.*app: :\([^, ]*\).*/\1/pg' "$TRAVIS_BUILD_DIR/mix.exs")
-			PROJECT_VERSION=$(sed -n 's/.*@version "\([^"]*\)".*/\1/pg' "$TRAVIS_BUILD_DIR/mix.exs")
-			#PROJECT_VERSION="0.1.261"
-			sed -i'' -e "20,25s/tag:.*/tag: \"$PROJECT_VERSION\"/g" "$Chart/values.yaml"
+			sed -i'' -e "1,10s/tag:.*/tag: \"$NEXT_VERSION\"/g" "$CHART/values.yaml"
 			helm init --upgrade
 			sleep 15
-			helm upgrade  -f $Chart/values.yaml  $Chart $Chart 
+			helm upgrade  -f $CHART/values.yaml  $CHART $CHART
 			cd $TRAVIS_BUILD_DIR/bin
-			./wait-for-deployment.sh api $Chart 180
+			./wait-for-deployment.sh api $CHART 180
    				if [ "$?" -eq 0 ]; then
-     				kubectl get pod -n$Chart | grep api 
-     				cd $TRAVIS_BUILD_DIR/ehealth.charts && git add . && sudo  git commit -m "Bump $Chart api to $PROJECT_VERSION" && sudo git pull && sudo git push
+     				kubectl get pod -n$CHART | grep api
+     				cd $TRAVIS_BUILD_DIR/ehealth.charts && git add . && sudo  git commit -m "Bump $CHART api to $NEXT_VERSION" && sudo git pull && sudo git push
      				exit 0;
-   				else 
-   	 				kubectl logs $(sudo kubectl get pod -n$Chart | awk '{ print $1 }' | grep api) -n$Chart 
-   	 				helm rollback $Chart  $(($(helm ls | grep $Chart | awk '{ print $2 }') -1)) 
+   				else
+   	 				kubectl logs $(sudo kubectl get pod -n$CHART | awk '{ print $1 }' | grep api) -n$CHART
+   	 				helm rollback $CHART  $(($(helm ls | grep $CHART | awk '{ print $2 }') -1))
    	 				exit 1;
    				fi;
  		fi;
