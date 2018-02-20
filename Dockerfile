@@ -9,6 +9,8 @@ WORKDIR /app
 
 ENV MIX_ENV=prod
 
+RUN apk add --no-cache --update --virtual .build-deps musl=1.1.18-r7 make g++
+
 RUN mix do \
       local.hex --force, \
       local.rebar --force, \
