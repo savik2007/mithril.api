@@ -9,7 +9,7 @@ WORKDIR /app
 
 ENV MIX_ENV=prod
 
-RUN apk add musl-dev gcc
+RUN apk add --no-cache --update --virtual .build-deps musl=1.1.18-r3 make g++
 
 RUN mix do \
       local.hex --force, \
