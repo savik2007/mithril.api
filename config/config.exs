@@ -62,6 +62,8 @@ config :mithril_api, :"2fa",
   otp_max_attempts: {:system, :integer, "OTP_MAX_ATTEMPTS", 3},
   otp_sms_template: {:system, :string, "OTP_SMS_TEMPLATE", "Код підтвердження: <otp.code>"}
 
+config :mithril_api, :sms_api, Mithril.OTP.SMS
+
 # Configures the endpoint
 config :mithril_api, Mithril.Web.Endpoint,
   url: [host: "localhost"],

@@ -6,7 +6,6 @@ defmodule Mithril.Authentication do
   import Ecto.{Query, Changeset, DateTime}, warn: false
 
   alias Mithril.OTP
-  alias Mithril.OTP.SMS
   alias Mithril.OTP.Schema, as: OTPSchema
   alias Mithril.Repo
   alias Mithril.UserAPI.User
@@ -27,6 +26,7 @@ defmodule Mithril.Authentication do
   )a
 
   @type_sms "SMS"
+  @sms_api Application.get_env(:mithril_api, :sms_api)
 
   def type(:sms), do: @type_sms
 
@@ -61,7 +61,7 @@ defmodule Mithril.Authentication do
   end
 
   defp send_otp_by_factor({:ok, %OTPSchema{code: code}}, %Factor{factor: factor, type: @type_sms}) do
-    case SMS.send(factor, generate_message(code), "2FA") do
+    case @sms_api.send(factor, generate_message(code), "2FA") do
       {:ok, _} ->
         :ok
 

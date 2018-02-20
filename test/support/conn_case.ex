@@ -45,18 +45,4 @@ defmodule Mithril.Web.ConnCase do
 
     {:ok, conn: conn}
   end
-
-  def start_microservices(module) do
-    {:ok, port} = :gen_tcp.listen(0, [])
-    {:ok, port_string} = :inet.port(port)
-    :erlang.port_close(port)
-    ref = make_ref()
-    # TODO: only 1 worker here
-    {:ok, _pid} = Plug.Adapters.Cowboy.http(module, [], port: port_string, ref: ref)
-    {:ok, port_string, ref}
-  end
-
-  def stop_microservices(ref) do
-    Plug.Adapters.Cowboy.shutdown(ref)
-  end
 end

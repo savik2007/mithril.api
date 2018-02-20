@@ -28,3 +28,5 @@ config :mithril_api, :"2fa",
   sms_enabled?: {:system, :boolean, "SMS_ENABLED", false},
   # seconds
   otp_send_timeout: {:system, :integer, "OTP_SEND_TIMEOUT", 0}
+
+config :mithril_api, :sms_api, Mithril.OTP.SMSMock
