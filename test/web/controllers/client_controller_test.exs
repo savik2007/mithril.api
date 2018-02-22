@@ -25,33 +25,22 @@ defmodule Mithril.Web.ClientControllerTest do
     settings: nil
   }
 
-  def fixture(:client, name \\ "some_name", client_type_params \\ %{}) do
-    %{id: client_type_id} = Mithril.Fixtures.create_client_type(client_type_params)
-
-    {:ok, client} =
-      name
-      |> Mithril.Fixtures.client_create_attrs(client_type_id)
-      |> ClientAPI.create_client()
-
-    client
-  end
-
   setup %{conn: conn} do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
   end
 
   test "search by name by like works", %{conn: conn} do
-    fixture(:client, "john")
-    fixture(:client, "simon")
-    fixture(:client, "monica")
+    insert(:client, name: "john")
+    insert(:client, name: "simon")
+    insert(:client, name: "monica")
     conn = get(conn, client_path(conn, :index), %{name: "mon"})
     assert 2 == length(json_response(conn, 200)["data"])
   end
 
   test "search by name by like is skipped when other params are invalid", %{conn: conn} do
-    fixture(:client, "john")
-    fixture(:client, "simon")
-    fixture(:client, "monica")
+    insert(:client, name: "john")
+    insert(:client, name: "simon")
+    insert(:client, name: "monica")
     conn = get(conn, client_path(conn, :index), %{user_id: "111", name: "mon"})
     resp = json_response(conn, 422)
     assert Map.has_key?(resp, "error")
@@ -64,25 +53,25 @@ defmodule Mithril.Web.ClientControllerTest do
   end
 
   test "lists all entries on index", %{conn: conn} do
-    fixture(:client)
-    fixture(:client)
-    fixture(:client)
+    insert(:client)
+    insert(:client)
+    insert(:client)
     conn = get(conn, client_path(conn, :index))
     assert 3 == length(json_response(conn, 200)["data"])
   end
 
   test "does not list all entries on index when limit is set", %{conn: conn} do
-    fixture(:client)
-    fixture(:client)
-    fixture(:client)
+    insert(:client)
+    insert(:client)
+    insert(:client)
     conn = get(conn, client_path(conn, :index), %{page_size: 2})
     assert 2 == length(json_response(conn, 200)["data"])
   end
 
   test "does not list all entries on index when starting_after is set", %{conn: conn} do
-    fixture(:client)
-    fixture(:client)
-    client = fixture(:client)
+    insert(:client)
+    insert(:client)
+    client = insert(:client)
     conn = get(conn, client_path(conn, :index), %{page_size: 2, page: 2})
     resp = json_response(conn, 200)["data"]
     assert 1 == length(resp)
@@ -91,7 +80,7 @@ defmodule Mithril.Web.ClientControllerTest do
 
   test "search clients by name", %{conn: conn} do
     name = "search_name"
-    fixture(:client)
+    insert(:client)
 
     {:ok, _} =
       name
@@ -107,7 +96,9 @@ defmodule Mithril.Web.ClientControllerTest do
   end
 
   test "show client details", %{conn: conn} do
-    client = fixture(:client, "some name", %{name: "some_kind_of_client"})
+
+    client_type = insert(:client_type, name: "independent client")
+    client = insert(:client, client_type_id: client_type.id)
 
     conn = get(conn, client_details_path(conn, :details, client.id))
 
@@ -118,7 +109,7 @@ defmodule Mithril.Web.ClientControllerTest do
              "redirect_uri" => client.redirect_uri,
              "user_id" => client.user_id,
              "client_type_id" => client.client_type_id,
-             "client_type_name" => "some_kind_of_client",
+             "client_type_name" => "independent client",
              "is_blocked" => false,
              "block_reason" => nil,
              "inserted_at" => NaiveDateTime.to_iso8601(client.inserted_at),
@@ -127,7 +118,9 @@ defmodule Mithril.Web.ClientControllerTest do
   end
 
   test "show client", %{conn: conn} do
-    client = fixture(:client, "some name", %{name: "some_kind_of_client"})
+    client_type = insert(:client_type, name: "independent client 2")
+    client = insert(:client, client_type_id: client_type.id)
+
     conn = get(conn, client_path(conn, :show, client.id))
 
     assert %{
@@ -139,7 +132,7 @@ defmodule Mithril.Web.ClientControllerTest do
              "redirect_uri" => client.redirect_uri,
              "user_id" => client.user_id,
              "client_type_id" => client.client_type_id,
-             "client_type_name" => "some_kind_of_client",
+             "client_type_name" => "independent client 2",
              "is_blocked" => false,
              "block_reason" => nil,
              "inserted_at" => NaiveDateTime.to_iso8601(client.inserted_at),
@@ -170,7 +163,7 @@ defmodule Mithril.Web.ClientControllerTest do
   end
 
   test "put new client with id", %{conn: conn} do
-    %Client{client_type_id: client_type_id, user_id: user_id} = fixture(:client)
+    %Client{client_type_id: client_type_id, user_id: user_id} = insert(:client)
 
     update_attrs =
       Map.merge(@update_attrs, %{
@@ -187,7 +180,7 @@ defmodule Mithril.Web.ClientControllerTest do
   end
 
   test "updates chosen client and renders client when data is valid", %{conn: conn} do
-    %Client{id: id, secret: secret} = client = fixture(:client)
+    %Client{id: id, secret: secret} = client = insert(:client)
     conn = put(conn, client_path(conn, :update, client), client: @update_attrs)
     assert %{"id" => ^id} = json_response(conn, 200)["data"]
 
@@ -208,13 +201,13 @@ defmodule Mithril.Web.ClientControllerTest do
   end
 
   test "does not update chosen client and renders errors when data is invalid", %{conn: conn} do
-    client = fixture(:client)
+    client = insert(:client)
     conn = put(conn, client_path(conn, :update, client), client: @invalid_attrs)
     assert json_response(conn, 422)["errors"] != %{}
   end
 
   test "deletes chosen client", %{conn: conn} do
-    client = fixture(:client)
+    client = insert(:client)
     conn = delete(conn, client_path(conn, :delete, client))
     assert response(conn, 204)
 
@@ -224,7 +217,7 @@ defmodule Mithril.Web.ClientControllerTest do
   end
 
   test "refresh client secret", %{conn: conn} do
-    %{id: id, secret: old_secret} = fixture(:client)
+    %{id: id, secret: old_secret} = insert(:client)
     conn = patch(conn, client_refresh_secret_path(conn, :refresh_secret, id))
     resp = json_response(conn, 200)
 

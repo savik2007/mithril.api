@@ -8,40 +8,31 @@ defmodule Mithril.Web.AppControllerTest do
   @update_attrs %{scope: "some updated scope"}
   @invalid_attrs %{scope: nil}
 
-  def fixture(:app) do
-    user = Mithril.Fixtures.create_user()
-    client = Mithril.Fixtures.create_client()
-
-    attrs = Map.merge(@create_attrs, %{user_id: user.id, client_id: client.id})
-    {:ok, app} = AppAPI.create_app(attrs)
-    app
-  end
-
   setup %{conn: conn} do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
   end
 
   describe "list all apps" do
     test "lists all entries on index", %{conn: conn} do
-      fixture(:app)
-      fixture(:app)
-      fixture(:app)
+      insert(:app)
+      insert(:app)
+      insert(:app)
       conn = get(conn, app_path(conn, :index))
       assert 3 == length(json_response(conn, 200)["data"])
     end
 
     test "does not list all entries on index when limit is set", %{conn: conn} do
-      fixture(:app)
-      fixture(:app)
-      fixture(:app)
+      insert(:app)
+      insert(:app)
+      insert(:app)
       conn = get(conn, app_path(conn, :index), %{page_size: 2})
       assert 2 == length(json_response(conn, 200)["data"])
     end
 
     test "does not list all entries on index when starting_after is set", %{conn: conn} do
-      fixture(:app)
-      fixture(:app)
-      app = fixture(:app)
+      insert(:app)
+      insert(:app)
+      app = insert(:app)
       conn = get(conn, app_path(conn, :index), %{page_size: 2, page: 2})
       resp = json_response(conn, 200)["data"]
       assert 1 == length(resp)
@@ -83,7 +74,7 @@ defmodule Mithril.Web.AppControllerTest do
   end
 
   test "updates chosen app and renders app when data is valid", %{conn: conn} do
-    %App{id: id} = app = fixture(:app)
+    %App{id: id} = app = insert(:app)
     conn = put(conn, app_path(conn, :update, app), app: @update_attrs)
     assert %{"id" => ^id} = json_response(conn, 200)["data"]
 
@@ -98,13 +89,13 @@ defmodule Mithril.Web.AppControllerTest do
   end
 
   test "does not update chosen app and renders errors when data is invalid", %{conn: conn} do
-    app = fixture(:app)
+    app = insert(:app)
     conn = put(conn, app_path(conn, :update, app), app: @invalid_attrs)
     assert json_response(conn, 422)["errors"] != %{}
   end
 
   test "deletes chosen app", %{conn: conn} do
-    app = fixture(:app)
+    app = insert(:app)
     conn = delete(conn, app_path(conn, :delete, app))
     assert response(conn, 204)
 
@@ -115,7 +106,7 @@ defmodule Mithril.Web.AppControllerTest do
 
   test "deletes apps by client_id", %{conn: conn} do
     # app 1
-    %{id: id_1} = fixture(:app)
+    %{id: id_1} = insert(:app)
     # app 2
     user = Mithril.Fixtures.create_user()
     client_1 = Mithril.Fixtures.create_client()

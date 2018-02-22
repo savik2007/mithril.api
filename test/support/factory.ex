@@ -41,7 +41,7 @@ defmodule Mithril.Factory do
 
   def client_type_factory do
     %Mithril.ClientTypeAPI.ClientType{
-      name: to_string(:rand.uniform()),
+      name: sequence("some client_type name-"),
       scope: "some scope"
     }
   end
@@ -49,7 +49,7 @@ defmodule Mithril.Factory do
   def user_factory do
     %Mithril.UserAPI.User{
       email: sequence("mail@example.com-"),
-      password: "Somepassword1",
+      password: Comeonin.Bcrypt.hashpwsalt("Somepassword1"),
       password_set_at: NaiveDateTime.utc_now(),
       settings: %{},
       priv_settings: %Mithril.UserAPI.User.PrivSettings{
@@ -71,7 +71,7 @@ defmodule Mithril.Factory do
 
   def role_factory do
     %Mithril.RoleAPI.Role{
-      name: to_string(:rand.uniform()),
+      name: sequence("some name-"),
       scope: "some scope"
     }
   end
@@ -81,6 +81,14 @@ defmodule Mithril.Factory do
       user_id: insert(:user).id,
       client_id: insert(:client).id,
       role_id: insert(:role).id
+    }
+  end
+
+  def app_factory do
+    %Mithril.AppAPI.App{
+      scope: "some scope",
+      user_id: insert(:user).id,
+      client_id: insert(:client).id
     }
   end
 

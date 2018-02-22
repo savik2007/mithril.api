@@ -2,7 +2,6 @@ defmodule Mithril.Web.TokenControllerTest do
   use Mithril.Web.ConnCase
 
   alias Ecto.UUID
-  alias Mithril.TokenAPI
   alias Mithril.TokenAPI.Token
 
   @broker Mithril.ClientAPI.access_type(:broker)
@@ -12,26 +11,14 @@ defmodule Mithril.Web.TokenControllerTest do
   @update_attrs %{details: %{}, expires_at: 43, name: "some updated name", value: "some updated value"}
   @invalid_attrs %{details: nil, expires_at: nil, name: nil, value: nil}
 
-  def fixture(:token, name \\ "some name", value \\ "some_value", details \\ %{}, user \\ nil) do
-    user = user || Mithril.Fixtures.create_user()
-
-    {:ok, token} =
-      @create_attrs
-      |> Map.put_new(:user_id, user.id)
-      |> Map.merge(%{name: name, value: value, details: details})
-      |> TokenAPI.create_token()
-
-    token
-  end
-
   setup %{conn: conn} do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
   end
 
   test "lists all entries on index", %{conn: conn} do
-    fixture(:token, "1")
-    fixture(:token, "2")
-    fixture(:token, "3")
+    insert(:token, name: "1")
+    insert(:token, name: "2")
+    insert(:token, name: "3")
     conn = get(conn, token_path(conn, :index))
     assert 3 == length(json_response(conn, 200)["data"])
   end
@@ -40,26 +27,26 @@ defmodule Mithril.Web.TokenControllerTest do
     client_1 = UUID.generate()
     client_2 = UUID.generate()
 
-    fixture(:token, "1", "val", %{"client_id" => client_1})
-    fixture(:token, "2", "val", %{"client_id" => client_1})
-    fixture(:token, "3", "val", %{"client_id" => client_2})
+    insert(:token, name: "1", details: %{"client_id" => client_1})
+    insert(:token, name: "2", details: %{"client_id" => client_1})
+    insert(:token, name: "3", details: %{"client_id" => client_2})
 
     conn = get(conn, token_path(conn, :index), %{"client_id" => client_1})
     assert 2 == length(json_response(conn, 200)["data"])
   end
 
   test "does not list all entries on index when limit is set", %{conn: conn} do
-    fixture(:token, "1")
-    fixture(:token, "2")
-    fixture(:token, "3")
+    insert(:token, name: "1")
+    insert(:token, name: "2")
+    insert(:token, name: "3")
     conn = get(conn, token_path(conn, :index), %{page_size: 2})
     assert 2 == length(json_response(conn, 200)["data"])
   end
 
   test "does not list all entries on index when page_size and page are set", %{conn: conn} do
-    fixture(:token, "1")
-    fixture(:token, "2")
-    token = fixture(:token, "3")
+    insert(:token, name: "1")
+    insert(:token, name: "2")
+    token = insert(:token, name: "3")
     conn = get(conn, token_path(conn, :index), %{page_size: 2, page: 2})
     resp = json_response(conn, 200)["data"]
     assert 1 == length(resp)
@@ -67,25 +54,26 @@ defmodule Mithril.Web.TokenControllerTest do
   end
 
   test "search by name by like works", %{conn: conn} do
-    fixture(:token, "refresh_token")
-    fixture(:token, "access_token")
-    fixture(:token, "something_different")
+    insert(:token, name: "refresh_token")
+    insert(:token, name: "access_token")
+    insert(:token, name: "something_different")
+
     conn = get(conn, token_path(conn, :index), %{name: "token"})
     assert 2 == length(json_response(conn, 200)["data"])
   end
 
   test "search by value by like works", %{conn: conn} do
-    fixture(:token, "access_token", "111")
-    fixture(:token, "access_token", "123")
-    fixture(:token, "access_token", "234")
+    insert(:token, name: "access_token", value: "111")
+    insert(:token, name: "access_token", value: "123")
+    insert(:token, name: "access_token", value: "234")
     conn = get(conn, token_path(conn, :index), %{value: "23"})
     assert 2 == length(json_response(conn, 200)["data"])
   end
 
   test "search by user_id works", %{conn: conn} do
-    token = fixture(:token, "1")
-    fixture(:token, "2")
-    fixture(:token, "3")
+    token = insert(:token, name: "1")
+    insert(:token, name: "2")
+    insert(:token, name: "3")
     conn = get(conn, token_path(conn, :index), %{user_id: token.user_id})
     assert 1 == length(json_response(conn, 200)["data"])
   end
@@ -113,7 +101,7 @@ defmodule Mithril.Web.TokenControllerTest do
   end
 
   test "updates chosen token and renders token when data is valid", %{conn: conn} do
-    %Token{id: id} = token = fixture(:token)
+    %Token{id: id} = token = insert(:token)
     conn = put(conn, token_path(conn, :update, token), token: @update_attrs)
     assert %{"id" => ^id} = json_response(conn, 200)["data"]
 
@@ -130,14 +118,14 @@ defmodule Mithril.Web.TokenControllerTest do
   end
 
   test "does not update chosen token and renders errors when data is invalid", %{conn: conn} do
-    token = fixture(:token)
+    token = insert(:token)
     conn = put(conn, token_path(conn, :update, token), token: @invalid_attrs)
     assert json_response(conn, 422)["errors"] != %{}
   end
 
   describe "delete token" do
     test "by id", %{conn: conn} do
-      token = fixture(:token)
+      token = insert(:token)
       conn = delete(conn, token_path(conn, :delete, token))
       assert response(conn, 204)
 
@@ -147,12 +135,12 @@ defmodule Mithril.Web.TokenControllerTest do
     end
 
     test "by user and client_id", %{conn: conn} do
-      %{id: id_1} = fixture(:token)
-      user = Mithril.Fixtures.create_user()
+      %{id: id_1} = insert(:token)
+      user = insert(:user)
       client_id = UUID.generate()
-      fixture(:token, "first", "a", %{"client_id" => client_id}, user)
-      fixture(:token, "second", "b", %{"client_id" => client_id}, user)
-      %{id: id_2} = fixture(:token, "third", "c", %{"client_id" => UUID.generate()}, user)
+      insert(:token, name: "first", value: "a", details: %{"client_id" => client_id}, user_id: user.id)
+      insert(:token, name: "second", value: "b", details: %{"client_id" => client_id}, user_id: user.id)
+      %{id: id_2} = insert(:token, name: "third", value: "c", details: %{"client_id" => UUID.generate()}, user_id: user.id)
 
       conn = delete(conn, user_token_path(conn, :delete_by_user, user.id), client_id: client_id)
       assert response(conn, 204)
@@ -275,7 +263,7 @@ defmodule Mithril.Web.TokenControllerTest do
   end
 
   test "returns error during token verification", %{conn: conn} do
-    token = fixture(:token)
+    token = insert(:token, expires_at: 1000)
 
     conn = get(conn, token_verify_path(conn, :verify, token.value))
 
