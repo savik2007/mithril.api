@@ -21,12 +21,20 @@ defmodule MithrilWeb.Router do
     # plug :allow_jsonp
   end
 
+  scope "/", Mithril.Web do
+    pipe_through(:api)
+    # registration
+    post("/send_email_verification", RegistrationController, :send_email_verification)
+  end
+
   scope "/oauth", as: :oauth2, alias: Mithril do
     pipe_through(:api)
 
     post("/apps/authorize", OAuth.AppController, :authorize)
     post("/tokens", OAuth.TokenController, :create)
     post("/tokens/actions/change_password", OAuth.TokenController, :create_change_pwd_token)
+
+    # 2FA
     post("/users/actions/init_factor", OAuth.TokenController, :init_factor)
     post("/users/actions/approve_factor", OAuth.TokenController, :approve_factor)
     post("/users/actions/update_password", OAuth.TokenController, :update_password)
