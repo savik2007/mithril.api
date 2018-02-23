@@ -29,15 +29,10 @@ defmodule Mithril.UserAPITest do
   }
   @invalid_attrs %{email: nil, password: nil, settings: nil}
 
-  def fixture(:user, attrs \\ @create_attrs) do
-    {:ok, user} = UserAPI.create_user(attrs)
-    user
-  end
-
   test "list_users/1 returns all users without search params" do
     # System User already inserted in DB by means of migration
     system_user = UserAPI.get_user!("4261eacf-8008-4e62-899f-de1e2f7065f0")
-    user = fixture(:user)
+    user = insert(:user)
 
     assert UserAPI.list_users(%{}) == %Page{
              entries: [system_user, user],
@@ -49,7 +44,7 @@ defmodule Mithril.UserAPITest do
   end
 
   test "list_users/1 returns all users with valid search params" do
-    user = fixture(:user)
+    user = insert(:user)
 
     assert UserAPI.list_users(%{"email" => user.email}) == %Page{
              entries: [user],
@@ -61,7 +56,7 @@ defmodule Mithril.UserAPITest do
   end
 
   test "list_users/1 returns empty list with invalid search params" do
-    user = fixture(:user)
+    user = insert(:user)
 
     assert UserAPI.list_users(%{"email" => user.email <> "111"}) == %Page{
              entries: [],
@@ -73,7 +68,7 @@ defmodule Mithril.UserAPITest do
   end
 
   test "get_user! returns the user with given id" do
-    user = fixture(:user)
+    user = insert(:user)
     assert UserAPI.get_user!(user.id) == user
   end
 
@@ -100,7 +95,7 @@ defmodule Mithril.UserAPITest do
   end
 
   test "update_user/2 with valid data updates the user" do
-    user = fixture(:user)
+    user = insert(:user)
     assert {:ok, user} = UserAPI.update_user(user, @update_attrs)
     assert %User{} = user
     assert user.email == "some updated email"
@@ -114,7 +109,7 @@ defmodule Mithril.UserAPITest do
   end
 
   test "update_user_priv_settings/2 with valid data updates the user.priv_settings" do
-    user = fixture(:user)
+    user = insert(:user)
     assert {:ok, user} = UserAPI.update_user_priv_settings(user, @update_attrs.priv_settings)
     assert %User{} = user
     assert length(user.priv_settings.login_hstr) == 2
@@ -122,7 +117,7 @@ defmodule Mithril.UserAPITest do
   end
 
   test "update_user/2 with invalid data returns error changeset" do
-    user = fixture(:user)
+    user = insert(:user)
     assert {:error, %Ecto.Changeset{}} = UserAPI.update_user(user, @invalid_attrs)
     assert user == UserAPI.get_user!(user.id)
   end
@@ -154,7 +149,7 @@ defmodule Mithril.UserAPITest do
   end
 
   test "delete_user/1 deletes the user" do
-    user = fixture(:user)
+    user = insert(:user)
     assert {:ok, %User{}} = UserAPI.delete_user(user)
     assert_raise Ecto.NoResultsError, fn -> UserAPI.get_user!(user.id) end
   end

@@ -3,6 +3,51 @@ defmodule Mithril.Factory do
 
   use ExMachina.Ecto, repo: Mithril.Repo
 
+  def create_code_grant_token(client, user, scope \\ "app:authorize", expires_at \\ 2_000_000_000) do
+    insert(
+      :token,
+      details: %{
+        scope_request: scope,
+        client_id: client.id,
+        grant_type: "password",
+        redirect_uri: client.redirect_uri
+      },
+      user_id: user.id,
+      expires_at: expires_at,
+      name: "authorization_code",
+      value: "some_short_lived_code"
+    )
+  end
+
+  def create_refresh_token(client, user, expires_at \\ 2_000_000_000) do
+    insert(
+      :token,
+      details: %{
+        scope: "",
+        client_id: client.id,
+        grant_type: "authorization_code"
+      },
+      user_id: user.id,
+      expires_at: expires_at,
+      name: "refresh_token",
+      value: "some_refresh_token_code"
+    )
+  end
+
+  def create_access_token(client, user, expires_at \\ 2_000_000_000) do
+    insert(
+      :token,
+      details: %{
+        scope: "legal_entity:read legal_entity:write",
+        client_id: client.id,
+        grant_type: "refresh_token"
+      },
+      user_id: user.id,
+      expires_at: expires_at,
+      value: "some_access_token"
+    )
+  end
+
   def token_factory do
     user = insert(:user)
     client = insert(:client)
@@ -41,7 +86,7 @@ defmodule Mithril.Factory do
 
   def client_type_factory do
     %Mithril.ClientTypeAPI.ClientType{
-      name: to_string(:rand.uniform()),
+      name: sequence("some client_type name-"),
       scope: "some scope"
     }
   end
@@ -49,7 +94,7 @@ defmodule Mithril.Factory do
   def user_factory do
     %Mithril.UserAPI.User{
       email: sequence("mail@example.com-"),
-      password: "Somepassword1",
+      password: Comeonin.Bcrypt.hashpwsalt("Somepassword1"),
       password_set_at: NaiveDateTime.utc_now(),
       settings: %{},
       priv_settings: %Mithril.UserAPI.User.PrivSettings{
@@ -71,7 +116,7 @@ defmodule Mithril.Factory do
 
   def role_factory do
     %Mithril.RoleAPI.Role{
-      name: to_string(:rand.uniform()),
+      name: sequence("some name-"),
       scope: "some scope"
     }
   end
@@ -81,6 +126,14 @@ defmodule Mithril.Factory do
       user_id: insert(:user).id,
       client_id: insert(:client).id,
       role_id: insert(:role).id
+    }
+  end
+
+  def app_factory do
+    %Mithril.AppAPI.App{
+      scope: "some scope",
+      user_id: insert(:user).id,
+      client_id: insert(:client).id
     }
   end
 

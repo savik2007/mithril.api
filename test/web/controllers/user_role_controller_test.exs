@@ -2,8 +2,6 @@ defmodule Mithril.Web.UserRoleControllerTest do
   use Mithril.Web.ConnCase
 
   alias Mithril.UserAPI.User
-  alias Mithril.UserRoleAPI
-  import Mithril.Fixtures
 
   setup %{conn: conn} do
     {:ok, user} = Mithril.UserAPI.create_user(%{email: "some email", password: "Some password1", settings: %{}})
@@ -72,7 +70,7 @@ defmodule Mithril.Web.UserRoleControllerTest do
   end
 
   test "creates user_role and renders user_role when data is valid", %{user_id: user_id, conn: conn} do
-    create_attrs = user_role_attrs()
+    create_attrs = :user_role |> build() |> Map.from_struct()
     conn = post(conn, user_role_path(conn, :create, %User{id: user_id}), user_role: create_attrs)
     assert %{"id" => id} = json_response(conn, 201)["data"]
 
@@ -87,7 +85,7 @@ defmodule Mithril.Web.UserRoleControllerTest do
   end
 
   test "create user_role twice with same user_id, client_id", %{user_id: user_id, conn: conn} do
-    create_attrs = user_role_attrs()
+    create_attrs = :user_role |> build() |> Map.from_struct()
     %{client_id: client_id, role_id: role_id, user_id: attr_user_id} = create_attrs
     conn1 = post(conn, user_role_path(conn, :create, %User{id: user_id}), user_role: create_attrs)
 
@@ -116,8 +114,7 @@ defmodule Mithril.Web.UserRoleControllerTest do
   end
 
   test "deletes chosen user_role", %{conn: conn} do
-    create_attrs = user_role_attrs()
-    {:ok, user_role} = UserRoleAPI.create_user_role(create_attrs)
+    user_role = insert(:user_role)
     conn = delete(conn, user_role_path(conn, :delete, user_role.id))
     assert response(conn, 204)
 
@@ -154,11 +151,11 @@ defmodule Mithril.Web.UserRoleControllerTest do
 
   test "deletes user_roles by user_id and client_id", %{user_id: user_id, conn: conn} do
     cleanup_fixture_roles()
-    %{id: role_id_admin} = create_role(%{name: "ADMIN", user_id: user_id})
-    %{id: role_id_doctor} = create_role(%{name: "DOCTOR", user_id: user_id})
-    create_user_role(%{role_id: role_id_admin, user_id: user_id})
-    create_user_role(%{role_id: role_id_admin, user_id: user_id})
-    %{id: user_role_id} = create_user_role(%{role_id: role_id_doctor, user_id: user_id})
+    %{id: role_id_admin} = insert(:role, name: "ADMIN")
+    %{id: role_id_doctor} = insert(:role, name: "DOCTOR")
+    insert(:user_role, role_id: role_id_admin, user_id: user_id)
+    insert(:user_role, role_id: role_id_admin, user_id: user_id)
+    %{id: user_role_id} = insert(:user_role, role_id: role_id_doctor, user_id: user_id)
 
     conn = delete(conn, user_role_path(conn, :delete_by_user, user_id), role_name: "ADMIN")
     assert response(conn, 204)
