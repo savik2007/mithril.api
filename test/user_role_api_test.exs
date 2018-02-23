@@ -20,7 +20,7 @@ defmodule Mithril.UserRoleAPITest do
   end
 
   test "create_user_role/1 with valid data creates a user_role" do
-    attrs = Mithril.Fixtures.user_role_attrs()
+    attrs = :user_role |> build() |> Map.from_struct()
 
     assert {:ok, %UserRole{} = user_role} = UserRoleAPI.create_user_role(attrs)
     assert user_role.client_id == attrs.client_id
@@ -29,7 +29,7 @@ defmodule Mithril.UserRoleAPITest do
   end
 
   test "create_user_role/1 with duplicate data returns error changeset" do
-    attrs = Mithril.Fixtures.user_role_attrs()
+    attrs = :user_role |> build() |> Map.from_struct()
     assert {:ok, %UserRole{}} = UserRoleAPI.create_user_role(attrs)
     assert {:error, %Ecto.Changeset{}} = UserRoleAPI.create_user_role(attrs)
   end

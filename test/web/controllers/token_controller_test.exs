@@ -79,7 +79,7 @@ defmodule Mithril.Web.TokenControllerTest do
   end
 
   test "creates token and renders token when data is valid", %{conn: conn} do
-    user = Mithril.Fixtures.create_user()
+    user = insert(:user)
     conn = post(conn, token_path(conn, :create), token: Map.put_new(@create_attrs, :user_id, user.id))
     assert %{"id" => id} = json_response(conn, 201)["data"]
 
@@ -140,7 +140,9 @@ defmodule Mithril.Web.TokenControllerTest do
       client_id = UUID.generate()
       insert(:token, name: "first", value: "a", details: %{"client_id" => client_id}, user_id: user.id)
       insert(:token, name: "second", value: "b", details: %{"client_id" => client_id}, user_id: user.id)
-      %{id: id_2} = insert(:token, name: "third", value: "c", details: %{"client_id" => UUID.generate()}, user_id: user.id)
+
+      %{id: id_2} =
+        insert(:token, name: "third", value: "c", details: %{"client_id" => UUID.generate()}, user_id: user.id)
 
       conn = delete(conn, user_token_path(conn, :delete_by_user, user.id), client_id: client_id)
       assert response(conn, 204)
@@ -174,8 +176,8 @@ defmodule Mithril.Web.TokenControllerTest do
   end
 
   test "render additional info about user", %{conn: conn} do
-    client = Mithril.Fixtures.create_client()
-    user = Mithril.Fixtures.create_user()
+    client = insert(:client)
+    user = insert(:user)
 
     {:ok, role} = Mithril.RoleAPI.create_role(%{name: "Some role", scope: "legal_entity:read"})
 
@@ -192,7 +194,7 @@ defmodule Mithril.Web.TokenControllerTest do
       scope: "legal_entity:read,legal_entity:write"
     })
 
-    {:ok, token} = Mithril.Fixtures.create_access_token(client, user)
+    token = create_access_token(client, user)
 
     conn = get(conn, token_user_path(conn, :user, token.value))
 
@@ -207,8 +209,8 @@ defmodule Mithril.Web.TokenControllerTest do
   end
 
   test "verify token using token value", %{conn: conn} do
-    client = Mithril.Fixtures.create_client()
-    user = Mithril.Fixtures.create_user()
+    client = insert(:client)
+    user = insert(:user)
 
     Mithril.AppAPI.create_app(%{
       user_id: user.id,
@@ -216,7 +218,7 @@ defmodule Mithril.Web.TokenControllerTest do
       scope: "legal_entity:read,legal_entity:write"
     })
 
-    {:ok, token} = Mithril.Fixtures.create_code_grant_token(client, user)
+    token = create_code_grant_token(client, user)
 
     conn = get(conn, token_verify_path(conn, :verify, token.value))
 

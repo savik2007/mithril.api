@@ -4,8 +4,8 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
   alias Mithril.Authorization.GrantType.AuthorizationCode, as: AuthorizationCodeGrantType
 
   test "creates code-granted access token" do
-    client = Mithril.Fixtures.create_client()
-    user = Mithril.Fixtures.create_user()
+    client = insert(:client)
+    user = insert(:user)
 
     Mithril.AppAPI.create_app(%{
       user_id: user.id,
@@ -13,7 +13,7 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
       scope: "legal_entity:read legal_entity:write"
     })
 
-    {:ok, code_grant} = Mithril.Fixtures.create_code_grant_token(client, user, "legal_entity:read")
+    code_grant = create_code_grant_token(client, user, "legal_entity:read")
 
     {:ok, token} =
       AuthorizationCodeGrantType.authorize(%{
@@ -46,7 +46,7 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
   end
 
   test "it returns invalid client id or secret error" do
-    client = Mithril.Fixtures.create_client()
+    client = insert(:client)
 
     message = "Invalid client id or secret."
 
@@ -61,7 +61,7 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
   end
 
   test "it returns Token Not Found error" do
-    client = Mithril.Fixtures.create_client()
+    client = insert(:client)
 
     assert {:error, {:access_denied, errors}} =
              AuthorizationCodeGrantType.authorize(%{
@@ -76,10 +76,10 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
   end
 
   test "it returns Resource owner revoked access for the client error" do
-    client = Mithril.Fixtures.create_client()
-    user = Mithril.Fixtures.create_user()
+    client = insert(:client)
+    user = insert(:user)
 
-    {:ok, code_grant} = Mithril.Fixtures.create_code_grant_token(client, user)
+    code_grant = create_code_grant_token(client, user)
 
     message = "Resource owner revoked access for the client."
 
@@ -94,8 +94,8 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
   end
 
   test "it returns redirection URI client error" do
-    client = Mithril.Fixtures.create_client()
-    user = Mithril.Fixtures.create_user()
+    client = insert(:client)
+    user = insert(:user)
 
     Mithril.AppAPI.create_app(%{
       user_id: user.id,
@@ -103,7 +103,7 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
       scope: "legal_entity:read legal_entity:write"
     })
 
-    {:ok, code_grant} = Mithril.Fixtures.create_code_grant_token(client, user)
+    code_grant = create_code_grant_token(client, user)
 
     message = "The redirection URI provided does not match a pre-registered value."
 
@@ -118,8 +118,8 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
   end
 
   test "it returns token expired error" do
-    client = Mithril.Fixtures.create_client()
-    user = Mithril.Fixtures.create_user()
+    client = insert(:client)
+    user = insert(:user)
     scope = "legal_entity:read legal_entity:write"
 
     Mithril.AppAPI.create_app(%{
@@ -128,7 +128,7 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
       scope: scope
     })
 
-    {:ok, code_grant} = Mithril.Fixtures.create_code_grant_token(client, user, scope, 0)
+    code_grant = create_code_grant_token(client, user, scope, 0)
 
     message = "Token expired."
 
@@ -143,8 +143,8 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
   end
 
   test "it returns token not found or expired error" do
-    client = Mithril.Fixtures.create_client()
-    user = Mithril.Fixtures.create_user()
+    client = insert(:client)
+    user = insert(:user)
 
     Mithril.AppAPI.create_app(%{
       user_id: user.id,
@@ -152,8 +152,8 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
       scope: "legal_entity:read legal_entity:write"
     })
 
-    client2 = Mithril.Fixtures.create_client(%{name: "Another name"})
-    {:ok, code_grant} = Mithril.Fixtures.create_code_grant_token(client2, user)
+    client2 = insert(:client, name: "Another name")
+    code_grant = create_code_grant_token(client2, user)
 
     message = "Token not found or expired."
 
@@ -168,8 +168,8 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
   end
 
   test "it returns token was used error" do
-    client = Mithril.Fixtures.create_client()
-    user = Mithril.Fixtures.create_user()
+    client = insert(:client)
+    user = insert(:user)
 
     Mithril.AppAPI.create_app(%{
       user_id: user.id,
@@ -177,7 +177,7 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
       scope: "legal_entity:read legal_entity:write"
     })
 
-    {:ok, code_grant} = Mithril.Fixtures.create_code_grant_token(client, user)
+    code_grant = create_code_grant_token(client, user)
 
     {:ok, code_grant} =
       Mithril.TokenAPI.update_token(code_grant, %{details: Map.put_new(code_grant.details, :used, true)})

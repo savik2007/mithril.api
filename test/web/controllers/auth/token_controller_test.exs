@@ -116,8 +116,8 @@ defmodule Mithril.OAuth.TokenControllerTest do
   end
 
   test "successfully issues new access_token using code_grant", %{conn: conn} do
-    client = Mithril.Fixtures.create_client()
-    user = Mithril.Fixtures.create_user(%{password: "Secret_password1"})
+    client = insert(:client)
+    user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("Secret_password1"))
 
     Mithril.AppAPI.create_app(%{
       user_id: user.id,
@@ -125,7 +125,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
       scope: "legal_entity:read legal_entity:write"
     })
 
-    {:ok, code_grant} = Mithril.Fixtures.create_code_grant_token(client, user, "legal_entity:read")
+    code_grant = create_code_grant_token(client, user, "legal_entity:read")
 
     request_payload = %{
       token: %{
@@ -172,15 +172,16 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
   test "expire old password tokens", %{conn: conn} do
     allowed_scope = "app:authorize"
-    client_type = Mithril.Fixtures.create_client_type(%{scope: allowed_scope})
+    client_type = insert(:client_type, scope: allowed_scope)
 
     client =
-      Mithril.Fixtures.create_client(%{
+      insert(
+        :client,
         settings: %{"allowed_grant_types" => ["password"]},
         client_type_id: client_type.id
-      })
+      )
 
-    user = Mithril.Fixtures.create_user(%{password: "Secret_password1"})
+    user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("Secret_password1"))
 
     request_payload = %{
       token: %{
@@ -209,15 +210,16 @@ defmodule Mithril.OAuth.TokenControllerTest do
     System.put_env("PASSWORD_EXPIRATION_DAYS", "0")
 
     allowed_scope = "app:authorize"
-    client_type = Mithril.Fixtures.create_client_type(%{scope: allowed_scope})
+    client_type = insert(:client_type, scope: allowed_scope)
 
     client =
-      Mithril.Fixtures.create_client(%{
+      insert(
+        :client,
         settings: %{"allowed_grant_types" => ["password"]},
         client_type_id: client_type.id
-      })
+      )
 
-    user = Mithril.Fixtures.create_user(%{password: "Secret_password1"})
+    user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("Secret_password1"))
 
     request_payload = %{
       token: %{

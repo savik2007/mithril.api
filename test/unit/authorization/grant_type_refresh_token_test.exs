@@ -4,8 +4,8 @@ defmodule Mithril.Authorization.GrantType.RefreshTokenTest do
   alias Mithril.Authorization.GrantType.RefreshToken, as: RefreshTokenGrantType
 
   test "creates refresh-granted access token" do
-    client = Mithril.Fixtures.create_client()
-    user = Mithril.Fixtures.create_user()
+    client = insert(:client)
+    user = insert(:user)
 
     Mithril.AppAPI.create_app(%{
       user_id: user.id,
@@ -13,7 +13,7 @@ defmodule Mithril.Authorization.GrantType.RefreshTokenTest do
       scope: "legal_entity:read legal_entity:write"
     })
 
-    {:ok, refresh_token} = Mithril.Fixtures.create_refresh_token(client, user)
+    refresh_token = create_refresh_token(client, user)
 
     assert refresh_token.name == "refresh_token"
     assert refresh_token.details.scope == ""
@@ -40,7 +40,7 @@ defmodule Mithril.Authorization.GrantType.RefreshTokenTest do
   end
 
   test "it returns invalid client id or secret error" do
-    client = Mithril.Fixtures.create_client()
+    client = insert(:client)
 
     message = "Invalid client id or secret."
 
@@ -53,7 +53,7 @@ defmodule Mithril.Authorization.GrantType.RefreshTokenTest do
   end
 
   test "it returns Token Not Found error" do
-    client = Mithril.Fixtures.create_client()
+    client = insert(:client)
 
     assert {:error, {:access_denied, errors}} =
              RefreshTokenGrantType.authorize(%{
@@ -66,10 +66,10 @@ defmodule Mithril.Authorization.GrantType.RefreshTokenTest do
   end
 
   test "it returns Resource owner revoked access for the client error" do
-    client = Mithril.Fixtures.create_client()
-    user = Mithril.Fixtures.create_user()
+    client = insert(:client)
+    user = insert(:user)
 
-    {:ok, refresh_token} = Mithril.Fixtures.create_refresh_token(client, user)
+    refresh_token = create_refresh_token(client, user)
 
     message = "Resource owner revoked access for the client."
 
@@ -82,8 +82,8 @@ defmodule Mithril.Authorization.GrantType.RefreshTokenTest do
   end
 
   test "it returns token expired error" do
-    client = Mithril.Fixtures.create_client()
-    user = Mithril.Fixtures.create_user()
+    client = insert(:client)
+    user = insert(:user)
 
     Mithril.AppAPI.create_app(%{
       user_id: user.id,
@@ -91,7 +91,7 @@ defmodule Mithril.Authorization.GrantType.RefreshTokenTest do
       scope: "legal_entity:read legal_entity:write"
     })
 
-    {:ok, refresh_token} = Mithril.Fixtures.create_refresh_token(client, user, 0)
+    refresh_token = create_refresh_token(client, user, 0)
 
     assert {:error, {:access_denied, %{message: "Token expired.", type: "invalid_grant"}}} =
              RefreshTokenGrantType.authorize(%{
@@ -102,8 +102,8 @@ defmodule Mithril.Authorization.GrantType.RefreshTokenTest do
   end
 
   test "it returns token not found or expired error" do
-    client = Mithril.Fixtures.create_client()
-    user = Mithril.Fixtures.create_user()
+    client = insert(:client)
+    user = insert(:user)
 
     Mithril.AppAPI.create_app(%{
       user_id: user.id,
@@ -111,8 +111,8 @@ defmodule Mithril.Authorization.GrantType.RefreshTokenTest do
       scope: "legal_entity:read legal_entity:write"
     })
 
-    client2 = Mithril.Fixtures.create_client(%{name: "Another name"})
-    {:ok, refresh_token} = Mithril.Fixtures.create_refresh_token(client2, user)
+    client2 = insert(:client, name: "Another name")
+    refresh_token = create_refresh_token(client2, user)
 
     assert {:error, {:access_denied, %{type: "invalid_grant"}}} =
              RefreshTokenGrantType.authorize(%{

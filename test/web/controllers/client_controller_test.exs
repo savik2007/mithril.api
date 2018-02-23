@@ -81,11 +81,7 @@ defmodule Mithril.Web.ClientControllerTest do
   test "search clients by name", %{conn: conn} do
     name = "search_name"
     insert(:client)
-
-    {:ok, _} =
-      name
-      |> Mithril.Fixtures.client_create_attrs()
-      |> ClientAPI.create_client()
+    insert(:client, name: name)
 
     conn = get(conn, client_path(conn, :index, name: name))
     resp = json_response(conn, 200)
@@ -96,7 +92,6 @@ defmodule Mithril.Web.ClientControllerTest do
   end
 
   test "show client details", %{conn: conn} do
-
     client_type = insert(:client_type, name: "independent client")
     client = insert(:client, client_type_id: client_type.id)
 
@@ -141,7 +136,7 @@ defmodule Mithril.Web.ClientControllerTest do
   end
 
   test "creates client and renders client when data is valid", %{conn: conn} do
-    attrs = Mithril.Fixtures.client_create_attrs()
+    attrs = :client |> build() |> Map.from_struct()
     conn = post(conn, client_path(conn, :create), client: attrs)
     assert %{"id" => id} = json_response(conn, 201)["data"]
 

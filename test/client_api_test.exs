@@ -34,9 +34,9 @@ defmodule Mithril.ClientAPITest do
   end
 
   test "create_client/1 with valid data creates a client" do
-    attrs = Mithril.Fixtures.client_create_attrs()
+    attrs = :client |> build() |> Map.from_struct()
     assert {:ok, %Client{} = client} = ClientAPI.create_client(attrs)
-    assert client.name == "some name"
+    assert client.name == "some client"
     assert client.priv_settings == %{"access_type" => @direct}
     assert client.redirect_uri == "http://localhost"
     assert client.secret
@@ -81,8 +81,8 @@ defmodule Mithril.ClientAPITest do
   end
 
   test "updating non-existent client results in creating a new client (idempotency)" do
-    user = Mithril.Fixtures.create_user()
-    client_type = Mithril.Fixtures.create_client_type()
+    user = insert(:user)
+    client_type = insert(:client_type)
     client_id = Ecto.UUID.generate()
 
     {:ok, client} =

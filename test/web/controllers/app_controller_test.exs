@@ -51,8 +51,8 @@ defmodule Mithril.Web.AppControllerTest do
   end
 
   test "creates app and renders app when data is valid", %{conn: conn} do
-    user = Mithril.Fixtures.create_user()
-    client = Mithril.Fixtures.create_client()
+    user = insert(:user)
+    client = insert(:client)
 
     attrs = Map.merge(@create_attrs, %{user_id: user.id, client_id: client.id})
     conn = post(conn, app_path(conn, :create), app: attrs)
@@ -108,12 +108,12 @@ defmodule Mithril.Web.AppControllerTest do
     # app 1
     %{id: id_1} = insert(:app)
     # app 2
-    user = Mithril.Fixtures.create_user()
-    client_1 = Mithril.Fixtures.create_client()
+    user = insert(:user)
+    client_1 = insert(:client)
     attrs = Map.merge(@create_attrs, %{user_id: user.id, client_id: client_1.id})
     {:ok, _} = AppAPI.create_app(attrs)
     # app 3
-    client_2 = Mithril.Fixtures.create_client()
+    client_2 = insert(:client)
     attrs = Map.merge(@create_attrs, %{user_id: user.id, client_id: client_2.id})
     {:ok, %{id: id_2}} = AppAPI.create_app(attrs)
 

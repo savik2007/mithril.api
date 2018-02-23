@@ -6,7 +6,7 @@ defmodule Mithril.Web.RoleControllerTest do
   @create_attrs %{scope: "some scope"}
   @update_attrs %{name: "some updated name", scope: "some updated scope"}
   @invalid_attrs %{name: nil, scope: nil}
-  
+
   setup %{conn: conn} do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
   end

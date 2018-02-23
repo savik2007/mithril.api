@@ -20,8 +20,8 @@ defmodule Mithril.AppAPITest do
   end
 
   test "create_app/1 with valid data creates a app" do
-    user = Mithril.Fixtures.create_user()
-    client = Mithril.Fixtures.create_client()
+    user = insert(:user)
+    client = insert(:client)
 
     attrs = Map.merge(@create_attrs, %{user_id: user.id, client_id: client.id})
     assert {:ok, %App{} = app} = AppAPI.create_app(attrs)

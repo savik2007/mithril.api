@@ -3,6 +3,51 @@ defmodule Mithril.Factory do
 
   use ExMachina.Ecto, repo: Mithril.Repo
 
+  def create_code_grant_token(client, user, scope \\ "app:authorize", expires_at \\ 2_000_000_000) do
+    insert(
+      :token,
+      details: %{
+        scope_request: scope,
+        client_id: client.id,
+        grant_type: "password",
+        redirect_uri: client.redirect_uri
+      },
+      user_id: user.id,
+      expires_at: expires_at,
+      name: "authorization_code",
+      value: "some_short_lived_code"
+    )
+  end
+
+  def create_refresh_token(client, user, expires_at \\ 2_000_000_000) do
+    insert(
+      :token,
+      details: %{
+        scope: "",
+        client_id: client.id,
+        grant_type: "authorization_code"
+      },
+      user_id: user.id,
+      expires_at: expires_at,
+      name: "refresh_token",
+      value: "some_refresh_token_code"
+    )
+  end
+
+  def create_access_token(client, user, expires_at \\ 2_000_000_000) do
+    insert(
+      :token,
+      details: %{
+        scope: "legal_entity:read legal_entity:write",
+        client_id: client.id,
+        grant_type: "refresh_token"
+      },
+      user_id: user.id,
+      expires_at: expires_at,
+      value: "some_access_token"
+    )
+  end
+
   def token_factory do
     user = insert(:user)
     client = insert(:client)
