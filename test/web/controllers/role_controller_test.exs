@@ -1,19 +1,11 @@
 defmodule Mithril.Web.RoleControllerTest do
   use Mithril.Web.ConnCase
 
-  alias Mithril.RoleAPI
   alias Mithril.RoleAPI.Role
 
   @create_attrs %{scope: "some scope"}
   @update_attrs %{name: "some updated name", scope: "some updated scope"}
   @invalid_attrs %{name: nil, scope: nil}
-
-  def fixture(:role, params \\ %{}) do
-    params = Map.merge(@create_attrs, params)
-    params = if Map.has_key?(params, :name), do: params, else: Map.put(params, :name, to_string(:rand.uniform()))
-    {:ok, role} = RoleAPI.create_role(params)
-    role
-  end
 
   setup %{conn: conn} do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
@@ -21,35 +13,35 @@ defmodule Mithril.Web.RoleControllerTest do
 
   describe "list roles" do
     test "search by name works", %{conn: conn} do
-      fixture(:role, %{name: "admin"})
-      fixture(:role, %{name: "administrator"})
-      fixture(:role, %{name: "user"})
-      conn = get(conn, role_path(conn, :index), %{name: "admin"})
+      insert(:role, name: "admin")
+      insert(:role, name: "administrator")
+      insert(:role, name: "user")
+      conn = get(conn, role_path(conn, :index), name: "admin")
       assert 1 == length(json_response(conn, 200)["data"])
     end
 
     test "lists all entries on index", %{conn: conn} do
       cleanup_fixture_roles()
-      fixture(:role)
-      fixture(:role)
-      fixture(:role)
+      insert(:role)
+      insert(:role)
+      insert(:role)
       conn = get(conn, role_path(conn, :index))
       assert 3 == length(json_response(conn, 200)["data"])
     end
 
     test "does not list all entries on index when limit is set", %{conn: conn} do
-      fixture(:role)
-      fixture(:role)
-      fixture(:role)
+      insert(:role)
+      insert(:role)
+      insert(:role)
       conn = get(conn, role_path(conn, :index), %{page_size: 2})
       assert 2 == length(json_response(conn, 200)["data"])
     end
 
     test "does not list all entries on index when starting_after is set", %{conn: conn} do
       cleanup_fixture_roles()
-      fixture(:role)
-      fixture(:role)
-      role = fixture(:role)
+      insert(:role)
+      insert(:role)
+      role = insert(:role)
       conn = get(conn, role_path(conn, :index), %{page_size: 2, page: 2})
       resp = json_response(conn, 200)["data"]
       assert 1 == length(resp)
@@ -58,9 +50,9 @@ defmodule Mithril.Web.RoleControllerTest do
 
     test "list roles by scopes", %{conn: conn} do
       cleanup_fixture_roles()
-      fixture(:role, %{scope: "some scope"})
-      fixture(:role, %{scope: "employee:read employee:write"})
-      fixture(:role, %{scope: "employee:read employee:write"})
+      insert(:role, scope: "some scope")
+      insert(:role, scope: "employee:read employee:write")
+      insert(:role, scope: "employee:read employee:write")
       scopes = ~w(employee:read employee:write)
       conn = get(conn, role_path(conn, :index), %{scope: Enum.join(scopes, ",")})
       resp = json_response(conn, 200)["data"]
@@ -120,7 +112,7 @@ defmodule Mithril.Web.RoleControllerTest do
   end
 
   test "updates chosen role and renders role when data is valid", %{conn: conn} do
-    %Role{id: id} = role = fixture(:role)
+    %Role{id: id} = role = insert(:role)
     conn = put(conn, role_path(conn, :update, role), role: @update_attrs)
     assert %{"id" => ^id} = json_response(conn, 200)["data"]
 
@@ -134,13 +126,13 @@ defmodule Mithril.Web.RoleControllerTest do
   end
 
   test "does not update chosen role and renders errors when data is invalid", %{conn: conn} do
-    role = fixture(:role)
+    role = insert(:role)
     conn = put(conn, role_path(conn, :update, role), role: @invalid_attrs)
     assert json_response(conn, 422)["errors"] != %{}
   end
 
   test "deletes chosen role", %{conn: conn} do
-    role = fixture(:role)
+    role = insert(:role)
     conn = delete(conn, role_path(conn, :delete, role))
     assert response(conn, 204)
 

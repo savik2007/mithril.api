@@ -124,17 +124,18 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
 
     test "expire old password tokens", %{conn: conn} do
       allowed_scope = "app:authorize"
-      client_type = Mithril.Fixtures.create_client_type(%{scope: allowed_scope})
+      client_type = insert(:client_type, scope: allowed_scope)
 
       client =
-        Mithril.Fixtures.create_client(%{
+        insert(
+          :client,
           settings: %{
             "allowed_grant_types" => ["password"]
           },
           client_type_id: client_type.id
-        })
+        )
 
-      user = Mithril.Fixtures.create_user(%{password: "Secret_password1"})
+      user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("Secret_password1"))
 
       request_payload = %{
         token: %{

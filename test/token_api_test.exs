@@ -27,14 +27,8 @@ defmodule Mithril.TokenAPITest do
     value: nil
   }
 
-  def fixture(:token, attrs \\ @create_attrs) do
-    user = Mithril.Fixtures.create_user()
-    {:ok, token} = TokenAPI.create_token(Map.put_new(attrs, :user_id, user.id))
-    token
-  end
-
   test "list_tokens/1 returns all tokens" do
-    token = fixture(:token)
+    token = insert(:token)
 
     assert TokenAPI.list_tokens(%{}) == %Page{
              entries: [token],
@@ -46,12 +40,12 @@ defmodule Mithril.TokenAPITest do
   end
 
   test "get_token! returns the token with given id" do
-    token = fixture(:token)
+    token = insert(:token)
     assert TokenAPI.get_token!(token.id) == token
   end
 
   test "create_token/1 with valid data creates a token" do
-    user = Mithril.Fixtures.create_user()
+    user = insert(:user)
 
     assert {:ok, %Token{} = token} = TokenAPI.create_token(Map.put_new(@create_attrs, :user_id, user.id))
     assert token.details == %{}
@@ -65,7 +59,7 @@ defmodule Mithril.TokenAPITest do
   end
 
   test "create_token/1 with duplicated user_id" do
-    user = Mithril.Fixtures.create_user()
+    user = insert(:user)
     assert {:ok, %Token{}} = TokenAPI.create_token(Map.put_new(@create_attrs, :user_id, user.id))
     assert {:error, %Ecto.Changeset{}} = TokenAPI.create_token(Map.put_new(@create_attrs, :user_id, user.id))
   end
@@ -75,7 +69,7 @@ defmodule Mithril.TokenAPITest do
   end
 
   test "update_token/2 with valid data updates the token" do
-    token = fixture(:token)
+    token = insert(:token)
     assert {:ok, token} = TokenAPI.update_token(token, @update_attrs)
     assert %Token{} = token
     assert token.details == %{}
@@ -85,19 +79,19 @@ defmodule Mithril.TokenAPITest do
   end
 
   test "update_token/2 with invalid data returns error changeset" do
-    token = fixture(:token)
+    token = insert(:token)
     assert {:error, %Ecto.Changeset{}} = TokenAPI.update_token(token, @invalid_attrs)
     assert token == TokenAPI.get_token!(token.id)
   end
 
   test "delete_token/1 deletes the token" do
-    token = fixture(:token)
+    token = insert(:token)
     assert {:ok, %Token{}} = TokenAPI.delete_token(token)
     assert_raise Ecto.NoResultsError, fn -> TokenAPI.get_token!(token.id) end
   end
 
   test "change_token/1 returns a token changeset" do
-    token = fixture(:token)
+    token = insert(:token)
     assert %Ecto.Changeset{} = TokenAPI.change_token(token)
   end
 

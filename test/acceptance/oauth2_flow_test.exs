@@ -11,18 +11,19 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
   setup :verify_on_exit!
 
   test "client successfully obtain an access_token API calls", %{conn: conn} do
-    client_type = Mithril.Fixtures.create_client_type(%{scope: "app:authorize legal_entity:read legal_entity:write"})
+    client_type = insert(:client_type, scope: "app:authorize legal_entity:read legal_entity:write")
 
     client =
-      Mithril.Fixtures.create_client(%{
+      insert(
+        :client,
         redirect_uri: "http://localhost",
         client_type_id: client_type.id,
         settings: %{"allowed_grant_types" => ["password"]},
         priv_settings: %{"access_type" => @direct}
-      })
+      )
 
-    user = Mithril.Fixtures.create_user(%{password: "Super$ecre71"})
-    user_role = Mithril.Fixtures.create_role(%{scope: "legal_entity:read legal_entity:write"})
+    user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("Super$ecre71"))
+    user_role = insert(:role, scope: "legal_entity:read legal_entity:write")
     Mithril.UserRoleAPI.create_user_role(%{user_id: user.id, role_id: user_role.id, client_id: client.id})
 
     # 1. User is presented a user-agent and logs in

@@ -8,15 +8,16 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
     System.put_env("USER_2FA_ENABLED", "false")
 
     allowed_scope = "app:authorize legal_entity:read legal_entity:write"
-    client_type = Mithril.Fixtures.create_client_type(%{scope: allowed_scope})
+    client_type = insert(:client_type, scope: allowed_scope)
 
     client =
-      Mithril.Fixtures.create_client(%{
+      insert(
+        :client,
         settings: %{"allowed_grant_types" => ["password"]},
         client_type_id: client_type.id
-      })
+      )
 
-    user = Mithril.Fixtures.create_user(%{password: "Somepa$$word1"})
+    user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("Somepa$$word1"))
 
     {:ok, %{token: token}} =
       PasswordGrantType.authorize(%{
@@ -66,8 +67,8 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
   end
 
   test "it returns Incorrect password error" do
-    client = Mithril.Fixtures.create_client(%{settings: %{"allowed_grant_types" => ["password"]}})
-    user = Mithril.Fixtures.create_user(%{password: "Somepa$$word1"})
+    client = insert(:client, settings: %{"allowed_grant_types" => ["password"]})
+    user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("Somepa$$word1"))
 
     assert {:error, {:access_denied, "Identity, password combination is wrong."}} =
              PasswordGrantType.authorize(%{
@@ -79,7 +80,7 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
   end
 
   test "it returns Incorrect password error when invalid email" do
-    client = Mithril.Fixtures.create_client(%{settings: %{"allowed_grant_types" => ["password"]}})
+    client = insert(:client, settings: %{"allowed_grant_types" => ["password"]})
 
     assert {:error, {:access_denied, "Identity, password combination is wrong."}} =
              PasswordGrantType.authorize(%{
@@ -91,7 +92,7 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
   end
 
   test "it returns Client Not Found error" do
-    user = Mithril.Fixtures.create_user(%{password: "Somepa$$word1"})
+    user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("Somepa$$word1"))
 
     assert {:error, {:access_denied, "Invalid client id."}} =
              PasswordGrantType.authorize(%{
@@ -104,15 +105,16 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
 
   test "it returns Incorrect Scopes error" do
     allowed_scope = "app:authorize legal_entity:read legal_entity:write"
-    client_type = Mithril.Fixtures.create_client_type(%{scope: allowed_scope})
+    client_type = insert(:client_type, scope: allowed_scope)
 
     client =
-      Mithril.Fixtures.create_client(%{
+      insert(
+        :client,
         settings: %{"allowed_grant_types" => ["password"]},
         client_type_id: client_type.id
-      })
+      )
 
-    user = Mithril.Fixtures.create_user(%{password: "Somepa$$word1"})
+    user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("Somepa$$word1"))
     message = "Allowed scopes for the token are #{Enum.join(String.split(allowed_scope), ", ")}."
 
     assert {:error, {:access_denied, ^message}} =
