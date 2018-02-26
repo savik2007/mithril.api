@@ -10,7 +10,7 @@ defmodule Mithril.Registration.API do
   def send_email_verification(params) do
     with %Ecto.Changeset{valid?: true, changes: %{email: email}} <- validate_params(params),
          true <- email_available_for_registration?(email),
-         false <- email_send?(email),
+         false <- email_sent?(email),
          {:ok, jwt} <- generate_jwt(email) do
       case @email_api.send(email, jwt) do
         {:ok, _} -> :ok
@@ -34,7 +34,7 @@ defmodule Mithril.Registration.API do
     end
   end
 
-  defp email_send?(_email) do
+  defp email_sent?(_email) do
     # ToDo: check sent email?
     false
   end
