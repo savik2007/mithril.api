@@ -52,12 +52,21 @@ defmodule Mithril.Web.RegistrationControllerTest do
                |> get_in(~w(error message))
     end
 
+    test "user with passed email already exists but tax_id is empty", %{conn: conn} do
+      email = "success-new-user@example.com"
+      insert(:user, email: email, tax_id: "")
+
+      conn
+      |> post(registration_path(conn, :send_email_verification), %{email: email})
+      |> json_response(200)
+    end
+
     test "success", %{conn: conn} do
       email = "success-new-user@example.com"
 
       conn
       |> post(registration_path(conn, :send_email_verification), %{email: email})
-      |> json_response(201)
+      |> json_response(200)
     end
   end
 end

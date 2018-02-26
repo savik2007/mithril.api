@@ -4,8 +4,7 @@ defmodule Mithril.Web.UserRoleControllerTest do
   alias Mithril.UserAPI.User
 
   setup %{conn: conn} do
-    {:ok, user} = Mithril.UserAPI.create_user(%{email: "some email", password: "Some password1", settings: %{}})
-
+    user = insert(:user)
     {:ok, conn: put_req_header(conn, "accept", "application/json"), user_id: user.id}
   end
 
@@ -126,7 +125,7 @@ defmodule Mithril.Web.UserRoleControllerTest do
   test "deletes user_roles by user_id", %{user_id: user_id, conn: conn} do
     insert(:user_role, user_id: user_id)
     insert(:user_role, user_id: user_id)
-    {:ok, user} = Mithril.UserAPI.create_user(%{email: "email@example.com", password: "Some password1", settings: %{}})
+    user = insert(:user)
     insert(:user_role, user_id: user.id)
 
     conn = delete(conn, user_role_path(conn, :delete_by_user, user_id))

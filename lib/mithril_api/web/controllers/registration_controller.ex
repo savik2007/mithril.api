@@ -7,9 +7,7 @@ defmodule Mithril.Web.RegistrationController do
 
   def send_email_verification(conn, params) do
     with :ok <- Registration.send_email_verification(params) do
-      conn
-      |> put_status(:created)
-      |> render("send_email_verification.json", %{})
+      render(conn, "send_email_verification.json", %{})
     end
   end
 end

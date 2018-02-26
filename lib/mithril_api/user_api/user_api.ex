@@ -167,7 +167,7 @@ defmodule Mithril.UserAPI do
 
   defp user_changeset(%User{} = user, attrs) do
     user
-    |> cast(attrs, @fields_optional)
+    |> cast(attrs, @fields_optional ++ @fields_required)
     |> validate_required(@fields_required)
     |> unique_constraint(:email)
     |> validate_length(:password, min: 12)
