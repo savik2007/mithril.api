@@ -91,6 +91,20 @@ config :mithril_api, Mithril.OTP.SMS,
     timeout: {:system, :integer, "OTP_REQUEST_TIMEOUT", 30_000}
   ]
 
+# Configures OTP Verification API
+config :mithril_api, Mithril.Registration.EmailSender,
+  endpoint: {:system, "EMAIL_ENDPOINT"},
+  hackney_options: [
+    connect_timeout: {:system, :integer, "EMAIL_REQUEST_TIMEOUT", 30_000},
+    recv_timeout: {:system, :integer, "EMAIL_REQUEST_TIMEOUT", 30_000},
+    timeout: {:system, :integer, "EMAIL_REQUEST_TIMEOUT", 30_000}
+  ]
+
+# Configures Registration
+config :mithril_api, Mithril.Registration.API,
+  jwt_secret: {:system, "JWT_SECRET"},
+  email_api: Mithril.Registration.EmailSender
+
 config :mithril_api, Mithril.Scheduler,
   token_expiration: {:system, :string, "TOKEN_EXPIRATION_SCHEDULE", "* 0-4 * * *"},
   otp_expiration: {:system, :string, "OTP_EXPIRATION_SCHEDULE", "*/5 * * * *"}

@@ -4,7 +4,6 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
   import Mox
 
   alias Mithril.OTP
-  alias Mithril.OTP.SMSMock
 
   @direct Mithril.ClientAPI.access_type(:direct)
 

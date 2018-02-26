@@ -6,6 +6,7 @@ defmodule Mithril.UserAPI.User do
   @primary_key {:id, :binary_id, autogenerate: true}
   schema "users" do
     field(:email, :string)
+    field(:tax_id, :string)
     field(:password, :string)
     field(:password_set_at, :naive_datetime)
     field(:current_password, :string, virtual: true)

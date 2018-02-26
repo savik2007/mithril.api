@@ -8,7 +8,7 @@ defmodule Mithril.Web.UserControllerTest do
   alias Mithril.UserAPI.User
   alias Mithril.UserAPI.PasswordHistory
 
-  @create_attrs %{email: "some email", password: "Somepassword1", settings: %{}, "2fa_enable": true}
+  @create_attrs %{email: "some email", password: "Somepassword1", settings: %{}, "2fa_enable": true, tax_id: "12341234"}
   @update_attrs %{email: "some updated email", password: "Some updated password1", settings: %{}}
   @invalid_attrs %{email: nil, password: nil, settings: nil}
 

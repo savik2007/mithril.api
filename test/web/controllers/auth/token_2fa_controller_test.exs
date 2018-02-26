@@ -4,7 +4,6 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
   import Mox
 
   alias Mithril.OTP
-  alias Mithril.OTP.SMSMock
   alias Mithril.TokenAPI.Token
   alias Mithril.UserAPI.User.PrivSettings
   alias Mithril.Authorization.GrantType.Password, as: PasswordGrantType
