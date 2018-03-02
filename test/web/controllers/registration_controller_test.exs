@@ -10,7 +10,7 @@ defmodule Mithril.Web.RegistrationControllerTest do
     setup %{conn: conn} do
       insert(:user, tax_id: "")
 
-      expect(EmailSenderMock, :send, fn "success-new-user@example.com", jwt ->
+      expect(EmailMock, :send, fn "success-new-user@example.com", jwt ->
         %{claims: claims, error: err} =
           jwt
           |> token()
@@ -24,7 +24,7 @@ defmodule Mithril.Web.RegistrationControllerTest do
         {:ok, %{"meta" => %{"code" => 200}}}
       end)
 
-      expect(EmailSenderMock, :send, fn _email, _jwt ->
+      expect(EmailMock, :send, fn _email, _jwt ->
         {:error, %{"meta" => %{"code" => 500}}}
       end)
 

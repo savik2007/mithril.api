@@ -62,7 +62,7 @@ config :mithril_api, :"2fa",
   otp_max_attempts: {:system, :integer, "OTP_MAX_ATTEMPTS", 3},
   otp_sms_template: {:system, :string, "OTP_SMS_TEMPLATE", "Код підтвердження: <otp.code>"}
 
-config :mithril_api, :sms_api, Mithril.OTP.SMS
+config :mithril_api, :sms_api, Mithril.API.SMS
 
 # Configures the endpoint
 config :mithril_api, Mithril.Web.Endpoint,
@@ -83,7 +83,7 @@ config :mithril_api, :token_lifetime, %{
 }
 
 # Configures OTP Verification API
-config :mithril_api, Mithril.OTP.SMS,
+config :mithril_api, Mithril.API.SMS,
   endpoint: {:system, "OTP_ENDPOINT"},
   hackney_options: [
     connect_timeout: {:system, :integer, "OTP_REQUEST_TIMEOUT", 30_000},
@@ -92,7 +92,7 @@ config :mithril_api, Mithril.OTP.SMS,
   ]
 
 # Configures OTP Verification API
-config :mithril_api, Mithril.Registration.EmailSender,
+config :mithril_api, Mithril.API.Email,
   endpoint: {:system, "EMAIL_ENDPOINT"},
   hackney_options: [
     connect_timeout: {:system, :integer, "EMAIL_REQUEST_TIMEOUT", 30_000},
@@ -100,10 +100,19 @@ config :mithril_api, Mithril.Registration.EmailSender,
     timeout: {:system, :integer, "EMAIL_REQUEST_TIMEOUT", 30_000}
   ]
 
+# Configures MPI API
+config :mithril_api, Mithril.API.MPI,
+  endpoint: {:system, "MPI_ENDPOINT"},
+  hackney_options: [
+    connect_timeout: {:system, :integer, "MPI_REQUEST_TIMEOUT", 30_000},
+    recv_timeout: {:system, :integer, "MPI_REQUEST_TIMEOUT", 30_000},
+    timeout: {:system, :integer, "MPI_REQUEST_TIMEOUT", 30_000}
+  ]
+
 # Configures Registration
 config :mithril_api, Mithril.Registration.API,
   jwt_secret: {:system, "JWT_SECRET"},
-  email_api: Mithril.Registration.EmailSender
+  email_api: Mithril.API.Email
 
 config :mithril_api, Mithril.Scheduler,
   token_expiration: {:system, :string, "TOKEN_EXPIRATION_SCHEDULE", "* 0-4 * * *"},

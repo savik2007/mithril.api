@@ -1,4 +1,4 @@
-defmodule Mithril.OTP.SMSBehaviour do
+defmodule Mithril.API.SMSBehaviour do
   @moduledoc false
 
   @callback send(phone_number :: term, body :: term, type :: term) ::

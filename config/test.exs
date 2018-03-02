@@ -31,6 +31,6 @@ config :mithril_api, :"2fa",
 
 config :mithril_api, Mithril.Registration.API,
   jwt_secret: "some very crypto secret",
-  email_api: EmailSenderMock
+  email_api: EmailMock
 
 config :mithril_api, :sms_api, SMSMock
