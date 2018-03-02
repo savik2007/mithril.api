@@ -1,4 +1,4 @@
-defmodule Mithril.ResponseDecoder do
+defmodule Mithril.API.Helpers.ResponseDecoder do
   @moduledoc """
   HTTPPoison JSON to Elixir data decoder and formatter
   """

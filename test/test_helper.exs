@@ -1,4 +1,4 @@
 ExUnit.start()
 Ecto.Adapters.SQL.Sandbox.mode(Mithril.Repo, :manual)
-Mox.defmock(SMSMock, for: Mithril.OTP.SMSBehaviour)
-Mox.defmock(EmailSenderMock, for: Mithril.Registration.EmailBehaviour)
+Mox.defmock(SMSMock, for: Mithril.API.SMSBehaviour)
+Mox.defmock(EmailMock, for: Mithril.Registration.EmailBehaviour)

@@ -25,6 +25,7 @@ defmodule MithrilWeb.Router do
     pipe_through(:api)
     # registration
     post("/email_verification", RegistrationController, :send_email_verification)
+    post("/email_verification", RegistrationController, :send_email_verification)
   end
 
   scope "/oauth", as: :oauth2, alias: Mithril do
