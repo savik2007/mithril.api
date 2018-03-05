@@ -1,4 +1,4 @@
-defmodule Mithril.Registration.EmailBehaviour do
+defmodule Mithril.API.EmailBehaviour do
   @moduledoc false
 
   @callback send(email :: binary, verification_code :: binary) ::
