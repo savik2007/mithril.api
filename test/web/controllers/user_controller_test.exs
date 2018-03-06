@@ -51,8 +51,15 @@ defmodule Mithril.Web.UserControllerTest do
 
   test "finds user by valid email", %{conn: conn} do
     conn = post(conn, user_path(conn, :create), user: @create_attrs)
-    conn = get(conn, user_path(conn, :index, %{email: @create_attrs.email}))
-    assert length(json_response(conn, 200)["data"]) == 1
+
+    resp =
+      conn
+      |> get(user_path(conn, :index, %{email: @create_attrs.email}))
+      |> json_response(200)
+      |> Map.get("data")
+
+    assert 1 == length(resp)
+    assert resp |> hd() |> Map.has_key?("tax_id")
   end
 
   test "finds users by id", %{conn: conn} do
