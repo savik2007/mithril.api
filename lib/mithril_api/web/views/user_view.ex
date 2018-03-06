@@ -4,7 +4,7 @@ defmodule Mithril.Web.UserView do
   use Mithril.Web, :view
   alias Mithril.Web.UserView
 
-  @fields ~w(id email settings is_blocked block_reason inserted_at updated_at)a
+  @fields ~w(id email tax_id settings is_blocked block_reason inserted_at updated_at)a
 
   def render("index.json", %{users: users}) do
     render_many(users, UserView, "user.json")
