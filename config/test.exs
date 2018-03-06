@@ -29,8 +29,4 @@ config :mithril_api, :"2fa",
   # seconds
   otp_send_timeout: {:system, :integer, "OTP_SEND_TIMEOUT", 0}
 
-config :mithril_api, Mithril.Registration.API,
-  jwt_secret: "some very crypto secret",
-  email_api: EmailMock
-
 config :mithril_api, :sms_api, SMSMock
