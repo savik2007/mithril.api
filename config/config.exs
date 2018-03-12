@@ -109,11 +109,6 @@ config :mithril_api, Mithril.API.MPI,
     timeout: {:system, :integer, "MPI_REQUEST_TIMEOUT", 30_000}
   ]
 
-# Configures Registration
-config :mithril_api, Mithril.Registration.API,
-  jwt_secret: {:system, "JWT_SECRET"},
-  email_api: Mithril.API.Email
-
 config :mithril_api, Mithril.Scheduler,
   token_expiration: {:system, :string, "TOKEN_EXPIRATION_SCHEDULE", "* 0-4 * * *"},
   otp_expiration: {:system, :string, "OTP_EXPIRATION_SCHEDULE", "*/5 * * * *"}
