@@ -64,7 +64,7 @@ defmodule Mithril.Web.OTPControllerTest do
     end
 
     test "OTP rate limit", %{conn: conn, jwt: jwt} do
-      System.put_env("OTP_SEND_TIMEOUT", "5")
+      System.put_env("OTP_SEND_TIMEOUT", "3")
       on_exit(fn -> System.put_env("SMS_ENABLED", "0") end)
 
       key = "email@example.com===+380670001122"
