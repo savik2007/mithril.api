@@ -95,6 +95,7 @@ defmodule MithrilWeb.Router do
     resources("/client_types", ClientTypeController, except: [:new, :edit])
     resources("/roles", RoleController, except: [:new, :edit])
     get("/otps", OTPController, :index)
+    post("/send_otp", OTPController, :send_otp)
   end
 
   defp handle_errors(%Plug.Conn{status: 500} = conn, %{kind: kind, reason: reason, stack: stacktrace}) do

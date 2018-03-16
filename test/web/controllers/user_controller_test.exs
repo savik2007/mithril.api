@@ -179,6 +179,34 @@ defmodule Mithril.Web.UserControllerTest do
              ] = res["error"]["invalid"]
     end
 
+    test "create user with factor", %{conn: conn} do
+      attrs = Map.put(@create_attrs, :factor, "+380631112233") |> IO.inspect()
+
+      assert %{"id" => id} =
+               conn
+               |> post(user_path(conn, :create), user: attrs)
+               |> json_response(201)
+               |> Map.get("data")
+
+      resp =
+        conn
+        |> get(user_path(conn, :show, id))
+        |> json_response(200)
+        |> Map.get("data")
+
+      assert %{
+               "id" => ^id,
+               "email" => "some email",
+               "settings" => %{}
+             } = resp
+
+      resp = conn
+             |> get(user_authentication_factor_path(conn, :index, id))
+             |> json_response(200)
+             |> Map.get("data")
+      |> IO.inspect()
+    end
+
     test "does not create user and renders errors when data is invalid", %{conn: conn} do
       conn = post(conn, user_path(conn, :create), user: @invalid_attrs)
       assert json_response(conn, 422)["errors"] != %{}

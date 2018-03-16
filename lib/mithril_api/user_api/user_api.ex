@@ -77,8 +77,13 @@ defmodule Mithril.UserAPI do
 
   defp create_user_factor(%{user: user}, attrs) do
     case enabled_2fa?(attrs) do
-      true -> Authentication.create_factor(%{type: Authentication.type(:sms), user_id: user.id})
-      false -> {:ok, :not_enabled}
+      true ->
+        attrs
+        |> Map.merge(%{"type" => Authentication.type(:sms), "user_id" => user.id})
+        |> Authentication.create_factor()
+
+      false ->
+        {:ok, :not_enabled}
     end
   end
 

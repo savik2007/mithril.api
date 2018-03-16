@@ -11,4 +11,8 @@ defmodule Mithril.Web.OTPController do
       render(conn, "index.json", otps: paging.entries, paging: paging)
     end
   end
+
+  def send_otp(conn, params) do
+
+  end
 end

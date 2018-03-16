@@ -53,6 +53,10 @@ defmodule Mithril.Authentication do
     {:error, :factor_not_set}
   end
 
+  def send_otp(user_id, factor) do
+    UserAPI.get_user(user_id)
+  end
+
   defp maybe_send_otp(otp, factor) do
     case Confex.get_env(:mithril_api, :"2fa")[:sms_enabled?] do
       true -> send_otp_by_factor(otp, factor)
