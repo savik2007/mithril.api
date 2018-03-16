@@ -1,7 +1,12 @@
 defmodule Mithril.Web.OTPControllerTest do
   use Mithril.Web.ConnCase
 
+  import Mox
+  import Mithril.Guardian
+
   alias Ecto.UUID
+
+  setup :verify_on_exit!
 
   setup %{conn: conn} do
     token = UUID.generate()
@@ -32,6 +37,51 @@ defmodule Mithril.Web.OTPControllerTest do
       data = json_response(conn, 200)["data"]
       assert 1 == length(data)
       assert 3456 == hd(data)["code"]
+    end
+  end
+
+  describe "send OTP" do
+    setup %{conn: conn} do
+      System.put_env("SMS_ENABLED", "true")
+      on_exit(fn -> System.put_env("SMS_ENABLED", "false") end)
+      {:ok, jwt, _} = encode_and_sign(:email, %{email: "email@example.com"}, token_type: "access")
+
+      %{conn: conn, jwt: jwt}
+    end
+
+    test "success", %{conn: conn, jwt: jwt} do
+      key = "email@example.com===+380670001122"
+      insert(:otp, key: key, inserted_at: DateTime.from_naive!(~N[2017-01-02 13:26:08], "Etc/UTC"))
+      insert(:otp, key: key)
+      insert(:otp, key: key)
+
+      expect(SMSMock, :send, fn "+380670001122", _body, _type -> {:ok, %{"meta" => %{"code" => 200}}} end)
+
+      conn
+      |> Plug.Conn.put_req_header("authorization", "Bearer " <> jwt)
+      |> post(otp_path(conn, :send_otp), %{type: "SMS", factor: "+380670001122"})
+      |> json_response(200)
+    end
+
+    test "OTP rate limit", %{conn: conn, jwt: jwt} do
+      System.put_env("OTP_SEND_TIMEOUT", "5")
+      on_exit(fn -> System.put_env("SMS_ENABLED", "0") end)
+
+      key = "email@example.com===+380670001122"
+      insert(:otp, key: key)
+      insert(:otp, key: key)
+      insert(:otp, key: key)
+
+      conn
+      |> Plug.Conn.put_req_header("authorization", "Bearer " <> jwt)
+      |> post(otp_path(conn, :send_otp), %{type: "SMS", factor: "+380670001122"})
+      |> json_response(429)
+    end
+
+    test "JWT not set", %{conn: conn} do
+      conn
+      |> post(otp_path(conn, :send_otp), %{type: "SMS", factor: "+380670001122"})
+      |> json_response(401)
     end
   end
 

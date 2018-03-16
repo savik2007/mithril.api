@@ -21,6 +21,17 @@ defmodule MithrilWeb.Router do
     # plug :allow_jsonp
   end
 
+  pipeline :jwt do
+    plug(Guardian.Plug.Pipeline, module: Mithril.Guardian, error_handler: Mithril.Web.FallbackController)
+    plug(Guardian.Plug.VerifyHeader, claims: %{typ: "access"})
+    plug(Guardian.Plug.EnsureAuthenticated)
+  end
+
+  scope "/api", Mithril.Web do
+    pipe_through([:api, :jwt])
+    post("/send_otp", OTPController, :send_otp)
+  end
+
   scope "/oauth", as: :oauth2, alias: Mithril do
     pipe_through(:api)
 

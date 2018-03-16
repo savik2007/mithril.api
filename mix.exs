@@ -64,7 +64,7 @@ defmodule Mithril.Mixfile do
       {:secure_random, ">= 0.0.0"},
       {:timex, "~> 3.1", override: true},
       {:quantum, ">= 2.1.0"},
-      {:joken, "~> 1.5"},
+      {:guardian, "~> 1.0"},
       {:plug_logger_json, "~> 0.5"},
       {:mox, "~> 0.3", only: :test},
       {:ex_machina, ">= 1.0.0", only: [:dev, :test]},

@@ -64,6 +64,11 @@ config :mithril_api, :"2fa",
 
 config :mithril_api, :sms_api, Mithril.API.SMS
 
+# Configures Guardian
+config :mithril_api, Mithril.Guardian,
+  issuer: "EHealth",
+  secret_key: {:system, "JWT_SECRET"}
+
 # Configures the endpoint
 config :mithril_api, Mithril.Web.Endpoint,
   url: [host: "localhost"],

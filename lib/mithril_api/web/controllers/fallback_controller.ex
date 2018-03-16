@@ -86,4 +86,8 @@ defmodule Mithril.Web.FallbackController do
     |> put_status(:service_unavailable)
     |> render(EView.Views.Error, :"503", %{message: reason})
   end
+
+  def auth_error(conn, {_type, reason}, _opts) do
+    call(conn, {:error, {:access_denied, to_string(reason)}})
+  end
 end

@@ -14,4 +14,8 @@ defmodule Mithril.Web.OTPView do
   def render("otp.json", %{otp: otp}) do
     Map.take(otp, @fields)
   end
+
+  def render("send_otp.json", %{message: message}) do
+    %{result: message}
+  end
 end
