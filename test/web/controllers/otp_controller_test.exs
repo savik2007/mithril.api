@@ -83,6 +83,29 @@ defmodule Mithril.Web.OTPControllerTest do
       |> post(otp_path(conn, :send_otp), %{type: "SMS", factor: "+380670001122"})
       |> json_response(401)
     end
+
+    test "invalid type", %{conn: conn, jwt: jwt} do
+      assert [err] =
+               conn
+               |> Plug.Conn.put_req_header("authorization", "Bearer " <> jwt)
+               |> post(otp_path(conn, :send_otp), %{type: "invalid", factor: "+380670001122"})
+               |> json_response(422)
+               |> get_in(~w(error invalid))
+
+      assert "$.type" == err["entry"]
+    end
+
+    test "invalid params", %{conn: conn, jwt: jwt} do
+      assert [err1, err2] =
+               conn
+               |> Plug.Conn.put_req_header("authorization", "Bearer " <> jwt)
+               |> post(otp_path(conn, :send_otp), %{types: "SMS", factors: "+380670001122"})
+               |> json_response(422)
+               |> get_in(~w(error invalid))
+
+      assert "$.type" == err2["entry"]
+      assert "$.factor" == err1["entry"]
+    end
   end
 
   defp generate_code(prefix) do
