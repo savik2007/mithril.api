@@ -26,7 +26,11 @@ config :mithril_api, :"2fa",
   otp_ttl: 1,
   user_2fa_enabled?: {:system, :boolean, "USER_2FA_ENABLED", true},
   sms_enabled?: {:system, :boolean, "SMS_ENABLED", false},
-  # seconds
+  # minutes
   otp_send_timeout: {:system, :integer, "OTP_SEND_TIMEOUT", 0}
+
+config :mithril_api, Mithril.Guardian,
+  issuer: "EHealth",
+  secret_key: "some_super-sEcret"
 
 config :mithril_api, :sms_api, SMSMock

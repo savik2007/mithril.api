@@ -7,7 +7,7 @@ defmodule Mithril.UserAPITest do
   alias Mithril.Authorization.LoginHistory
   alias Scrivener.Page
 
-  @create_attrs %{email: "some email", password: "Some password1", tax_id: "12342345"}
+  @create_attrs %{"email" => "some email", "password" => "Some password1", "tax_id" => "12342345"}
   @update_attrs %{
     email: "some updated email",
     password: "Some updated password1",

@@ -161,7 +161,8 @@ defmodule Mithril.Factory do
       code_expired_at: expires,
       status: "NEW",
       active: true,
-      attempts_count: 0
+      attempts_count: 0,
+      inserted_at: DateTime.utc_now()
     }
   end
 end
