@@ -5,12 +5,11 @@ defmodule Mithril.Authentication do
 
   import Ecto.{Query, Changeset, DateTime}, warn: false
 
-  alias Mithril.OTP
+  alias Mithril.{Repo, OTP, Error, Guardian}
   alias Mithril.OTP.Schema, as: OTPSchema
-  alias Mithril.Repo
   alias Mithril.UserAPI.User
   alias Mithril.TokenAPI.Token
-  alias Mithril.Authentication.{Factor, FactorSearch, OTPSearch}
+  alias Mithril.Authentication.{Factor, FactorSearch, OTPSearch, OTPSend}
   alias Mithril.Authorization.LoginHistory
 
   require Logger
@@ -53,8 +52,41 @@ defmodule Mithril.Authentication do
     {:error, :factor_not_set}
   end
 
-  def send_otp(user_id, factor) do
-    UserAPI.get_user(user_id)
+  def send_otp(params, jwt) do
+    with {:ok, %{"email" => email}} <- Guardian.decode_and_verify(jwt),
+         %Ecto.Changeset{valid?: true} <- changeset(%OTPSend{}, params),
+         factor <- %Factor{factor: params["factor"], type: params["type"]},
+         otp_key <- generate_key(email, factor.factor),
+         :ok <- check_sent_otps(otp_key),
+         otp <- OTP.initialize_otp(otp_key),
+         :ok <- maybe_send_otp(otp, factor) do
+      :ok
+    else
+      {:error, :sms_not_sent} -> {:error, {:service_unavailable, "SMS not sent. Try later"}}
+      err -> err
+    end
+  end
+
+  def check_sent_otps(otp_key) do
+    conf = Confex.get_env(:mithril_api, :"2fa")
+    timeout = conf[:otp_send_timeout]
+    max_otps = conf[:otp_send_counter_max]
+    do_check_login(otp_key, max_otps, timeout)
+  end
+
+  defp do_check_login(otp_key, max_otps, timeout) do
+    inserted_at = NaiveDateTime.add(NaiveDateTime.utc_now(), -timeout * 60, :second)
+
+    otps =
+      OTPSchema
+      |> where([o], o.key == ^otp_key)
+      |> where([o], o.inserted_at >= ^inserted_at)
+      |> Repo.all()
+
+    case length(otps) >= max_otps do
+      true -> Error.otp_timeout()
+      false -> :ok
+    end
   end
 
   defp maybe_send_otp(otp, factor) do
@@ -94,9 +126,8 @@ defmodule Mithril.Authentication do
     {:error, :factor_not_set}
   end
 
-  def generate_key(%Token{} = token, value) do
-    token.id <> "===" <> value
-  end
+  def generate_key(%Token{id: id}, value), do: generate_key(id, value)
+  def generate_key(prefix, value), do: prefix <> "===" <> value
 
   def generate_message(code) when is_integer(code) do
     code
@@ -164,12 +195,21 @@ defmodule Mithril.Authentication do
     changeset(%Factor{}, attrs, @fields_required)
   end
 
-  def changeset(%FactorSearch{} = factor, attrs) do
-    cast(factor, attrs, FactorSearch.__schema__(:fields))
+  def changeset(%FactorSearch{} = schema, attrs) do
+    cast(schema, attrs, FactorSearch.__schema__(:fields))
   end
 
-  def changeset(%OTPSearch{} = factor, attrs) do
-    cast(factor, attrs, OTPSearch.__schema__(:fields))
+  def changeset(%OTPSearch{} = schema, attrs) do
+    cast(schema, attrs, OTPSearch.__schema__(:fields))
+  end
+
+  def changeset(%OTPSend{} = schema, attrs) do
+    fields = OTPSend.__schema__(:fields)
+
+    schema
+    |> cast(attrs, fields)
+    |> validate_required(fields)
+    |> validate_inclusion(:type, [@type_sms])
   end
 
   def changeset(%Factor{} = client, attrs, cast_fields \\ @fields_required ++ @fields_optional) do

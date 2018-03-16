@@ -1,8 +1,9 @@
 defmodule Mithril.Web.OTPController do
   use Mithril.Web, :controller
 
-  alias Mithril.Authentication
   alias Scrivener.Page
+  alias Mithril.Authentication
+  alias Mithril.Guardian.Plug
 
   action_fallback(Mithril.Web.FallbackController)
 
@@ -13,6 +14,9 @@ defmodule Mithril.Web.OTPController do
   end
 
   def send_otp(conn, params) do
-
+    with jwt <- Plug.current_token(conn),
+         :ok <- Authentication.send_otp(params, jwt) do
+      render(conn, "send_otp.json", message: "OTP sent")
+    end
   end
 end
