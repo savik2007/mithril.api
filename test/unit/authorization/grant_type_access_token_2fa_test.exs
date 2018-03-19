@@ -135,7 +135,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
       assert {:ok, %{token: token}} = AccessToken2FA.refresh(%{"token_value" => token_2fa.value})
       # generated new OTP
       otp_key = Authentication.generate_key(token, factor.factor)
-      assert %OTPSchema{active: true} = OTP.get_otp_by!(key: otp_key)
+      assert %OTPSchema{active: true} = OTP.get_otp_by(key: otp_key)
     end
 
     test "user blocked", %{token: token_2fa, user: user} do

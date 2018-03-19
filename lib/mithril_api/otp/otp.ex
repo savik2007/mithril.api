@@ -57,15 +57,15 @@ defmodule Mithril.OTP do
 
   ## Examples
 
-      iex> get_otp_by!(123)
-      %Mithril.OTP.Schema
+      iex> get_otp_by(123)
+      %Mithril.OTP.Schema | nil
   """
-  @spec get_otp_by!(params :: Keyword.t()) :: OTPSchema.t() | []
-  def get_otp_by!(params) do
+  @spec get_otp_by(params :: Keyword.t()) :: OTPSchema.t() | []
+  def get_otp_by(params) do
     OTPSchema
     |> order_by(desc: :inserted_at)
     |> limit(1)
-    |> Repo.get_by!(params)
+    |> Repo.get_by(params)
   end
 
   @doc """
@@ -111,13 +111,15 @@ defmodule Mithril.OTP do
 
   @spec verify(otp :: %{key: String.t()}, code :: Integer.t()) :: tuple()
   def verify(key, code) do
-    otp = get_otp_by!(key: key, status: @status_new)
+    otp = get_otp_by(key: key, status: @status_new)
 
-    with :ok <- verify_expiration_time(otp),
+    with %OTPSchema{} <- otp,
+         :ok <- verify_expiration_time(otp),
          :ok <- verify_max_attemps(otp),
          :ok <- verify_code(otp, code) do
       otp_completed(otp)
     else
+      nil -> {:error, :otp_not_found}
       error -> otp_does_not_completed(otp, error)
     end
   end

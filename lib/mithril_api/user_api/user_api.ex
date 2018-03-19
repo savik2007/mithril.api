@@ -5,6 +5,7 @@ defmodule Mithril.UserAPI do
   use Mithril.Search
 
   import Ecto.{Query, Changeset}, warn: false
+  import EView.Changeset.Validators.Email
 
   alias Ecto.Multi
   alias Mithril.Repo
@@ -79,7 +80,7 @@ defmodule Mithril.UserAPI do
     case enabled_2fa?(attrs) do
       true ->
         attrs
-        |> Map.merge(%{"type" => Authentication.type(:sms), "user_id" => user.id})
+        |> Map.merge(%{"type" => Authentication.type(:sms), "user_id" => user.id, "email" => user.email})
         |> Authentication.create_factor()
 
       false ->
@@ -174,6 +175,7 @@ defmodule Mithril.UserAPI do
     user
     |> cast(attrs, @fields_optional ++ @fields_required)
     |> validate_required(@fields_required)
+    |> validate_email(:email)
     |> unique_constraint(:email)
     |> validate_length(:password, min: 12)
     |> validate_format(

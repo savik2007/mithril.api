@@ -20,6 +20,8 @@ defmodule Mithril.Authentication do
   )a
 
   @fields_optional ~w(
+    otp
+    email
     factor
     is_active
   )a
@@ -127,7 +129,7 @@ defmodule Mithril.Authentication do
   end
 
   def generate_key(%Token{id: id}, value), do: generate_key(id, value)
-  def generate_key(prefix, value), do: prefix <> "===" <> value
+  def generate_key(prefix, value) when is_binary(prefix) and is_binary(value), do: prefix <> "===" <> value
 
   def generate_message(code) when is_integer(code) do
     code
@@ -179,7 +181,7 @@ defmodule Mithril.Authentication do
 
   def create_factor(attrs) do
     attrs
-    |> create_changeset()
+    |> create_factor_changeset()
     |> Repo.insert()
     |> preload_references()
   end
@@ -191,8 +193,10 @@ defmodule Mithril.Authentication do
     |> preload_references()
   end
 
-  def create_changeset(attrs) do
-    changeset(%Factor{}, attrs, @fields_required)
+  def create_factor_changeset(attrs) do
+    %Factor{}
+    |> changeset(attrs)
+    |> validate_factor_and_otp()
   end
 
   def changeset(%FactorSearch{} = schema, attrs) do
@@ -212,14 +216,36 @@ defmodule Mithril.Authentication do
     |> validate_inclusion(:type, [@type_sms])
   end
 
-  def changeset(%Factor{} = client, attrs, cast_fields \\ @fields_required ++ @fields_optional) do
-    client
-    |> cast(attrs, cast_fields)
+  def changeset(%Factor{} = schema, attrs) do
+    schema
+    |> cast(attrs, @fields_required ++ @fields_optional)
     |> validate_required(@fields_required)
     |> validate_inclusion(:type, [@type_sms])
     |> validate_factor_format()
     |> unique_constraint(:user_id, name: "authentication_factors_user_id_type_index")
     |> assoc_constraint(:user)
+  end
+
+  def validate_factor_and_otp(changeset) do
+    validate_change(changeset, :factor, fn :factor, factor ->
+      otp = fetch_change(changeset, :otp)
+      email = fetch_change(changeset, :email)
+      validate_otp(otp, email, factor)
+    end)
+  end
+
+  defp validate_otp(:error, _email, _factor), do: [otp: {"can't be blank", [validation: "required"]}]
+  defp validate_otp(_otp, :error, _factor), do: [email: {"can't be blank", [validation: "required"]}]
+
+  defp validate_otp({_, otp}, {_, email}, factor) do
+    email
+    |> generate_key(factor)
+    |> OTP.verify(otp)
+    |> case do
+      {:error, _} -> [otp: {"invalid code", [validation: "invalid"]}]
+      {:ok, _, :invalid_code} -> [otp: {"invalid code", [validation: "invalid"]}]
+      {:ok, _, :verified} -> []
+    end
   end
 
   def validate_factor_format(changeset) do
@@ -241,7 +267,7 @@ defmodule Mithril.Authentication do
   defp validate_factor_format(@type_sms, value) do
     case value =~ ~r/^\+380[0-9]{9}$/ do
       true -> []
-      false -> [factor: "invalid phone"]
+      false -> [factor: {"invalid phone", [validation: "format"]}]
     end
   end
 

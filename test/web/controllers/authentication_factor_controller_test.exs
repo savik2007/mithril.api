@@ -49,7 +49,6 @@ defmodule Mithril.Web.AuthenticationFactorControllerTest do
 
     test "success", %{conn: conn, user: user} do
       create_attrs = %{
-        "factor" => "+380229008070",
         "user_id" => user.id,
         "type" => Authentication.type(:sms)
       }

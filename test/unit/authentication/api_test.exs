@@ -19,8 +19,7 @@ defmodule Mithril.Authentication.APITest do
     test "success", %{user: user} do
       data = %{
         "user_id" => user.id,
-        "type" => Authentication.type(:sms),
-        "factor" => "+380901002030"
+        "type" => Authentication.type(:sms)
       }
 
       assert {:ok, %Factor{}} = Authentication.create_factor(data)
@@ -35,14 +34,14 @@ defmodule Mithril.Authentication.APITest do
       assert {:ok, %Factor{}} = Authentication.create_factor(data)
     end
 
-    test "cannot create factor with value", %{user: user} do
+    test "cannot create factor without otp", %{user: user} do
       data = %{
         "user_id" => user.id,
         "type" => Authentication.type(:sms),
         "factor" => "+380881002030"
       }
 
-      assert {:ok, %Factor{factor: nil}} = Authentication.create_factor(data)
+      assert {:error, %Changeset{valid?: false, errors: [otp: _]}} = Authentication.create_factor(data)
     end
 
     test "invalid type", %{user: user} do
@@ -55,11 +54,19 @@ defmodule Mithril.Authentication.APITest do
     end
 
     test "factor already exists", %{user: user} do
+      key = Authentication.generate_key("email@example.com", "+380901002030")
+      insert(:otp, key: key, code: 9912)
+
       data = %{
         "user_id" => user.id,
         "type" => Authentication.type(:sms),
-        "factor" => "+380901002030"
+        "factor" => "+380901002030",
+        "email" => "email@example.com",
+        "otp" => 9912
       }
+
+      key = Authentication.generate_key("email@example.com", "+380901002030")
+      insert(:otp, key: key, code: 9912)
 
       assert {:ok, %Factor{}} = Authentication.create_factor(data)
       assert {:error, %Changeset{valid?: false, errors: [user_id: _]}} = Authentication.create_factor(data)
@@ -68,8 +75,7 @@ defmodule Mithril.Authentication.APITest do
     test "user does not exists" do
       data = %{
         "user_id" => Ecto.UUID.generate(),
-        "type" => Authentication.type(:sms),
-        "factor" => "+380901002030"
+        "type" => Authentication.type(:sms)
       }
 
       assert {:error, %Changeset{valid?: false, errors: [user: _]}} = Authentication.create_factor(data)

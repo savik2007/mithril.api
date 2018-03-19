@@ -319,7 +319,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
 
     test "OTP expired", %{conn: conn, otp: otp} do
       [code: otp]
-      |> OTP.get_otp_by!()
+      |> OTP.get_otp_by()
       |> OTP.update_otp(%{code_expired_at: "2010-11-27T12:40:13"})
 
       conn = post(conn, oauth2_token_path(conn, :approve_factor), %{otp: 100_200})

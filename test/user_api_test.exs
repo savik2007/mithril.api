@@ -7,9 +7,9 @@ defmodule Mithril.UserAPITest do
   alias Mithril.Authorization.LoginHistory
   alias Scrivener.Page
 
-  @create_attrs %{"email" => "some email", "password" => "Some password1", "tax_id" => "12342345"}
+  @create_attrs %{"email" => "email@example.com", "password" => "Some password1", "tax_id" => "12342345"}
   @update_attrs %{
-    email: "some updated email",
+    email: "updated@example.com",
     password: "Some updated password1",
     settings: %{},
     priv_settings: %{
@@ -74,7 +74,7 @@ defmodule Mithril.UserAPITest do
 
   test "create_user/1 with valid data creates a user" do
     assert {:ok, %User{} = user} = UserAPI.create_user(@create_attrs)
-    assert user.email == "some email"
+    assert user.email == "email@example.com"
     assert String.length(user.password) == 60
     assert user.settings == %{}
 
@@ -98,7 +98,7 @@ defmodule Mithril.UserAPITest do
     user = insert(:user)
     assert {:ok, user} = UserAPI.update_user(user, @update_attrs)
     assert %User{} = user
-    assert user.email == "some updated email"
+    assert user.email == "updated@example.com"
     assert String.length(user.password) == 60
     assert user.settings == %{}
 
