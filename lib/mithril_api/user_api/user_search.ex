@@ -9,6 +9,7 @@ defmodule Mithril.UserAPI.UserSearch do
     # ToDo: remember, that field user_ids is hardcoded in UserRoleAPI.query_where
     field(:ids, Ecto.CommaParamsUUID)
     field(:email, :string)
+    field(:tax_id, :string)
     field(:is_blocked, :boolean)
   end
 end

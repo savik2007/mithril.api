@@ -23,77 +23,90 @@ defmodule Mithril.Web.UserControllerTest do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
   end
 
-  test "lists all entries on index", %{conn: conn} do
-    insert(:user, email: "1", password: "Password1234", settings: %{})
-    insert(:user, email: "2", password: "Password2234", settings: %{})
-    insert(:user, email: "3", password: "Password3234", settings: %{})
+  describe "search users" do
+    test "lists all entries on index", %{conn: conn} do
+      insert(:user, email: "1", password: "Password1234", settings: %{})
+      insert(:user, email: "2", password: "Password2234", settings: %{})
+      insert(:user, email: "3", password: "Password3234", settings: %{})
 
-    conn = get(conn, user_path(conn, :index))
+      conn = get(conn, user_path(conn, :index))
 
-    # System User already inserted in DB by means of migration
-    [users_count] = Repo.all(from(u in User, select: count(u.id)))
+      # System User already inserted in DB by means of migration
+      [users_count] = Repo.all(from(u in User, select: count(u.id)))
 
-    assert users_count == length(json_response(conn, 200)["data"])
-  end
+      assert users_count == length(json_response(conn, 200)["data"])
+    end
 
-  test "does not list all entries on index when limit is set", %{conn: conn} do
-    insert(:user, email: "1", password: "Password1234", settings: %{})
-    insert(:user, email: "2", password: "Password2234", settings: %{})
-    insert(:user, email: "3", password: "Password3234", settings: %{})
-    conn = get(conn, user_path(conn, :index), %{page_size: 2})
-    assert 2 == length(json_response(conn, 200)["data"])
-  end
+    test "does not list all entries on index when limit is set", %{conn: conn} do
+      insert(:user, email: "1", password: "Password1234", settings: %{})
+      insert(:user, email: "2", password: "Password2234", settings: %{})
+      insert(:user, email: "3", password: "Password3234", settings: %{})
+      conn = get(conn, user_path(conn, :index), %{page_size: 2})
+      assert 2 == length(json_response(conn, 200)["data"])
+    end
 
-  test "does not list all entries on index when starting_after is set", %{conn: conn} do
-    # System User already inserted in DB by means of migration
-    insert(:user, email: "1", password: "Password1234", settings: %{})
-    insert(:user, email: "2", password: "Password2234", settings: %{})
-    insert(:user, email: "3", password: "Password3234", settings: %{})
-    insert(:user, email: "4", password: "Password4234", settings: %{})
+    test "does not list all entries on index when starting_after is set", %{conn: conn} do
+      # System User already inserted in DB by means of migration
+      insert(:user, email: "1", password: "Password1234", settings: %{})
+      insert(:user, email: "2", password: "Password2234", settings: %{})
+      insert(:user, email: "3", password: "Password3234", settings: %{})
+      insert(:user, email: "4", password: "Password4234", settings: %{})
 
-    conn = get(conn, user_path(conn, :index), %{page_size: 2, page: 3})
-    resp = json_response(conn, 200)["data"]
-    assert 1 == length(resp)
-  end
+      conn = get(conn, user_path(conn, :index), %{page_size: 2, page: 3})
+      resp = json_response(conn, 200)["data"]
+      assert 1 == length(resp)
+    end
 
-  test "finds user by valid email", %{conn: conn} do
-    conn = post(conn, user_path(conn, :create), user: @create_attrs)
+    test "finds user by valid email", %{conn: conn} do
+      conn = post(conn, user_path(conn, :create), user: @create_attrs)
 
-    resp =
-      conn
-      |> get(user_path(conn, :index, %{email: @create_attrs.email}))
-      |> json_response(200)
-      |> Map.get("data")
+      resp =
+        conn
+        |> get(user_path(conn, :index, %{email: @create_attrs.email}))
+        |> json_response(200)
+        |> Map.get("data")
 
-    assert 1 == length(resp)
-    assert resp |> hd() |> Map.has_key?("tax_id")
-  end
+      assert 1 == length(resp)
+      assert resp |> hd() |> Map.has_key?("tax_id")
+    end
 
-  test "finds users by id", %{conn: conn} do
-    user = insert(:user, %{email: "1", password: "Password1234", settings: %{}})
-    conn = get(conn, user_path(conn, :index, %{id: user.id}))
-    assert length(json_response(conn, 200)["data"]) == 1
-  end
+    test "finds users by id", %{conn: conn} do
+      user = insert(:user, %{email: "1", password: "Password1234", settings: %{}})
+      conn = get(conn, user_path(conn, :index, %{id: user.id}))
+      assert length(json_response(conn, 200)["data"]) == 1
+    end
 
-  test "finds users by ids and is_blocked", %{conn: conn} do
-    %{id: id1} = insert(:user, email: "1", password: "Password1234", settings: %{}, is_blocked: true)
-    %{id: id2} = insert(:user, email: "2", password: "Password2234", settings: %{}, is_blocked: true)
-    %{id: id3} = insert(:user, email: "3", password: "Password3234", settings: %{})
-    insert(:user, %{email: "4", password: "Password4234", settings: %{}})
+    test "finds users by tax_id", %{conn: conn} do
+      insert(:user, %{email: "1", password: "Password1234", tax_id: "3002001020"})
+      %{id: id} = insert(:user, %{email: "2", password: "Password1234", tax_id: "3002001030"})
 
-    conn = get(conn, user_path(conn, :index, %{ids: Enum.join([id1, id2, id3], ","), is_blocked: true}))
-    data = json_response(conn, 200)["data"]
-    assert 2 == length(data)
+      assert [%{"id" => ^id}] =
+               conn
+               |> get(user_path(conn, :index, %{tax_id: "3002001030"}))
+               |> json_response(200)
+               |> Map.get("data")
+    end
 
-    Enum.each(data, fn %{"id" => id} ->
-      assert id in [id1, id2]
-    end)
-  end
+    test "finds users by ids and is_blocked", %{conn: conn} do
+      %{id: id1} = insert(:user, email: "1", password: "Password1234", settings: %{}, is_blocked: true)
+      %{id: id2} = insert(:user, email: "2", password: "Password2234", settings: %{}, is_blocked: true)
+      %{id: id3} = insert(:user, email: "3", password: "Password3234", settings: %{})
+      insert(:user, %{email: "4", password: "Password4234", settings: %{}})
 
-  test "finds nothing by invalid email", %{conn: conn} do
-    conn = post(conn, user_path(conn, :create), user: @create_attrs)
-    conn = get(conn, user_path(conn, :index, %{email: @create_attrs.email <> "111"}))
-    assert Enum.empty?(json_response(conn, 200)["data"])
+      conn = get(conn, user_path(conn, :index, %{ids: Enum.join([id1, id2, id3], ","), is_blocked: true}))
+      data = json_response(conn, 200)["data"]
+      assert 2 == length(data)
+
+      Enum.each(data, fn %{"id" => id} ->
+        assert id in [id1, id2]
+      end)
+    end
+
+    test "finds nothing by invalid email", %{conn: conn} do
+      conn = post(conn, user_path(conn, :create), user: @create_attrs)
+      conn = get(conn, user_path(conn, :index, %{email: @create_attrs.email <> "111"}))
+      assert Enum.empty?(json_response(conn, 200)["data"])
+    end
   end
 
   describe "create user" do
