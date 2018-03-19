@@ -9,6 +9,8 @@ defmodule Mithril.Authentication.Factor do
     field(:type, :string)
     field(:factor, :string)
     field(:is_active, :boolean, default: true)
+    field(:otp, :integer, virtual: true)
+    field(:email, :string, virtual: true)
 
     belongs_to(:user, Mithril.UserAPI.User)
 

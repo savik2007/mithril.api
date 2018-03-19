@@ -28,7 +28,7 @@ defmodule Mithril.OTPTest do
     end
 
     test "invalid key" do
-      assert_raise Ecto.NoResultsError, fn -> OTP.verify("invalid", 123) end
+      assert {:error, :otp_not_found} == OTP.verify("invalid", 123)
     end
 
     test "invalid code", %{otp: otp} do
@@ -54,7 +54,7 @@ defmodule Mithril.OTPTest do
 
     test "alredy verified", %{otp: otp} do
       OTP.verify(otp.key, otp.code)
-      assert_raise Ecto.NoResultsError, fn -> OTP.verify(otp.key, otp.code) end
+      assert {:error, :otp_not_found} == OTP.verify(otp.key, otp.code)
     end
   end
 

@@ -6,10 +6,17 @@ defmodule Mithril.Web.UserControllerTest do
   alias Mithril.TokenAPI
   alias Mithril.UserAPI
   alias Mithril.UserAPI.User
+  alias Mithril.Authentication
   alias Mithril.UserAPI.PasswordHistory
 
-  @create_attrs %{email: "some email", password: "Somepassword1", settings: %{}, "2fa_enable": true, tax_id: "12341234"}
-  @update_attrs %{email: "some updated email", password: "Some updated password1", settings: %{}}
+  @create_attrs %{
+    email: "email@example.com",
+    password: "Somepassword1",
+    settings: %{},
+    "2fa_enable": true,
+    tax_id: "12341234"
+  }
+  @update_attrs %{email: "update@example.com", password: "Some updated password1", settings: %{}}
   @invalid_attrs %{email: nil, password: nil, settings: nil}
 
   setup %{conn: conn} do
@@ -98,7 +105,7 @@ defmodule Mithril.Web.UserControllerTest do
 
       assert %{
                "id" => ^id,
-               "email" => "some email",
+               "email" => "email@example.com",
                "settings" => %{}
              } = json_response(conn, 200)["data"]
     end
@@ -179,6 +186,77 @@ defmodule Mithril.Web.UserControllerTest do
              ] = res["error"]["invalid"]
     end
 
+    test "create user with factor", %{conn: conn} do
+      key = Authentication.generate_key("email@example.com", "+380631112233")
+      insert(:otp, key: key, code: 1234)
+      attrs = Map.merge(@create_attrs, %{factor: "+380631112233", otp: 1234})
+
+      assert %{"id" => id} =
+               conn
+               |> post(user_path(conn, :create), user: attrs)
+               |> json_response(201)
+               |> Map.get("data")
+
+      resp =
+        conn
+        |> get(user_path(conn, :show, id))
+        |> json_response(200)
+        |> Map.get("data")
+
+      assert %{
+               "id" => ^id,
+               "email" => "email@example.com",
+               "settings" => %{}
+             } = resp
+
+      assert [factor] =
+               conn
+               |> get(user_authentication_factor_path(conn, :index, id))
+               |> json_response(200)
+               |> Map.get("data")
+
+      assert "+38063*****33" == factor["factor"]
+    end
+
+    test "create user with factor but without otp", %{conn: conn} do
+      attrs = Map.merge(@create_attrs, %{factor: "+380631112233"})
+
+      assert [err] =
+               conn
+               |> post(user_path(conn, :create), user: attrs)
+               |> json_response(422)
+               |> get_in(~w(error invalid))
+
+      assert "$.otp" == err["entry"]
+    end
+
+    test "create user with factor but invalid OTP", %{conn: conn} do
+      key = Authentication.generate_key("email@example.com", "+380631112233")
+      insert(:otp, key: key, code: 1234)
+
+      attrs = Map.merge(@create_attrs, %{factor: "+380631112233", otp: 1235})
+
+      assert [err] =
+               conn
+               |> post(user_path(conn, :create), user: attrs)
+               |> json_response(422)
+               |> get_in(~w(error invalid))
+
+      assert "$.otp" == err["entry"]
+    end
+
+    test "create user with factor but OTP was not created", %{conn: conn} do
+      attrs = Map.merge(@create_attrs, %{factor: "+380631112233", otp: 1234})
+
+      assert [err] =
+               conn
+               |> post(user_path(conn, :create), user: attrs)
+               |> json_response(422)
+               |> get_in(~w(error invalid))
+
+      assert "$.otp" == err["entry"]
+    end
+
     test "does not create user and renders errors when data is invalid", %{conn: conn} do
       conn = post(conn, user_path(conn, :create), user: @invalid_attrs)
       assert json_response(conn, 422)["errors"] != %{}
@@ -194,7 +272,7 @@ defmodule Mithril.Web.UserControllerTest do
 
     assert %{
              "id" => ^id,
-             "email" => "some updated email",
+             "email" => "update@example.com",
              "settings" => %{}
            } = json_response(conn, 200)["data"]
 
