@@ -84,6 +84,13 @@ defmodule Mithril.Web.OTPControllerTest do
       |> json_response(401)
     end
 
+    test "invalid JWT", %{conn: conn} do
+      conn
+      |> Plug.Conn.put_req_header("authorization", "Bearer invalid")
+      |> post(otp_path(conn, :send_otp), %{type: "SMS", factor: "+380670001122"})
+      |> json_response(401)
+    end
+
     test "invalid type", %{conn: conn, jwt: jwt} do
       assert [err] =
                conn
