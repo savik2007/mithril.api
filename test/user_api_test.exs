@@ -7,7 +7,7 @@ defmodule Mithril.UserAPITest do
   alias Mithril.Authorization.LoginHistory
   alias Scrivener.Page
 
-  @create_attrs %{email: "some email", password: "Some password1", settings: %{}}
+  @create_attrs %{email: "email@example.com", password: "Some password1", settings: %{}}
   @update_attrs %{
     email: "some updated email",
     password: "Some updated password1",
@@ -79,7 +79,7 @@ defmodule Mithril.UserAPITest do
 
   test "create_user/1 with valid data creates a user" do
     assert {:ok, %User{} = user} = UserAPI.create_user(@create_attrs)
-    assert user.email == "some email"
+    assert user.email == "email@example.com"
     assert String.length(user.password) == 60
     assert user.settings == %{}
 
@@ -87,6 +87,14 @@ defmodule Mithril.UserAPITest do
              login_hstr: [],
              otp_error_counter: 0
            }
+  end
+
+  test "email is case insensive" do
+    assert {:ok, %User{}} = UserAPI.create_user(@create_attrs)
+    attrs = %{@create_attrs | email: "EMAIL@example.com"}
+
+    assert {:error, %Ecto.Changeset{valid?: false, errors: [email: {"has already been taken", []}]}} =
+             UserAPI.create_user(attrs)
   end
 
   test "create_user/1 secures user password" do
