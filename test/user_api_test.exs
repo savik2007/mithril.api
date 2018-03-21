@@ -84,6 +84,14 @@ defmodule Mithril.UserAPITest do
            }
   end
 
+  test "email is case insensive" do
+    assert {:ok, %User{}} = UserAPI.create_user(@create_attrs)
+    attrs = %{@create_attrs | "email" => "EMAIL@example.com"}
+
+    assert {:error, %Ecto.Changeset{valid?: false, errors: [email: {"has already been taken", []}]}} =
+             UserAPI.create_user(attrs)
+  end
+
   test "create_user/1 secures user password" do
     {:ok, user} = UserAPI.create_user(@create_attrs)
 
