@@ -17,16 +17,22 @@ defmodule Mithril.Web.FallbackController do
     |> render(EView.Views.Error, :"401", reason)
   end
 
+  def call(conn, {:error, {:access_denied, reason}}) do
+    conn
+    |> put_status(:unauthorized)
+    |> render(EView.Views.Error, :"401", %{message: reason})
+  end
+
   def call(conn, {:error, {:too_many_requests, reason}}) when is_map(reason) do
     conn
     |> put_status(:too_many_requests)
     |> render(EView.Views.Error, :"401", reason)
   end
 
-  def call(conn, {:error, {:access_denied, reason}}) do
+  def call(conn, {:error, {:forbidden, reason}}) when is_map(reason) do
     conn
-    |> put_status(:unauthorized)
-    |> render(EView.Views.Error, :"401", %{message: reason})
+    |> put_status(:forbidden)
+    |> render(EView.Views.Error, :"403", reason)
   end
 
   def call(conn, {:error, {:password_expired, reason}}) do
