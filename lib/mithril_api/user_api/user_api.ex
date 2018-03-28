@@ -15,7 +15,7 @@ defmodule Mithril.UserAPI do
   alias Mithril.UserAPI.PasswordHistory
   alias Mithril.Authentication
 
-  @fields_optional ~w(tax_id settings current_password is_blocked block_reason)a
+  @fields_optional ~w(tax_id person_id settings current_password is_blocked block_reason)a
   @fields_required ~w(email password)a
 
   def list_users(params) do
@@ -175,6 +175,7 @@ defmodule Mithril.UserAPI do
     user
     |> cast(attrs, @fields_optional ++ @fields_required)
     |> validate_required(@fields_required)
+    |> update_change(:email, &String.downcase/1)
     |> validate_email(:email)
     |> unique_constraint(:email)
     |> validate_length(:password, min: 12)
