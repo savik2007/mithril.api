@@ -69,9 +69,14 @@ defmodule Mithril.Web.UserRoleControllerTest do
   end
 
   test "creates user_role and renders user_role when data is valid", %{user_id: user_id, conn: conn} do
-    create_attrs = :user_role |> build() |> Map.from_struct()
-    conn = post(conn, user_role_path(conn, :create, %User{id: user_id}), user_role: create_attrs)
-    assert %{"id" => id} = json_response(conn, 201)["data"]
+    %{id: id} = insert(:role)
+    create_attrs = :user_role |> build(role_id: id) |> Map.from_struct()
+
+    assert %{"id" => id, "scope" => _} =
+             conn
+             |> post(user_role_path(conn, :create, %User{id: user_id}), user_role: create_attrs)
+             |> json_response(201)
+             |> Map.get("data")
 
     conn = get(conn, user_role_path(conn, :show, user_id, id))
 

@@ -1,6 +1,7 @@
 defmodule Mithril.Web.UserRoleView do
   use Mithril.Web, :view
   alias Mithril.Web.UserRoleView
+  alias Mithril.RoleAPI.Role
 
   def render("index.json", %{user_roles: user_roles}) do
     render_many(user_roles, UserRoleView, "user_role.json")
@@ -15,9 +16,9 @@ defmodule Mithril.Web.UserRoleView do
       id: user_role.id,
       user_id: user_role.user_id,
       role_id: user_role.role_id,
-      client_id: user_role.client_id,
-      scope: user_role.role.scope
+      client_id: user_role.client_id
     }
+    |> put_role_scope(user_role.role)
   end
 
   def render("user_role.json", %{user_role: user_role}) do
@@ -26,12 +27,19 @@ defmodule Mithril.Web.UserRoleView do
       user_id: user_role.user_id,
       role_id: user_role.role_id,
       role_name: user_role.role.name,
-      scope: user_role.role.scope,
       client_id: user_role.client_id,
       client_name: user_role.client.name,
       created_at: user_role.inserted_at,
       updated_at: user_role.updated_at,
       scope: user_role.role.scope
     }
+  end
+
+  defp put_role_scope(attrs, %Role{} = role) do
+    Map.put(attrs, :scope, role.scope)
+  end
+
+  defp put_role_scope(attrs, _role) do
+    attrs
   end
 end
