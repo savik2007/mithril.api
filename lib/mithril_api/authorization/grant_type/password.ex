@@ -22,6 +22,7 @@ defmodule Mithril.Authorization.GrantType.Password do
   def authorize(attrs) do
     grant_type = Map.get(attrs, "grant_type", @grant_type_password)
 
+    # check client_id and define process (with DS or not)
     with %Ecto.Changeset{valid?: true} <- changeset(attrs),
          client <- Mithril.ClientAPI.get_client_with_type(attrs["client_id"]),
          :ok <- validate_client(client),
