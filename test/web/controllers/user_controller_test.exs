@@ -14,7 +14,8 @@ defmodule Mithril.Web.UserControllerTest do
     password: "Somepassword1",
     settings: %{},
     "2fa_enable": true,
-    tax_id: "12341234"
+    tax_id: "12341234",
+    person_id: UUID.generate()
   }
   @update_attrs %{email: "update@example.com", password: "Some updated password1", settings: %{}}
   @invalid_attrs %{email: nil, password: nil, settings: nil}
@@ -119,6 +120,7 @@ defmodule Mithril.Web.UserControllerTest do
       assert %{
                "id" => ^id,
                "email" => "email@example.com",
+               "person_id" => _,
                "settings" => %{}
              } = json_response(conn, 200)["data"]
     end

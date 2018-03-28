@@ -7,6 +7,7 @@ defmodule Mithril.UserAPI.User do
   schema "users" do
     field(:email, :string)
     field(:tax_id, :string)
+    field(:person_id, :string, default: "")
     field(:password, :string)
     field(:password_set_at, :naive_datetime)
     field(:current_password, :string, virtual: true)
