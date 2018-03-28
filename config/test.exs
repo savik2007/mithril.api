@@ -33,4 +33,9 @@ config :mithril_api, Mithril.Guardian,
   issuer: "EHealth",
   secret_key: "some_super-sEcret"
 
-config :mithril_api, :sms_api, SMSMock
+config :mithril_api,
+  api_resolvers: [
+    sms: SMSMock,
+    mpi: MPIMock,
+    digital_signature: SignatureMock
+  ]

@@ -62,7 +62,12 @@ config :mithril_api, :"2fa",
   otp_max_attempts: {:system, :integer, "OTP_MAX_ATTEMPTS", 3},
   otp_sms_template: {:system, :string, "OTP_SMS_TEMPLATE", "Код підтвердження: <otp.code>"}
 
-config :mithril_api, :sms_api, Mithril.API.SMS
+config :mithril_api,
+  api_resolvers: [
+    sms: Mithril.API.SMS,
+    mpi: Mithril.API.MPI,
+    digital_signature: Mithril.API.Signature
+  ]
 
 # Configures Guardian
 config :mithril_api, Mithril.Guardian,

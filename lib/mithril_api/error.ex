@@ -10,7 +10,11 @@ defmodule Mithril.Error do
 
   def token_invalid, do: {:error, {:access_denied, %{type: "token_invalid", message: "Invalid token."}}}
 
+  def tax_id_invalid(msg), do: {:error, {:forbidden, %{type: "tax_id_invalid", message: msg}}}
+
   def token_invalid_type, do: {:error, {:access_denied, %{type: "token_invalid_type", message: "Invalid token type."}}}
+
+  def jwt_invalid(msg), do: {:error, {:access_denied, %{type: "jwt_invalid", message: msg}}}
 
   def otp_invalid, do: {:error, {:access_denied, %{type: "otp_invalid", message: "Invalid OTP code."}}}
 
