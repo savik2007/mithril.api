@@ -6,16 +6,13 @@ defmodule Mithril.API.Signature do
 
   use HTTPoison.Base
   use Confex, otp_app: :ehealth
-  use EHealth.API.Helpers.HeadersProcessor
-
-  alias EHealth.API.ResponseDecoder
-  import EHealth.Utils.Connection, only: [get_header: 2]
+  use Mithril.API.Helpers.MicroserviceBase
 
   @behaviour EHealth.API.SignatureBehaviour
 
   def process_url(url), do: config()[:endpoint] <> url
 
-  def decode_and_validate(signed_content, signed_content_encoding, headers) do
+  def decode_and_validate(signed_content, signed_content_encoding, headers \\ []) do
     if config()[:enabled] do
       params = %{
         "signed_content" => signed_content,
@@ -48,21 +45,21 @@ defmodule Mithril.API.Signature do
 
         {:ok, data} ->
           case Poison.decode(data) do
-            {:ok, data} -> data_is_valid_resp(data, headers)
+            {:ok, data} -> data_is_valid_resp(data)
             _ -> data_is_invalid_resp()
           end
       end
     end
   end
 
-  defp data_is_valid_resp(data, headers) do
+  defp data_is_valid_resp(data) do
     data =
       %{
         "content" => data,
         "is_valid" => true,
         "signer" => %{
-          "edrpou" => get_header(headers, "edrpou"),
-          "drfo" => get_header(headers, "drfo")
+          "edrpou" => Map.get(data, "edrpou"),
+          "drfo" => Map.get(data, "drfo")
         }
       }
       |> wrap_response(200)

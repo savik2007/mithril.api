@@ -5,10 +5,7 @@ defmodule Mithril.Authorization.Token do
   # based on grant_type the request came with
 
   alias Mithril.Error
-  alias Mithril.Authorization.GrantType.Password
-  alias Mithril.Authorization.GrantType.AuthorizationCode
-  alias Mithril.Authorization.GrantType.RefreshToken
-  alias Mithril.Authorization.GrantType.AccessToken2FA
+  alias Mithril.Authorization.GrantType.{Password, RefreshToken, AccessToken2FA, AuthorizationCode, Signature}
 
   # TODO: rename grant_type to response_type
   def authorize(%{"grant_type" => grant_type} = params) when grant_type in ["password", "change_password"] do
@@ -25,6 +22,10 @@ defmodule Mithril.Authorization.Token do
 
   def authorize(%{"grant_type" => "authorization_code"} = params) do
     AuthorizationCode.authorize(params)
+  end
+
+  def authorize(%{"grant_type" => "digital_signature"} = params) do
+    Signature.authorize(params)
   end
 
   def authorize(%{"grant_type" => "refresh_token"} = params) do

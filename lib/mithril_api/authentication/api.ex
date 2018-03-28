@@ -27,7 +27,7 @@ defmodule Mithril.Authentication do
   )a
 
   @type_sms "SMS"
-  @sms_api Application.get_env(:mithril_api, :sms_api)
+  @sms_api Application.get_env(:mithril_api, :api_resolvers)[:sms]
 
   def type(:sms), do: @type_sms
 

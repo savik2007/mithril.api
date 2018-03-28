@@ -22,10 +22,10 @@ defmodule Mithril.Authorization.GrantType.Password do
   def authorize(attrs) do
     grant_type = Map.get(attrs, "grant_type", @grant_type_password)
 
-    # check client_id and define process (with DS or not)
+    # check client_id and define process (with required DS or not)
     with %Ecto.Changeset{valid?: true} <- changeset(attrs),
          client <- Mithril.ClientAPI.get_client_with_type(attrs["client_id"]),
-         :ok <- validate_client(client),
+         :ok <- validate_client(client, "password"),
          user <- UserAPI.get_user_by(email: attrs["email"]),
          {:ok, user} <- validate_user(user),
          :ok <- LoginHistory.check_failed_login(user, LoginHistory.type(:password)),
@@ -62,12 +62,12 @@ defmodule Mithril.Authorization.GrantType.Password do
     |> validate_required(Map.keys(types))
   end
 
-  defp validate_client(nil) do
+  def validate_client(nil, _grant_type) do
     {:error, {:access_denied, "Invalid client id."}}
   end
 
-  defp validate_client(client) do
-    case "password" in Map.get(client.settings, "allowed_grant_types", []) do
+  def validate_client(client, grant_type) do
+    case grant_type in Map.get(client.settings, "allowed_grant_types", []) do
       true -> :ok
       false -> {:error, {:access_denied, "Client is not allowed to issue login token."}}
     end
@@ -87,7 +87,7 @@ defmodule Mithril.Authorization.GrantType.Password do
     end
   end
 
-  defp validate_token_scope_by_client(client_scope, requested_scope) do
+  def validate_token_scope_by_client(client_scope, requested_scope) do
     allowed_scopes = String.split(client_scope, " ", trim: true)
     requested_scopes = String.split(requested_scope, " ", trim: true)
 

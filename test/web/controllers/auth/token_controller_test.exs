@@ -1,7 +1,12 @@
 defmodule Mithril.OAuth.TokenControllerTest do
   use Mithril.Web.ConnCase
 
+  import Mox
+  import Mithril.Guardian
+
   alias Mithril.TokenAPI.Token
+
+  setup :verify_on_exit!
 
   setup %{conn: conn} do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
@@ -316,6 +321,97 @@ defmodule Mithril.OAuth.TokenControllerTest do
       assert resp["data"]["details"]["scope"] == "user:change_password"
       assert resp["data"]["user_id"] == user.id
       assert resp["data"]["name"] == "change_password_token"
+    end
+  end
+
+  defmodule SignatureExpect do
+    defmacro __using__(_) do
+      quote do
+        expect(SignatureMock, :decode_and_validate, fn signed_content, "base64" ->
+          content = signed_content |> Base.decode64!() |> Poison.decode!()
+          assert Map.has_key?(content, "jwt")
+
+          data = %{
+            "signer" => %{
+              "drfo" => "12345678"
+            },
+            "signed_content" => signed_content,
+            "is_valid" => true,
+            "content" => content
+          }
+
+          {:ok, %{"data" => data}}
+        end)
+      end
+    end
+  end
+
+  describe "digital signature flow" do
+    test "successfully issues new access_token", %{conn: conn} do
+      tax_id = "12345678"
+      use SignatureExpect
+      expect(MPIMock, :person, fn id -> {:ok, %{"data" => %{"id" => id, "tax_id" => tax_id}}} end)
+
+      user = insert(:user, tax_id: tax_id)
+      client_type = insert(:client_type, scope: "cabinet:read cabinet:write")
+
+      client =
+        insert(
+          :client,
+          user_id: user.id,
+          client_type_id: client_type.id,
+          settings: %{"allowed_grant_types" => ["password", "digital_signature"]}
+        )
+
+      Mithril.AppAPI.create_app(%{
+        user_id: user.id,
+        client_id: client.id,
+        scope: "cabinet:read cabinet:write"
+      })
+
+      {:ok, jwt, _} = encode_and_sign(:nonce, %{nonce: 123}, token_type: "access")
+      signed_content = %{"jwt" => jwt} |> Poison.encode!() |> Base.encode64()
+
+      request_payload = %{
+        token: %{
+          grant_type: "digital_signature",
+          signed_content: signed_content,
+          signed_content_encoding: "base64",
+          client_id: client.id,
+          scope: "cabinet:read"
+        }
+      }
+
+      conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
+
+      token = json_response(conn, 201)["data"]
+
+      assert token["name"] == "access_token"
+      assert token["value"]
+      assert token["expires_at"]
+      assert token["user_id"] == user.id
+      assert token["details"]["client_id"] == client.id
+      assert token["details"]["grant_type"] == "digital_signature"
+      assert token["details"]["redirect_uri"] == client.redirect_uri
+      assert token["details"]["scope"] == "cabinet:read"
+    end
+
+    test "DS tax_id not match", %{conn: conn} do
+    end
+
+    test "user by tax_id not found", %{conn: conn} do
+    end
+
+    test "MPI person not found", %{conn: conn} do
+    end
+
+    test "MPI person tax_id not match with digital signature edrpou", %{conn: conn} do
+    end
+
+    test "invalid params", %{conn: conn} do
+    end
+
+    test "invalid scopes", %{conn: conn} do
     end
   end
 end

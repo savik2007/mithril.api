@@ -5,7 +5,7 @@ defmodule Mithril.API.MPI do
 
   @behaviour Mithril.API.MPIBehaviour
 
-  def search(params, headers) do
-    get!("/persons", headers, params: params)
+  def person(id, headers \\ []) do
+    get!("/persons/#{id}", headers)
   end
 end
