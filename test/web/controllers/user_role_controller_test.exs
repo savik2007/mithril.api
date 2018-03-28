@@ -92,7 +92,8 @@ defmodule Mithril.Web.UserRoleControllerTest do
              "id" => _,
              "client_id" => ^client_id,
              "role_id" => ^role_id,
-             "user_id" => ^attr_user_id
+             "user_id" => ^attr_user_id,
+             "scope" => _
            } = json_response(conn1, 201)["data"]
 
     conn2 = post(conn, user_role_path(conn, :create, %User{id: user_id}), user_role: create_attrs)

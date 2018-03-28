@@ -49,7 +49,11 @@ defmodule Mithril.UserRoleAPI do
     %UserRole{}
     |> user_role_changeset(attrs)
     |> Repo.insert()
+    |> preload_role()
   end
+
+  def preload_role({:ok, %UserRole{} = role}), do: {:ok, Repo.preload(role, :role)}
+  def preload_role(err), do: err
 
   def delete_user_role(%UserRole{} = user_role) do
     Repo.delete(user_role)
