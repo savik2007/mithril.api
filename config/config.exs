@@ -70,9 +70,12 @@ config :mithril_api,
   ]
 
 # Configures Guardian
+config :mithril_api, jwt_secret: {:system, "JWT_SECRET"}
+config :mithril_api, ttl_login: {:system, :integer, "JWT_LOGIN_TTL"}
+
 config :mithril_api, Mithril.Guardian,
   issuer: "EHealth",
-  secret_key: {:system, "JWT_SECRET"}
+  secret_key: {Confex, :fetch_env!, [:mithril_api, :jwt_secret]}
 
 # Configures the endpoint
 config :mithril_api, Mithril.Web.Endpoint,
