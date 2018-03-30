@@ -18,6 +18,10 @@ defmodule Mithril.Web.TokenView do
     Map.take(token, @fields)
   end
 
+  def render("raw.json", %{json: json}) do
+    json
+  end
+
   def render("token-without-details.json", %{token: token}) do
     Map.take(token, List.delete(@fields, :details))
   end

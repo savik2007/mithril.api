@@ -29,6 +29,8 @@ config :mithril_api, :"2fa",
   # minutes
   otp_send_timeout: {:system, :integer, "OTP_SEND_TIMEOUT", 0}
 
+config :mithril_api, ttl_login: 1
+
 config :mithril_api, Mithril.Guardian,
   issuer: "EHealth",
   secret_key: "some_super-sEcret"

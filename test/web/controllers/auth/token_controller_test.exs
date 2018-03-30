@@ -412,7 +412,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
       assert "Digital signature signer does not contain drfo." == msg
     end
 
-    test "invalid jwt format", %{conn: conn} do
+    test "invalid JWT format", %{conn: conn} do
       use SignatureExpect
 
       payload =
@@ -428,13 +428,31 @@ defmodule Mithril.OAuth.TokenControllerTest do
         |> get_in(~w(error message))
     end
 
-    test "jwt not in signed content", %{conn: conn} do
+    test "JWT not in signed content", %{conn: conn} do
       use SignatureExpect
       signed_content = %{"no" => "jwt"} |> Poison.encode!() |> Base.encode64()
 
       payload = signed_content |> ds_payload(UUID.generate())
 
       "Signed content does not contain field jwt." =
+        conn
+        |> post("/oauth/tokens", payload)
+        |> json_response(401)
+        |> get_in(~w(error message))
+    end
+
+    test "JWT expired", %{conn: conn} do
+      use SignatureExpect
+
+      jwt =
+        "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJtaXRocmlsLWxvZ2luIiwiZXhwIjoxNTIyMzEzODgxLCJpYXQiOjE1Mj" <>
+          "IzMTM4MjEsImlzcyI6IkVIZWFsdGgiLCJqdGkiOiI1YzRlMjg5ZS0wNjQyLTQ0YzYtYmU0Yy1iOWZjM2EyZDllZGYiLCJuYmYiOjE" <>
+          "1MjIzMTM4MjAsIm5vbmNlIjoxMjMsInN1YiI6MTIzLCJ0eXAiOiJhY2Nlc3MifQ.g853d2Tl3J0aAeEfJyxQ1O1V4b442qSdXb9em" <>
+          "TGvhZIooT5c8JN5rdRh0x3L-Mk58Z_vcjtZcAHc9Vsn-MFLbg"
+
+      payload = %{"jwt" => jwt} |> Poison.encode!() |> Base.encode64() |> ds_payload(UUID.generate())
+
+      "JWT is invalid." =
         conn
         |> post("/oauth/tokens", payload)
         |> json_response(401)
@@ -586,6 +604,19 @@ defmodule Mithril.OAuth.TokenControllerTest do
         }
       }
       |> Poison.encode!()
+    end
+  end
+
+  describe "generate nonce" do
+    test "success", %{conn: conn} do
+      nonce =
+        conn
+        |> get(oauth2_token_path(conn, :nonce))
+        |> json_response(200)
+        |> get_in(~w(data token))
+
+      aud = get_aud(:login)
+      assert {:ok, %{"nonce" => _, "aud" => ^aud}} = decode_and_verify(nonce)
     end
   end
 end

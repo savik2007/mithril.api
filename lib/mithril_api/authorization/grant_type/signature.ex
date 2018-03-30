@@ -15,6 +15,8 @@ defmodule Mithril.Authorization.GrantType.Signature do
   @mpi_api Application.get_env(:mithril_api, :api_resolvers)[:mpi]
   @signature_api Application.get_env(:mithril_api, :api_resolvers)[:digital_signature]
 
+  @aud_login Guardian.get_aud(:login)
+
   def authorize(attrs) do
     with %Ecto.Changeset{valid?: true} <- changeset(attrs),
          {:ok, %{"data" => %{"content" => content, "signer" => signer}}} <-
@@ -45,7 +47,7 @@ defmodule Mithril.Authorization.GrantType.Signature do
 
   defp validate_content_jwt(%{"jwt" => jwt}) do
     case Guardian.decode_and_verify(jwt) do
-      {:ok, %{"nonce" => _}} -> :ok
+      {:ok, %{"nonce" => _, "aud" => @aud_login}} -> :ok
       _ -> Error.jwt_invalid("JWT is invalid.")
     end
   end
