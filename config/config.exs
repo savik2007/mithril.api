@@ -122,6 +122,16 @@ config :mithril_api, Mithril.API.MPI,
     timeout: {:system, :integer, "MPI_REQUEST_TIMEOUT", 30_000}
   ]
 
+# Configures Digital Signature API
+config :mithril_api, Mithril.API.Signature,
+  enabled: {:system, :boolean, "DIGITAL_SIGNATURE_ENABLED", false},
+  endpoint: {:system, "DIGITAL_SIGNATURE_ENDPOINT"},
+  hackney_options: [
+    connect_timeout: {:system, :integer, "DIGITAL_SIGNATURE_REQUEST_TIMEOUT", 30_000},
+    recv_timeout: {:system, :integer, "DIGITAL_SIGNATURE_REQUEST_TIMEOUT", 30_000},
+    timeout: {:system, :integer, "DIGITAL_SIGNATURE_REQUEST_TIMEOUT", 30_000}
+  ]
+
 config :mithril_api, Mithril.Scheduler,
   token_expiration: {:system, :string, "TOKEN_EXPIRATION_SCHEDULE", "* 0-4 * * *"},
   otp_expiration: {:system, :string, "OTP_EXPIRATION_SCHEDULE", "*/5 * * * *"}

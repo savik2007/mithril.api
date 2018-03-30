@@ -20,6 +20,7 @@ defmodule Mithril.Web do
     quote do
       use Phoenix.Controller, namespace: Mithril.Web
       import Plug.Conn
+      import Mithril.Proxy
       import MithrilWeb.Router.Helpers
     end
   end

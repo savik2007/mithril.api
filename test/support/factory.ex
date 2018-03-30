@@ -3,6 +3,8 @@ defmodule Mithril.Factory do
 
   use ExMachina.Ecto, repo: Mithril.Repo
 
+  alias Ecto.UUID
+
   def create_code_grant_token(client, user, scope \\ "app:authorize", expires_at \\ 2_000_000_000) do
     insert(
       :token,
@@ -103,7 +105,8 @@ defmodule Mithril.Factory do
         otp_error_counter: 0
       },
       is_blocked: false,
-      block_reason: nil
+      block_reason: nil,
+      person_id: UUID.generate()
     }
   end
 
