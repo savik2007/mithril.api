@@ -104,15 +104,6 @@ config :mithril_api, Mithril.API.SMS,
     timeout: {:system, :integer, "OTP_REQUEST_TIMEOUT", 30_000}
   ]
 
-# Configures OTP Verification API
-config :mithril_api, Mithril.API.Email,
-  endpoint: {:system, "EMAIL_ENDPOINT"},
-  hackney_options: [
-    connect_timeout: {:system, :integer, "EMAIL_REQUEST_TIMEOUT", 30_000},
-    recv_timeout: {:system, :integer, "EMAIL_REQUEST_TIMEOUT", 30_000},
-    timeout: {:system, :integer, "EMAIL_REQUEST_TIMEOUT", 30_000}
-  ]
-
 # Configures MPI API
 config :mithril_api, Mithril.API.MPI,
   endpoint: {:system, "MPI_ENDPOINT"},
