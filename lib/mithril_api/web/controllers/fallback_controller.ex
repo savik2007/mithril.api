@@ -5,6 +5,12 @@ defmodule Mithril.Web.FallbackController do
   use Mithril.Web, :controller
   alias EView.Views.{ValidationError, Error}
 
+  def call(conn, {:error, {:bad_request, reason}}) when is_binary(reason) do
+    conn
+    |> put_status(:bad_request)
+    |> render(EView.Views.Error, :"400", %{message: reason})
+  end
+
   def call(conn, {:error, :access_denied}) do
     conn
     |> put_status(:unauthorized)
@@ -91,6 +97,13 @@ defmodule Mithril.Web.FallbackController do
     conn
     |> put_status(:service_unavailable)
     |> render(EView.Views.Error, :"503", %{message: reason})
+  end
+
+  @doc """
+  Proxy response from APIs
+  """
+  def call(conn, {_, %{"meta" => %{}} = proxy_resp}) do
+    proxy(conn, proxy_resp)
   end
 
   def auth_error(conn, _, _opts) do

@@ -328,7 +328,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
   defmodule SignatureExpect do
     defmacro __using__(_) do
       quote do
-        expect(SignatureMock, :decode_and_validate, fn signed_content, "base64" ->
+        expect(SignatureMock, :decode_and_validate, fn signed_content, "base64", _attrs ->
           content = signed_content |> Base.decode64!() |> Poison.decode!()
 
           data = %{
@@ -350,7 +350,12 @@ defmodule Mithril.OAuth.TokenControllerTest do
     test "successfully issues new access_token", %{conn: conn} do
       tax_id = "12345678"
       use SignatureExpect
-      expect(MPIMock, :person, fn id -> {:ok, %{"data" => %{"id" => id, "tax_id" => tax_id}}} end)
+
+      expect(MPIMock, :person, fn id ->
+        assert is_binary(id)
+        assert byte_size(id) > 0
+        {:ok, %{"data" => %{"id" => id, "tax_id" => tax_id}}}
+      end)
 
       user = insert(:user, tax_id: tax_id)
       client_type = insert(:client_type, scope: "cabinet:read cabinet:write")
@@ -388,7 +393,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
     end
 
     test "DS tax_id does not contain drfo", %{conn: conn} do
-      expect(SignatureMock, :decode_and_validate, fn signed_content, "base64" ->
+      expect(SignatureMock, :decode_and_validate, fn signed_content, "base64", _attrs ->
         content = signed_content |> Base.decode64!() |> Poison.decode!()
 
         data = %{
@@ -586,6 +591,33 @@ defmodule Mithril.OAuth.TokenControllerTest do
         |> get_in(~w(error message))
 
       assert "Allowed scopes for the token are cabinet:read, cabinet:write." == msg
+    end
+
+    test "DS cannot decode signed content", %{conn: conn} do
+      expect(SignatureMock, :decode_and_validate, fn _signed_content, "base64", _attrs ->
+        {:error, %{"data" => %{"is_valid" => false}, "meta" => %{"code" => 422, "type" => "list"}}}
+      end)
+
+      user = insert(:user, tax_id: "12345678")
+      client_type = insert(:client_type, scope: "cabinet:read cabinet:write")
+
+      client =
+        insert(
+          :client,
+          user_id: user.id,
+          client_type_id: client_type.id,
+          settings: %{"allowed_grant_types" => ["digital_signature"]}
+        )
+
+      payload = ds_valid_signed_content() |> ds_payload(client.id)
+
+      err =
+        conn
+        |> post("/oauth/tokens", payload)
+        |> json_response(422)
+        |> Map.get("error")
+
+      assert %{"is_valid" => false} == err
     end
 
     defp ds_valid_signed_content() do

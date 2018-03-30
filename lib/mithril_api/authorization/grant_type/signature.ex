@@ -20,7 +20,7 @@ defmodule Mithril.Authorization.GrantType.Signature do
   def authorize(attrs) do
     with %Ecto.Changeset{valid?: true} <- changeset(attrs),
          {:ok, %{"data" => %{"content" => content, "signer" => signer}}} <-
-           @signature_api.decode_and_validate(attrs["signed_content"], attrs["signed_content_encoding"]),
+           @signature_api.decode_and_validate(attrs["signed_content"], attrs["signed_content_encoding"], attrs),
          :ok <- validate_content_jwt(content),
          {:ok, tax_id} <- validate_signer_tax_id(signer),
          client <- ClientAPI.get_client_with_type(attrs["client_id"]),
@@ -54,10 +54,13 @@ defmodule Mithril.Authorization.GrantType.Signature do
 
   defp validate_content_jwt(_), do: Error.jwt_invalid("Signed content does not contain field jwt.")
 
-  defp validate_signer_tax_id(%{"drfo" => tax_id}), do: {:ok, tax_id}
+  defp validate_signer_tax_id(%{"drfo" => tax_id}) when is_binary(tax_id) and byte_size(tax_id) > 0, do: {:ok, tax_id}
   defp validate_signer_tax_id(_), do: {:error, {:"422", "Digital signature signer does not contain drfo."}}
 
-  def validate_user(%User{is_blocked: false} = user), do: {:ok, user}
+  def validate_user(%User{is_blocked: false, person_id: id} = user) when is_binary(id) and byte_size(id) > 0 do
+    {:ok, user}
+  end
+
   def validate_user(%User{is_blocked: true}), do: Error.user_blocked("User blocked.")
   def validate_user(_), do: {:error, {:access_denied, "Person with tax id from digital signature not found."}}
 

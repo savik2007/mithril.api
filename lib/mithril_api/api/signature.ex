@@ -10,19 +10,14 @@ defmodule Mithril.API.Signature do
 
   @behaviour Mithril.API.SignatureBehaviour
 
-  def process_url(url), do: config()[:endpoint] <> url
-
-  def decode_and_validate(signed_content, signed_content_encoding, headers \\ []) do
+  def decode_and_validate(signed_content, signed_content_encoding, attrs \\ %{}, headers \\ []) do
     if config()[:enabled] do
       params = %{
         "signed_content" => signed_content,
         "signed_content_encoding" => signed_content_encoding
       }
 
-      result =
-        "/digital_signatures"
-        |> post!(Poison.encode!(params), headers, config()[:hackney_options])
-        |> ResponseDecoder.check_response()
+      result = post!("/digital_signatures", Poison.encode!(params), headers, config()[:hackney_options])
 
       {_, response} = result
 
@@ -35,7 +30,7 @@ defmodule Mithril.API.Signature do
         })
       end)
 
-      result
+      check_is_valid(result)
     else
       data = Base.decode64(signed_content)
 
@@ -45,21 +40,34 @@ defmodule Mithril.API.Signature do
 
         {:ok, data} ->
           case Poison.decode(data) do
-            {:ok, data} -> data_is_valid_resp(data)
+            {:ok, data} -> data_is_valid_resp(data, attrs)
             _ -> data_is_invalid_resp()
           end
       end
     end
   end
 
-  defp data_is_valid_resp(data) do
+  defp check_is_valid({:ok, %{"data" => %{"is_valid" => false, "validation_error_message" => error}}}) do
+    {:error, {:bad_request, error}}
+  end
+
+  defp check_is_valid({:ok, %{"data" => %{"is_valid" => true}} = result}) do
+    {_empty_message, result} = pop_in(result, ["data", "validation_error_message"])
+    {:ok, result}
+  end
+
+  defp check_is_valid({:error, error}) do
+    {:error, error}
+  end
+
+  defp data_is_valid_resp(data, attrs) do
     data =
       %{
         "content" => data,
         "is_valid" => true,
         "signer" => %{
-          "edrpou" => Map.get(data, "edrpou"),
-          "drfo" => Map.get(data, "drfo")
+          "edrpou" => Map.get(attrs, "edrpou"),
+          "drfo" => Map.get(attrs, "drfo")
         }
       }
       |> wrap_response(200)
