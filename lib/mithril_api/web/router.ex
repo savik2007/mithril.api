@@ -35,6 +35,9 @@ defmodule MithrilWeb.Router do
   scope "/oauth", as: :oauth2, alias: Mithril do
     pipe_through(:api)
 
+    # generate nonce for Sign in
+    get("/nonce", OAuth.TokenController, :nonce)
+
     post("/apps/authorize", OAuth.AppController, :authorize)
     post("/tokens", OAuth.TokenController, :create)
     post("/tokens/actions/change_password", OAuth.TokenController, :create_change_pwd_token)

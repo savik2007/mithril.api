@@ -5,10 +5,10 @@ defmodule Mithril.API.Signature do
   require Logger
 
   use HTTPoison.Base
-  use Confex, otp_app: :ehealth
+  use Confex, otp_app: :mithril_api
   use Mithril.API.Helpers.MicroserviceBase
 
-  @behaviour EHealth.API.SignatureBehaviour
+  @behaviour Mithril.API.SignatureBehaviour
 
   def process_url(url), do: config()[:endpoint] <> url
 
