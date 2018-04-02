@@ -1,0 +1,43 @@
+[
+  {
+    "name": "PHARMACY",
+    "seed?": false,
+    "scope": "client:read declaration:read declaration_request:approve declaration_request:read declaration_request:reject declaration_request:sign declaration_request:write division:activate division:deactivate division:details division:read division:write employee:deactivate employee:details employee:read employee:write employee_request:approve employee_request:read employee_request:reject employee_request:write legal_entity:read medical_program:deactivate medical_program:read medical_program:write medication_dispense:process medication_dispense:read medication_dispense:reject medication_dispense:write medication_request:details otp:read otp:write reimbursement_report:read secret:refresh"
+  },
+  {
+    "name": "MSP",
+    "seed?": false,
+    "scope": "client:read declaration:read declaration_request:approve declaration_request:read declaration_request:reject declaration_request:sign declaration_request:write division:activate division:deactivate division:details division:read division:write drugs:read employee:deactivate employee:details employee:read employee:write employee_request:approve employee_request:read employee_request:reject employee_request:write legal_entity:read medication_dispense:read medication_request:details medication_request:read medication_request:reject medication_request:resend medication_request_request:read medication_request_request:reject medication_request_request:sign medication_request_request:write otp:read otp:write person:read reimbursement_report:read secret:refresh"
+  },
+  {
+    "name": "NHS ADMIN",
+    "seed?": false,
+    "scope": "bl_user:deactivate bl_user:read bl_user:write declaration:approve declaration:approve declaration:read declaration:reject declaration:write declaration_documents:read declaration_request:read declaration_request:write dictionary:write employee:deactivate employee:read employee:write employee_request:read employee_request:write global_parameters:read global_parameters:read global_parameters:write global_parameters:write innm:read innm:write innm_dosage:deactivate innm_dosage:read innm_dosage:write legal_entity:deactivate legal_entity:nhs_verify legal_entity:read medical_program:deactivate medical_program:read medical_program:write medication:deactivate medication:read medication:write medication_dispense:read medication_dispense:reject medication_request:details medication_request:read party_user:read person:reset_authentication_method program_medication:read program_medication:write user:approve_factor user:request_factor reimbursement_report:download declaration:terminate register:write register:read register_entry:read person:read"
+  },
+  {
+    "name": "MITHRIL ADMIN",
+    "seed?": false,
+    "scope": "app:delete app:read app:write client:delete client:read client:write client_type:delete client_type:read client_type:write role:delete role:read role:write token:delete token:read token:write user:delete user:read user:write user:block user:unblock authentication_factor:write authentication_factor:read user:request_factor user:approve_factor"
+  },
+  {
+    "name": "MIS",
+    "seed?": false,
+    "scope": "legal_entity:read legal_entity:write legal_entity:mis_verify role:read event:read"
+  },
+  {
+    "name": "UADDRESSES ADMIN",
+    "seed?": false,
+    "scope": "address:write address:read user:request_factor user:approve_factor"
+  },
+  {
+    "name": "Auth_FE",
+    "seed?": false,
+    "scope": "app:authorize employee_request:approve employee_request:reject user:request_factor user:approve_factor"
+  },
+  {
+    "name": "CABINET",
+    "id": "b6c956a2-a400-45ca-9966-f0030a968eec",
+    "seed?": true,
+    "scope": "cabinet:read employee_request:approve employee_request:reject user:request_factor user:approve_factor user:change_password"
+  }
+]

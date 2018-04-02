@@ -7,6 +7,8 @@ defmodule Mithril.RoleAPI.Role do
     field(:name, :string)
     field(:scope, :string)
 
+    field(:seed?, :boolean, default: false, virtual: true)
+
     timestamps()
   end
 end

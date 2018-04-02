@@ -12,6 +12,8 @@ defmodule Mithril.ClientAPI.Client do
     field(:is_blocked, :boolean, default: false)
     field(:block_reason, :string)
 
+    field(:seed?, :boolean, default: false, virtual: true)
+
     belongs_to(:client_type, Mithril.ClientTypeAPI.ClientType)
     belongs_to(:user, Mithril.UserAPI.User)
 

@@ -24,22 +24,19 @@ defmodule Mithril.ReleaseTasks do
   ]
 
   def migrate do
-    IO.puts("Loading mithril_api..")
-    # Load the code for mithril_api, but don't start it
-    :ok = Application.load(:mithril_api)
-
-    IO.puts("Starting dependencies..")
-    # Start apps necessary for executing migrations
-    Enum.each(@start_apps, &Application.ensure_all_started/1)
-
-    # Start the Repo(s) for mithril_api
-    IO.puts("Starting repos..")
-    Enum.each(@repos, & &1.start_link(pool_size: 1))
+    load_app()
+    start_repos()
 
     # Run migrations
     Enum.each(@apps, &run_migrations_for/1)
 
-    # Run the seed script if it exists
+    shutdown()
+  end
+
+  def seed do
+    load_app()
+    start_repos()
+
     seed_script = seed_path()
 
     if File.exists?(seed_script) do
@@ -47,12 +44,28 @@ defmodule Mithril.ReleaseTasks do
       Code.eval_file(seed_script)
     end
 
-    # Signal shutdown
+    shutdown()
+  end
+
+  defp load_app do
+    IO.puts("Loading mithril_api..")
+    # Load the code for mithril_api, but don't start it
+    :ok = Application.load(:mithril_api)
+
+    IO.puts("Starting dependencies..")
+    # Start apps necessary for executing migrations
+    Enum.each(@start_apps, &Application.ensure_all_started/1)
+  end
+
+  defp start_repos do
+    IO.puts("Starting repos..")
+    Enum.each(@repos, & &1.start_link(pool_size: 1))
+  end
+
+  defp shutdown do
     IO.puts("Success!")
     :init.stop()
   end
-
-  def priv_dir(app), do: :code.priv_dir(app)
 
   defp run_migrations_for(app) do
     IO.puts("Running migrations for #{app}")
@@ -60,5 +73,5 @@ defmodule Mithril.ReleaseTasks do
   end
 
   defp migrations_path, do: Application.app_dir(:mithril_api, "priv/repo/migrations")
-  defp seed_path, do: Application.app_dir(:mithril_api, "priv/repo/seeds")
+  defp seed_path, do: Application.app_dir(:mithril_api, "priv/repo/seeds.ex")
 end

@@ -10,7 +10,8 @@ defmodule Mithril.Repo.Migrations.SetClientsPrivSettings do
       WHERE client_types.name NOT IN('MSP', 'PHARMACY')
       AND clients.client_type_id = client_types.id;
     """
-    execute sql
+
+    execute(sql)
 
     # set BROKER access_type for MSP and PHARMACY clients
     sql = """
@@ -20,6 +21,7 @@ defmodule Mithril.Repo.Migrations.SetClientsPrivSettings do
       WHERE client_types.name IN('MSP', 'PHARMACY')
       AND clients.client_type_id = client_types.id;
     """
-    execute sql
+
+    execute(sql)
   end
 end

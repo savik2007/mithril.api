@@ -3,7 +3,7 @@ defmodule Mithril.Repo.Migrations.DropClientClientTypes do
 
   def change do
     alter table(:clients) do
-      add :client_type_id, :uuid
+      add(:client_type_id, :uuid)
     end
 
     # Migrates data from client_client_types to client.client_type_id
@@ -17,12 +17,12 @@ defmodule Mithril.Repo.Migrations.DropClientClientTypes do
     WHERE clients.id = subquery.client_id
     """
 
-    execute sql
+    execute(sql)
 
     alter table(:clients) do
-      modify :client_type_id, references(:client_types, type: :uuid), null: false
+      modify(:client_type_id, references(:client_types, type: :uuid), null: false)
     end
 
-    drop table(:client_client_types)
+    drop(table(:client_client_types))
   end
 end

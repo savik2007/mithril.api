@@ -3,7 +3,7 @@ defmodule Mithril.Repo.Migrations.AddTaxIdToUser do
 
   def change do
     alter table(:users) do
-      add :tax_id, :string, null: false, default: ""
+      add(:tax_id, :string, null: false, default: "")
     end
   end
 end

@@ -26,6 +26,7 @@ use Mix.Config
 
 config :mithril_api,
   ecto_repos: [Mithril.Repo],
+  system_user: {:system, "EHEALTH_SYSTEM_USER", "4261eacf-8008-4e62-899f-de1e2f7065f0"},
   namespace: Mithril
 
 # Configure your database
