@@ -2,7 +2,7 @@ defmodule Mithril.Repo.Migrations.AddPasswordsHistoryTrigger do
   use Ecto.Migration
 
   def up do
-    execute """
+    execute("""
       CREATE OR REPLACE FUNCTION insert_password_hstr()
         RETURNS trigger AS
       $BODY$
@@ -14,24 +14,24 @@ defmodule Mithril.Repo.Migrations.AddPasswordsHistoryTrigger do
       END;
       $BODY$
       LANGUAGE plpgsql;
-    """
+    """)
 
-    execute """
+    execute("""
     CREATE TRIGGER on_user_insert
     AFTER INSERT
     ON users
     FOR EACH ROW
     EXECUTE PROCEDURE insert_password_hstr();
-    """
+    """)
 
-    execute """
+    execute("""
     CREATE TRIGGER on_user_update
     AFTER UPDATE
     ON users
     FOR EACH ROW
     WHEN (OLD.password IS DISTINCT FROM NEW.password)
     EXECUTE PROCEDURE insert_password_hstr();
-    """
+    """)
   end
 
   def down do

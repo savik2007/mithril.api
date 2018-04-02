@@ -1,0 +1,79 @@
+[
+  {
+    "name": "ADMIN",
+    "seed?": false,
+    "scope": "division:details division:read employee:read employee_request:approve employee_request:reject legal_entity:read declaration_request:write declaration_request:approve declaration_request:reject declaration_request:read declaration:read otp:read otp:write person:read declaration_request:sign"
+  },
+  {
+    "name": "DOCTOR",
+    "seed?": false,
+    "scope": "declaration:read declaration_request:approve declaration_request:read declaration_request:sign declaration_request:write division:read employee:read employee_request:approve employee_request:reject legal_entity:read otp:read otp:write person:read employee_request:read"
+  },
+  {
+    "name": "HR",
+    "seed?": false,
+    "scope": "legal_entity:read employee_request:read employee_request:write employee_request:approve employee_request:reject employee:read employee:write employee:details employee:deactivate division:write division:read division:details division:activate division:deactivate"
+  },
+  {
+    "name": "MIS USER",
+    "seed?": false,
+    "scope": "legal_entity:read legal_entity:write legal_entity:mis_verify role:read user:request_factor user:approve_factor event:read"
+  },
+  {
+    "name": "MITHRIL ADMIN",
+    "seed?": false,
+    "scope": "app:read app:write app:delete token:read token:write token:delete user:read user:write user:delete role:read role:write role:delete client_type:read client_type:write client_type:delete client:read client:write client:delete user:block user:unblock user:request_factor user:approve_factor authentication_factor:write authentication_factor:read"
+  },
+  {
+    "name": "NHS ADMIN",
+    "seed?": false,
+    "scope": "bl_user:deactivate bl_user:read bl_user:write declaration:approve employee:read employee_request:read employee_request:write innm:read innm:write innm_dosage:deactivate innm_dosage:read innm_dosage:write legal_entity:deactivate legal_entity:nhs_verify legal_entity:read medical_program:deactivate medical_program:read medical_program:write medication:deactivate medication:read medication:write medication_dispense:read medication_dispense:reject medication_request:details medication_request:read party_user:read person:reset_authentication_method program_medication:read program_medication:write user:approve_factor user:request_factor reimbursement_report:download declaration_documents:read declaration:reject declaration:terminate register:write register:read register_entry:read person:read global_parameters:read global_parameters:write"
+  },
+  {
+    "name": "NHS_ADMIN_ADMIN",
+    "seed?": false,
+    "scope": "global_parameters:read global_parameters:write dictionary:write user:request_factor user:approve_factor"
+  },
+  {
+    "name": "NHS ADMIN MANAGE",
+    "seed?": false,
+    "scope": "legal_entity:read user:request_factor user:approve_factor"
+  },
+  {
+    "name": "NHS ADMIN SUPPORT",
+    "seed?": false,
+    "scope": "legal_entity:read declaration:read employee:read user:request_factor user:approve_factor"
+  },
+  {
+    "name": "NHS ADMIN VERIFIER",
+    "seed?": false,
+    "scope": "declaration:read employee:read legal_entity:read legal_entity:nhs_verify legal_entity:deactivate declaration:approve user:request_factor user:approve_factor"
+  },
+  {
+    "name": "OWNER",
+    "seed?": false,
+    "scope": "client:read declaration:read declaration_request:approve declaration_request:read declaration_request:reject declaration_request:write division:activate division:deactivate division:details division:read division:write employee:deactivate employee:details employee:read employee:write employee_request:approve employee_request:read employee_request:reject employee_request:write legal_entity:read otp:read otp:write person:read reimbursement_report:read secret:refresh"
+  },
+  {
+    "name": "PHARMACIST",
+    "seed?": false,
+    "scope": "declaration:read division:read employee:read employee_request:approve employee_request:read employee_request:reject legal_entity:read medication_dispense:process medication_dispense:read medication_dispense:reject medication_dispense:write medication_request:details"
+  },
+  {
+    "name": "PHARMACY_OWNER",
+    "seed?": false,
+    "scope": "client:read declaration:read division:activate division:deactivate division:details division:read division:write employee:deactivate employee:details employee:read employee:write employee_request:approve employee_request:read employee_request:reject employee_request:write legal_entity:read otp:read otp:write reimbursement_report:read secret:refresh medication_request:details"
+  },
+  {
+    "name": "UADDRESSES ADMIN",
+    "seed?": false,
+    "scope": "address:read address:write user:request_factor user:approve_factor"
+  },
+  {
+    "name": "CABINET",
+    "seed?": true,
+    "id": "b9994457-a40a-4eae-b73c-120502d4aaa4",
+    "scope": "cabinet:read employee_request:approve employee_request:reject user:request_factor user:approve_factor user:change_password"
+  }
+]
+

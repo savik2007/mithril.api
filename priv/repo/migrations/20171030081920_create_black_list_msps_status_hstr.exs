@@ -3,13 +3,13 @@ defmodule Mithril.Repo.Migrations.CreateBlackListMspsStatusHstr do
 
   def up do
     create table(:black_list_msps_status_hstr) do
-      add :legal_entity_id, :uuid, null: false
-      add :is_blocked, :boolean, null: false
-      add :block_reason, :string
+      add(:legal_entity_id, :uuid, null: false)
+      add(:is_blocked, :boolean, null: false)
+      add(:block_reason, :string)
       timestamps(type: :utc_datetime, updated_at: false)
     end
 
-    execute """
+    execute("""
     CREATE OR REPLACE FUNCTION insert_black_list_msps_status_hstr()
     RETURNS trigger AS
     $BODY$
@@ -21,17 +21,17 @@ defmodule Mithril.Repo.Migrations.CreateBlackListMspsStatusHstr do
     END;
     $BODY$
     LANGUAGE plpgsql;
-    """
+    """)
 
-    execute """
+    execute("""
     CREATE TRIGGER on_black_list_msps_insert
     AFTER INSERT
     ON clients
     FOR EACH ROW
     EXECUTE PROCEDURE insert_black_list_msps_status_hstr();
-    """
+    """)
 
-    execute """
+    execute("""
     CREATE TRIGGER on_black_list_msps_update
     AFTER UPDATE
     ON clients
@@ -39,7 +39,7 @@ defmodule Mithril.Repo.Migrations.CreateBlackListMspsStatusHstr do
     WHEN (OLD.block_reason IS DISTINCT FROM NEW.block_reason OR
           OLD.is_blocked IS DISTINCT FROM NEW.is_blocked)
     EXECUTE PROCEDURE insert_black_list_msps_status_hstr();
-    """
+    """)
   end
 
   def down do
@@ -47,6 +47,6 @@ defmodule Mithril.Repo.Migrations.CreateBlackListMspsStatusHstr do
     execute("DROP TRIGGER IF EXISTS on_black_list_msps_update ON clients;")
     execute("DROP FUNCTION IF EXISTS insert_black_list_msps_status_hstr();")
 
-    drop table(:black_list_msps_status_hstr)
+    drop(table(:black_list_msps_status_hstr))
   end
 end

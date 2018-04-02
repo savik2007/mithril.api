@@ -6,6 +6,7 @@ defmodule Mithril.Repo.Migrations.SetUserPrivSettings do
       UPDATE users
       SET priv_settings = '{"login_error_counter": 0, "otp_error_counter": 0}'
     """
-    execute sql
+
+    execute(sql)
   end
 end

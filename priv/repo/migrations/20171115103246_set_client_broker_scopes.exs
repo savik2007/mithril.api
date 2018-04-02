@@ -9,6 +9,7 @@ defmodule Mithril.Repo.Migrations.SetClientBrokerScopes do
       WHERE client_types.name = 'MIS'
       AND clients.client_type_id = client_types.id;
     """
-    execute sql
+
+    execute(sql)
   end
 end
