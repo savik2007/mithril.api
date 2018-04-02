@@ -38,6 +38,7 @@ defmodule Mithril.ReleaseTasks do
     start_repos()
 
     seed_script = seed_path()
+    IO.puts("Looking for seed script..")
 
     if File.exists?(seed_script) do
       IO.puts("Running seed script..")
@@ -64,6 +65,7 @@ defmodule Mithril.ReleaseTasks do
 
   defp shutdown do
     IO.puts("Success!")
+    System.halt(0)
     :init.stop()
   end
 
@@ -73,5 +75,5 @@ defmodule Mithril.ReleaseTasks do
   end
 
   defp migrations_path, do: Application.app_dir(:mithril_api, "priv/repo/migrations")
-  defp seed_path, do: Application.app_dir(:mithril_api, "priv/repo/seeds.ex")
+  defp seed_path, do: Application.app_dir(:mithril_api, "priv/repo/seeds.exs")
 end
