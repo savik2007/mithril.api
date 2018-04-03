@@ -96,15 +96,4 @@ defmodule Mithril.Web.FallbackController do
     |> put_status(:service_unavailable)
     |> render(Error, :"503", %{message: reason})
   end
-
-  @doc """
-  Proxy response from APIs
-  """
-  def call(conn, {_, %{"meta" => %{}} = proxy_resp}) do
-    proxy(conn, proxy_resp)
-  end
-
-  def auth_error(conn, _, _opts) do
-    call(conn, {:error, :access_denied})
-  end
 end
