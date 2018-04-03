@@ -36,7 +36,7 @@ defmodule Seeder do
   defp insert_or_update!(%Client{seed?: true} = schema) do
     Repo.insert!(
       schema,
-      on_conflict: :replace_all,
+      on_conflict: prepare_on_conflict(schema),
       conflict_target: :id
     )
   end
@@ -50,6 +50,11 @@ defmodule Seeder do
   end
 
   defp insert_or_update!(_schema), do: :skipped
+
+  defp prepare_on_conflict() do
+    on_conflict = [set: [body: "updated"]]
+  end
+
 
   defp seed_file_path(file) do
     :mithril_api
