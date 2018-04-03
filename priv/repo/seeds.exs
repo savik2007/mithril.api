@@ -36,7 +36,7 @@ defmodule Seeder do
   defp insert_or_update!(%Client{seed?: true} = schema) do
     Repo.insert!(
       schema,
-      on_conflict: :replace_all,
+      on_conflict: prepare_on_conflict(schema),
       conflict_target: :id
     )
   end
@@ -44,12 +44,26 @@ defmodule Seeder do
   defp insert_or_update!(%{seed?: true} = schema) do
     Repo.insert!(
       schema,
-      on_conflict: :replace_all,
+      on_conflict: prepare_on_conflict(schema),
       conflict_target: :name
     )
   end
 
   defp insert_or_update!(_schema), do: :skipped
+
+  defp prepare_on_conflict(schema) do
+    not_for_update = ~w(id inserted_at updated_at)a
+
+    update =
+      :fields
+      |> schema.__struct__.__schema__()
+      |> Enum.reject(fn elem -> elem in not_for_update end)
+      |> Enum.map(fn field ->
+        {field, Map.get(schema, field)}
+      end)
+
+    [set: update]
+  end
 
   defp seed_file_path(file) do
     :mithril_api
