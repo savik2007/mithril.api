@@ -12,14 +12,14 @@ defmodule Mithril.UserRoleAPI do
   alias Mithril.UserRoleAPI.UserRoleSearch
 
   def list_user_roles(params \\ %{}) do
-    search_user_roles(user_role_changeset(%UserRoleSearch{}, params))
+    with %Ecto.Changeset{valid?: true, changes: changes} <- user_role_changeset(%UserRoleSearch{}, params) do
+      {:ok, search_user_roles(changes)}
+    end
   end
 
-  defp search_user_roles(%Ecto.Changeset{valid?: false} = changeset), do: {:error, changeset}
-
-  defp search_user_roles(%Ecto.Changeset{valid?: true} = changeset) do
+  defp search_user_roles(where) do
     UserRole
-    |> query_where(changeset.changes)
+    |> query_where(where)
     |> join(:left, [ur], r in assoc(ur, :role))
     |> join(:left, [ur, r], c in assoc(ur, :client))
     |> preload([ur, r, c], role: r, client: c)
