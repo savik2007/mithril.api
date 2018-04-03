@@ -8,7 +8,7 @@ defmodule Mithril.Web.FallbackController do
   def call(conn, {:error, {:bad_request, reason}}) when is_binary(reason) do
     conn
     |> put_status(:bad_request)
-    |> render(EView.Views.Error, :"400", %{message: reason})
+    |> render(Error, :"400", %{message: reason})
   end
 
   def call(conn, {:error, :access_denied}) do
@@ -20,31 +20,31 @@ defmodule Mithril.Web.FallbackController do
   def call(conn, {:error, {:access_denied, reason}}) when is_map(reason) do
     conn
     |> put_status(:unauthorized)
-    |> render(EView.Views.Error, :"401", reason)
+    |> render(Error, :"401", reason)
   end
 
   def call(conn, {:error, {:access_denied, reason}}) do
     conn
     |> put_status(:unauthorized)
-    |> render(EView.Views.Error, :"401", %{message: reason})
+    |> render(Error, :"401", %{message: reason})
   end
 
   def call(conn, {:error, {:too_many_requests, reason}}) when is_map(reason) do
     conn
     |> put_status(:too_many_requests)
-    |> render(EView.Views.Error, :"401", reason)
+    |> render(Error, :"401", reason)
   end
 
   def call(conn, {:error, {:forbidden, reason}}) when is_map(reason) do
     conn
     |> put_status(:forbidden)
-    |> render(EView.Views.Error, :"403", reason)
+    |> render(Error, :"403", reason)
   end
 
   def call(conn, {:error, {:password_expired, reason}}) do
     conn
     |> put_status(:unauthorized)
-    |> render(EView.Views.Error, :"401", %{message: reason, type: :password_expired})
+    |> render(Error, :"401", %{message: reason, type: :password_expired})
   end
 
   def call(conn, {:error, :not_found}) do
@@ -75,13 +75,11 @@ defmodule Mithril.Web.FallbackController do
     |> render(Error, :"400", %{message: error})
   end
 
-  def call(conn, {:error, %Ecto.Changeset{} = changeset}) do
-    conn
-    |> put_status(:unprocessable_entity)
-    |> render(ValidationError, :"422", changeset)
+  def call(conn, %Ecto.Changeset{valid?: false} = changeset) do
+    call(conn, {:error, changeset})
   end
 
-  def call(conn, %Ecto.Changeset{valid?: false} = changeset) do
+  def call(conn, {:error, %Ecto.Changeset{valid?: false} = changeset}) do
     conn
     |> put_status(:unprocessable_entity)
     |> render(ValidationError, :"422", changeset)
@@ -90,13 +88,13 @@ defmodule Mithril.Web.FallbackController do
   def call(conn, {:error, {:unprocessable_entity, error}}) do
     conn
     |> put_status(:unprocessable_entity)
-    |> render(EView.Views.Error, :"400", %{message: error})
+    |> render(Error, :"400", %{message: error})
   end
 
   def call(conn, {:error, {:service_unavailable, reason}}) do
     conn
     |> put_status(:service_unavailable)
-    |> render(EView.Views.Error, :"503", %{message: reason})
+    |> render(Error, :"503", %{message: reason})
   end
 
   @doc """
