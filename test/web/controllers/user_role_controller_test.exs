@@ -66,6 +66,16 @@ defmodule Mithril.Web.UserRoleControllerTest do
         assert client_id in [client_id1, client_id2]
       end)
     end
+
+    test "search by invalid client_id", %{conn: conn} do
+      assert [err] =
+               conn
+               |> get(user_roles_path(conn, :index), client_id: "asd")
+               |> json_response(422)
+               |> get_in(~w(error invalid))
+
+      assert "$.client_id" == err["entry"]
+    end
   end
 
   test "creates user_role and renders user_role when data is valid", %{user_id: user_id, conn: conn} do
