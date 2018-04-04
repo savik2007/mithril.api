@@ -6,6 +6,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
   alias Ecto.UUID
   alias Mithril.TokenAPI.Token
+  alias Mithril.ClientTypeAPI.ClientType
 
   setup :verify_on_exit!
 
@@ -77,11 +78,66 @@ defmodule Mithril.OAuth.TokenControllerTest do
     |> json_response(201)
   end
 
+  describe "login via client CABINET with empty factor for 2FA" do
+    setup %{conn: conn} do
+      client_type = insert(:client_type, name: ClientType.client_type(:cabinet), scope: "app:authorize")
+      user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("Somepa$$word1"))
+
+      client =
+        insert(
+          :client,
+          user_id: user.id,
+          client_type_id: client_type.id,
+          settings: %{"allowed_grant_types" => ["password"]}
+        )
+
+      payload = %{
+        token: %{
+          grant_type: "password",
+          email: user.email,
+          password: "Somepa$$word1",
+          client_id: client.id,
+          scope: "app:authorize"
+        }
+      }
+
+      %{conn: conn, user: user, payload: payload}
+    end
+
+    test "send user to login via DS when 2FA factor is nil", %{conn: conn, user: user, payload: payload} do
+      insert(:authentication_factor, user_id: user.id, factor: nil)
+
+      assert "REQUEST_LOGIN_VIA_DS" ==
+               conn
+               |> post("/oauth/tokens", payload)
+               |> json_response(403)
+               |> get_in(~w(error message))
+    end
+
+    test "send user to login via DS when 2FA factor is empty string", %{conn: conn, user: user, payload: payload} do
+      insert(:authentication_factor, user_id: user.id, factor: "")
+
+      assert "REQUEST_LOGIN_VIA_DS" ==
+               conn
+               |> post("/oauth/tokens", payload)
+               |> json_response(403)
+               |> get_in(~w(error message))
+    end
+
+    test "send user to login via DS when 2FA not exist", %{conn: conn, payload: payload} do
+      assert "REQUEST_LOGIN_VIA_DS" ==
+               conn
+               |> post("/oauth/tokens", payload)
+               |> json_response(403)
+               |> get_in(~w(error message))
+    end
+  end
+
   test "successfully issues new 2FA access_token using password. Next step: send OTP", %{conn: conn} do
     allowed_scope = "app:authorize legal_entity:read legal_entity:write"
     password = "secret_password"
     user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt(password))
-    client_type = insert(:client_type, scope: allowed_scope)
+    client_type = insert(:client_type, name: ClientType.client_type(:cabinet), scope: allowed_scope)
 
     client =
       insert(

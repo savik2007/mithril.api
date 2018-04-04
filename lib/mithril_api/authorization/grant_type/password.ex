@@ -8,13 +8,17 @@ defmodule Mithril.Authorization.GrantType.Password do
   alias Mithril.Authentication
   alias Mithril.Authentication.Factor
   alias Mithril.Authorization.LoginHistory
+  alias Mithril.ClientTypeAPI.ClientType
 
   @request_otp "REQUEST_OTP"
   @request_apps "REQUEST_APPS"
   @request_factor "REQUEST_FACTOR"
+  @request_ds "REQUEST_LOGIN_VIA_DS"
 
   @grant_type_password "password"
   @grant_type_change_password "change_password"
+
+  @cabinet_client_type ClientType.client_type(:cabinet)
 
   def next_step(:request_otp), do: @request_otp
   def next_step(:request_apps), do: @request_apps
@@ -100,6 +104,21 @@ defmodule Mithril.Authorization.GrantType.Password do
   defp validate_token_scope_by_grant(@grant_type_change_password, "user:change_password"), do: :ok
   defp validate_token_scope_by_grant(@grant_type_change_password, _), do: Error.invalid_scope(["user:change_password"])
   defp validate_token_scope_by_grant(_, _requested_scope), do: :ok
+
+  defp create_token_by_grant_type(nil, _, %{client_type: %{name: @cabinet_client_type}}, _, @grant_type_password) do
+    {:error, {:forbidden, %{message: @request_ds}}}
+  end
+
+  defp create_token_by_grant_type(
+         %Factor{factor: factor},
+         _,
+         %{client_type: %{name: @cabinet_client_type}},
+         _,
+         @grant_type_password
+       )
+       when is_nil(factor) or (is_binary(factor) and byte_size(factor) == 0) do
+    {:error, {:forbidden, %{message: @request_ds}}}
+  end
 
   defp create_token_by_grant_type(%Factor{}, %User{} = user, client, scope, grant_type) do
     data = %{
