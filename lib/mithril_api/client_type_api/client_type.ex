@@ -13,4 +13,8 @@ defmodule Mithril.ClientTypeAPI.ClientType do
 
     timestamps()
   end
+
+  @cabinet_client_type "CABINET"
+
+  def client_type(:cabinet), do: @cabinet_client_type
 end
