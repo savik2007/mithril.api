@@ -4,17 +4,15 @@ defmodule Mithril.TokenAPI do
   use Mithril.Search
   import Ecto.{Query, Changeset}, warn: false
 
-  alias Mithril.Error
-  alias Mithril.Repo
-  alias Mithril.UserAPI
-  alias Mithril.ClientAPI
+  alias Mithril.{Repo, Error}
+  alias Mithril.{UserAPI, ClientAPI}
   alias Mithril.UserAPI.User
   alias Mithril.TokenAPI.Token
   alias Mithril.ClientAPI.Client
   alias Mithril.TokenAPI.TokenSearch
   alias Mithril.Authentication
   alias Mithril.Authentication.Factor
-  alias Mithril.Authorization.GrantType.AccessToken2FA
+  alias Mithril.Authorization.GrantType.{Password, AccessToken2FA}
   alias Ecto.Multi
 
   @direct ClientAPI.access_type(:direct)
@@ -76,6 +74,32 @@ defmodule Mithril.TokenAPI do
     %Token{}
     |> authorization_code_changeset(attrs)
     |> Repo.insert()
+  end
+
+  def create_access_token(%User{} = user, %{"client_id" => client_id, "scope" => scope}) do
+    with client <- ClientAPI.get_client_with_type(client_id),
+         :ok <- Password.validate_client(client, "password"),
+         :ok <- Password.validate_token_scope_by_client(client.client_type.scope, scope),
+         {:ok, token} <- create_access_token(user, client, scope),
+         {_, nil} <- Mithril.TokenAPI.deactivate_old_tokens(token) do
+      {:ok, token}
+    end
+  end
+
+  def create_access_token(_, _), do: {:error, {:"422", "invalid params"}}
+
+  def create_access_token(user, client, scope) do
+    data = %{
+      user_id: user.id,
+      details: %{
+        "grant_type" => "password",
+        "client_id" => client.id,
+        "scope" => scope,
+        "redirect_uri" => client.redirect_uri
+      }
+    }
+
+    create_access_token(data)
   end
 
   def create_access_token(attrs \\ %{}) do

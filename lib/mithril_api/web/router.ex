@@ -57,6 +57,8 @@ defmodule MithrilWeb.Router do
       delete("/tokens", TokenController, :delete_by_user)
       delete("/apps", AppController, :delete_by_user)
 
+      post("/tokens/access", TokenController, :create_access_token)
+
       patch("/actions/change_password", UserController, :change_password)
       patch("/actions/block", UserController, :block)
       patch("/actions/unblock", UserController, :unblock)
