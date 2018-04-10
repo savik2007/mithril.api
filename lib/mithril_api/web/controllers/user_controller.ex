@@ -3,6 +3,7 @@ defmodule Mithril.Web.UserController do
 
   use Mithril.Web, :controller
 
+  alias Mithril.Repo
   alias Mithril.UserAPI
   alias Mithril.UserAPI.User
   alias Scrivener.Page
@@ -30,7 +31,7 @@ defmodule Mithril.Web.UserController do
   end
 
   def update(conn, %{"id" => id, "user" => user_params}) do
-    user = UserAPI.get_user!(id)
+    user = id |> UserAPI.get_user!() |> Repo.preload(:factor)
 
     with {:ok, %User{} = user} <- UserAPI.update_user(user, user_params) do
       render(conn, "show.json", user: user)

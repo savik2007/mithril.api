@@ -20,6 +20,7 @@ defmodule Mithril.UserAPI.User do
       field(:otp_error_counter, :integer, default: 0)
     end
 
+    has_one(:factor, Mithril.Authentication.Factor)
     has_many(:user_roles, Mithril.UserRoleAPI.UserRole)
     has_many(:roles, through: [:user_roles, :role])
 

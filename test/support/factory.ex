@@ -106,6 +106,7 @@ defmodule Mithril.Factory do
       },
       is_blocked: false,
       block_reason: nil,
+      factor: nil,
       person_id: UUID.generate()
     }
   end

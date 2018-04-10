@@ -193,6 +193,14 @@ defmodule Mithril.Authentication do
     |> preload_references()
   end
 
+  def update_factor(%Factor{} = factor, attrs, :with_otp_validation) do
+    factor
+    |> changeset(attrs)
+    |> validate_factor_and_otp()
+    |> Repo.update()
+    |> preload_references()
+  end
+
   def create_factor_changeset(attrs) do
     %Factor{}
     |> changeset(attrs)
