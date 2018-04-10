@@ -78,26 +78,96 @@ defmodule Mithril.Web.TokenControllerTest do
     assert 1 == length(json_response(conn, 200)["data"])
   end
 
-  test "creates token and renders token when data is valid", %{conn: conn} do
-    user = insert(:user)
-    conn = post(conn, token_path(conn, :create), token: Map.put_new(@create_attrs, :user_id, user.id))
-    assert %{"id" => id} = json_response(conn, 201)["data"]
+  describe "create token" do
+    test "creates token and renders token when data is valid", %{conn: conn} do
+      user = insert(:user)
+      conn = post(conn, token_path(conn, :create), token: Map.put_new(@create_attrs, :user_id, user.id))
+      assert %{"id" => id} = json_response(conn, 201)["data"]
 
-    conn = get(conn, token_path(conn, :show, id))
+      conn = get(conn, token_path(conn, :show, id))
 
-    assert json_response(conn, 200)["data"] == %{
-             "id" => id,
-             "details" => %{},
-             "expires_at" => 42,
-             "name" => "some name",
-             "value" => "some value",
-             "user_id" => user.id
-           }
+      assert json_response(conn, 200)["data"] == %{
+               "id" => id,
+               "details" => %{},
+               "expires_at" => 42,
+               "name" => "some name",
+               "value" => "some value",
+               "user_id" => user.id
+             }
+    end
+
+    test "does not create token and renders errors when data is invalid", %{conn: conn} do
+      conn = post(conn, token_path(conn, :create), token: @invalid_attrs)
+      assert json_response(conn, 422)["errors"] != %{}
+    end
   end
 
-  test "does not create token and renders errors when data is invalid", %{conn: conn} do
-    conn = post(conn, token_path(conn, :create), token: @invalid_attrs)
-    assert json_response(conn, 422)["errors"] != %{}
+  describe "create access token" do
+    test "creates token and renders token when data is valid", %{conn: conn} do
+      user = insert(:user)
+      allowed_scope = "cabinet:read"
+      client_type = insert(:client_type, scope: allowed_scope)
+
+      %{id: client_id} =
+        insert(
+          :client,
+          settings: %{"allowed_grant_types" => ["password"]},
+          client_type_id: client_type.id
+        )
+
+      payload = %{
+        client_id: client_id,
+        scope: allowed_scope
+      }
+
+      assert %{"id" => id} =
+               conn
+               |> post(user_token_path(conn, :create_access_token, user.id), token: payload)
+               |> json_response(201)
+               |> Map.get("data")
+
+      token =
+        conn
+        |> get(token_path(conn, :show, id))
+        |> json_response(200)
+        |> Map.get("data")
+
+      assert id == token["id"]
+      assert %{"client_id" => ^client_id, "grant_type" => "password", "scope" => ^allowed_scope} = token["details"]
+      assert "access_token" == token["name"]
+    end
+
+    test "invalid client scope", %{conn: conn} do
+      user = insert(:user)
+      allowed_scope = "cabinet:read"
+      client_type = insert(:client_type, scope: allowed_scope)
+
+      %{id: client_id} =
+        insert(
+          :client,
+          settings: %{"allowed_grant_types" => ["password"]},
+          client_type_id: client_type.id
+        )
+
+      payload = %{
+        client_id: client_id,
+        scope: "cabinet:write"
+      }
+
+      assert msg =
+               conn
+               |> post(user_token_path(conn, :create_access_token, user.id), token: payload)
+               |> json_response(401)
+               |> get_in(~w(error message))
+
+      assert "Allowed scopes for the token are cabinet:read." == msg
+    end
+
+    test "user not found", %{conn: conn} do
+      assert_error_sent(404, fn ->
+        post(conn, user_token_path(conn, :create_access_token, Ecto.UUID.generate()), token: %{})
+      end)
+    end
   end
 
   test "updates chosen token and renders token when data is valid", %{conn: conn} do

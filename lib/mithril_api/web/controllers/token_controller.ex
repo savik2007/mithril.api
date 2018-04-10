@@ -1,7 +1,7 @@
 defmodule Mithril.Web.TokenController do
   use Mithril.Web, :controller
 
-  alias Mithril.TokenAPI
+  alias Mithril.{TokenAPI, UserAPI}
   alias Mithril.TokenAPI.Token
   alias Scrivener.Page
 
@@ -15,6 +15,17 @@ defmodule Mithril.Web.TokenController do
 
   def create(conn, %{"token" => token_params}) do
     with {:ok, %Token{} = token} <- TokenAPI.create_token(token_params) do
+      conn
+      |> put_status(:created)
+      |> put_resp_header("location", token_path(conn, :show, token))
+      |> render("show.json", token: token)
+    end
+  end
+
+  def create_access_token(conn, %{"token" => token_params, "user_id" => user_id}) do
+    user = UserAPI.get_user!(user_id)
+
+    with {:ok, %Token{} = token} <- TokenAPI.create_access_token(user, token_params) do
       conn
       |> put_status(:created)
       |> put_resp_header("location", token_path(conn, :show, token))
