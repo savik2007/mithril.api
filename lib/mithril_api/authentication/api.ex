@@ -222,6 +222,7 @@ defmodule Mithril.Authentication do
     |> cast(attrs, fields)
     |> validate_required(fields)
     |> validate_inclusion(:type, [@type_sms])
+    |> validate_factor_format()
   end
 
   def changeset(%Factor{} = schema, attrs) do
