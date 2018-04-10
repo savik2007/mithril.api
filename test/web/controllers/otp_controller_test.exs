@@ -63,6 +63,17 @@ defmodule Mithril.Web.OTPControllerTest do
       |> json_response(200)
     end
 
+    test "invalid otp value", %{conn: conn, jwt: jwt} do
+      assert [err] =
+               conn
+               |> Plug.Conn.put_req_header("authorization", "Bearer " <> jwt)
+               |> post(otp_path(conn, :send_otp), %{type: "SMS", factor: "invalid"})
+               |> json_response(422)
+               |> get_in(~w(error invalid))
+
+      assert "$.factor" == err["entry"]
+    end
+
     test "OTP rate limit", %{conn: conn, jwt: jwt} do
       System.put_env("OTP_SEND_TIMEOUT", "3")
       on_exit(fn -> System.put_env("SMS_ENABLED", "0") end)
