@@ -31,28 +31,28 @@ defmodule Mithril.UserAPITest do
 
   test "list_users/1 returns all users without search params" do
     # System User already inserted in DB by means of migration
-    system_user = UserAPI.get_user!("4261eacf-8008-4e62-899f-de1e2f7065f0")
-    user = insert(:user)
+    system_user_id = "4261eacf-8008-4e62-899f-de1e2f7065f0"
+    %{id: id} = insert(:user)
 
-    assert UserAPI.list_users(%{}) == %Page{
-             entries: [system_user, user],
+    assert %Page{
+             entries: [%{id: ^system_user_id}, %{id: ^id}],
              page_number: 1,
              page_size: 50,
              total_pages: 1,
              total_entries: 2
-           }
+           } = UserAPI.list_users(%{})
   end
 
   test "list_users/1 returns all users with valid search params" do
-    user = insert(:user)
+    %{id: id} = user = insert(:user)
 
-    assert UserAPI.list_users(%{"email" => user.email}) == %Page{
-             entries: [user],
+    assert %Page{
+             entries: [%{id: ^id}],
              page_number: 1,
              page_size: 50,
              total_pages: 1,
              total_entries: 1
-           }
+           } = UserAPI.list_users(%{"email" => user.email})
   end
 
   test "list_users/1 returns empty list with invalid search params" do
@@ -68,8 +68,8 @@ defmodule Mithril.UserAPITest do
   end
 
   test "get_user! returns the user with given id" do
-    user = insert(:user)
-    assert UserAPI.get_user!(user.id) == user
+    %{id: id} = insert(:user)
+    assert %User{id: ^id} = UserAPI.get_user!(id)
   end
 
   test "create_user/1 with valid data creates a user" do
@@ -125,9 +125,9 @@ defmodule Mithril.UserAPITest do
   end
 
   test "update_user/2 with invalid data returns error changeset" do
-    user = insert(:user)
+    user = insert(:user, factor: insert(:authentication_factor))
     assert {:error, %Ecto.Changeset{}} = UserAPI.update_user(user, @invalid_attrs)
-    assert user == UserAPI.get_user!(user.id)
+    assert user == UserAPI.get_user!(user.id) |> Mithril.Repo.preload(:factor)
   end
 
   test "unblock/1 and refresh error counters" do

@@ -14,6 +14,7 @@ defmodule Mithril.UserAPI do
   alias Mithril.UserAPI.User.PrivSettings
   alias Mithril.UserAPI.PasswordHistory
   alias Mithril.Authentication
+  alias Mithril.Authentication.Factor
 
   @fields_optional ~w(tax_id person_id settings current_password is_blocked block_reason)a
   @fields_required ~w(email password)a
@@ -88,6 +89,19 @@ defmodule Mithril.UserAPI do
     end
   end
 
+  defp create_or_update_user_factor(%{user: %{factor: nil}} = user, %{"factor" => _} = attrs) do
+    create_user_factor(user, attrs)
+  end
+
+  defp create_or_update_user_factor(%{user: %{factor: %Factor{} = factor} = user}, %{"factor" => _} = attrs) do
+    case enabled_2fa?(attrs) do
+      true -> Authentication.update_factor(factor, Map.put(attrs, "email", user.email), :with_otp_validation)
+      false -> {:ok, :not_enabled}
+    end
+  end
+
+  defp create_or_update_user_factor(_, _), do: {:ok, :not_set}
+
   defp enabled_2fa?(attrs) do
     case Map.has_key?(attrs, "2fa_enable") do
       true -> Map.get(attrs, "2fa_enable") == true
@@ -96,7 +110,16 @@ defmodule Mithril.UserAPI do
   end
 
   def update_user(%User{} = user, attrs) do
-    elem(Repo.transaction(fn -> do_update(user, attrs) end), 1)
+    user_changeset = user_changeset(user, attrs)
+
+    Multi.new()
+    |> Multi.update(:user, user_changeset)
+    |> Multi.run(:authentication_factors, &create_or_update_user_factor(&1, attrs))
+    |> Repo.transaction()
+    |> case do
+      {:ok, %{user: user}} -> {:ok, user}
+      {:error, _, err, _} -> {:error, err}
+    end
   end
 
   def merge_user_priv_settings(%User{priv_settings: priv_settings} = user, new_settings) when is_map(new_settings) do
@@ -263,12 +286,6 @@ defmodule Mithril.UserAPI do
           ]
       end
     end)
-  end
-
-  defp do_update(user, attrs) do
-    user
-    |> user_changeset(attrs)
-    |> Repo.update()
   end
 
   defp to_map(%_{} = data) do

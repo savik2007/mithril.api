@@ -278,37 +278,144 @@ defmodule Mithril.Web.UserControllerTest do
     end
   end
 
-  test "updates chosen user and renders user when data is valid", %{conn: conn} do
-    %User{id: id, password_set_at: password_set_at} = user = insert(:user)
-    conn = put(conn, user_path(conn, :update, user), user: @update_attrs)
-    assert %{"id" => ^id} = json_response(conn, 200)["data"]
+  describe "update user" do
+    setup %{conn: conn} do
+      %{conn: conn, user: insert(:user, email: "email@example.com")}
+    end
 
-    conn = get(conn, user_path(conn, :show, id))
+    test "updates chosen user and renders user when data is valid", %{conn: conn, user: user} do
+      %User{id: id, password_set_at: password_set_at} = user
+      conn = put(conn, user_path(conn, :update, user), user: @update_attrs)
+      assert %{"id" => ^id} = json_response(conn, 200)["data"]
 
-    assert %{
-             "id" => ^id,
-             "email" => "update@example.com",
-             "settings" => %{}
-           } = json_response(conn, 200)["data"]
+      conn = get(conn, user_path(conn, :show, id))
 
-    user = UserAPI.get_user!(id)
-    refute password_set_at == user.password_set_at
-  end
+      assert %{
+               "id" => ^id,
+               "email" => "update@example.com",
+               "settings" => %{}
+             } = json_response(conn, 200)["data"]
 
-  test "does not update chosen user and renders errors when data is invalid", %{conn: conn} do
-    user = insert(:user)
-    conn = put(conn, user_path(conn, :update, user), user: @invalid_attrs)
-    assert json_response(conn, 422)["errors"] != %{}
-  end
+      user = UserAPI.get_user!(id)
+      refute password_set_at == user.password_set_at
+    end
 
-  test "deletes chosen user", %{conn: conn} do
-    user = insert(:user)
-    conn = delete(conn, user_path(conn, :delete, user))
-    assert response(conn, 204)
+    test "update user with factor when factor don't exist and otp valid", %{conn: conn, user: user} do
+      key = Authentication.generate_key("email@example.com", "+380551112233")
+      insert(:otp, key: key, code: 2233)
 
-    assert_error_sent(404, fn ->
-      get(conn, user_path(conn, :show, user))
-    end)
+      person_id = UUID.generate()
+
+      update = %{
+        "2fa_enable": true,
+        factor: "+380551112233",
+        tax_id: "12341234",
+        otp: 2233,
+        person_id: person_id
+      }
+
+      assert %{"id" => id, "person_id" => ^person_id} =
+               conn
+               |> put(user_path(conn, :update, user), user: update)
+               |> json_response(200)
+               |> Map.get("data")
+
+      assert id
+
+      assert [factor] =
+               conn
+               |> get(user_authentication_factor_path(conn, :index, id))
+               |> json_response(200)
+               |> Map.get("data")
+
+      assert "+38055*****33" == factor["factor"]
+    end
+
+    test "update user with factor when factor don't exist and otp invalid", %{conn: conn, user: user} do
+      key = Authentication.generate_key("email@example.com", "+380551112233")
+      insert(:otp, key: key, code: 2233)
+
+      update = %{
+        "2fa_enable": true,
+        factor: "+380551112233",
+        tax_id: "12341234",
+        otp: 1234,
+        person_id: UUID.generate()
+      }
+
+      assert [err] =
+               conn
+               |> put(user_path(conn, :update, user), user: update)
+               |> json_response(422)
+               |> get_in(~w(error invalid))
+
+      assert "$.otp" == err["entry"]
+    end
+
+    test "update user with factor when factor exist and otp valid", %{conn: conn, user: user} do
+      insert(:authentication_factor, user_id: user.id)
+      key = Authentication.generate_key("email@example.com", "+380551112233")
+      insert(:otp, key: key, code: 1234)
+
+      update = %{
+        "2fa_enable": true,
+        factor: "+380551112233",
+        tax_id: "12341234",
+        otp: 1234,
+        person_id: UUID.generate()
+      }
+
+      id =
+        conn
+        |> put(user_path(conn, :update, user), user: update)
+        |> json_response(200)
+        |> get_in(~w(data id))
+
+      assert id
+
+      assert [factor] =
+               conn
+               |> get(user_authentication_factor_path(conn, :index, id))
+               |> json_response(200)
+               |> Map.get("data")
+
+      assert "+38055*****33" == factor["factor"]
+    end
+
+    test "update user with factor when factor exist and otp invalid", %{conn: conn, user: user} do
+      insert(:authentication_factor, user_id: user.id)
+
+      update = %{
+        "2fa_enable": true,
+        factor: "+380551112233",
+        tax_id: "12341234",
+        otp: 9999,
+        person_id: UUID.generate()
+      }
+
+      assert [err] =
+               conn
+               |> put(user_path(conn, :update, user), user: update)
+               |> json_response(422)
+               |> get_in(~w(error invalid))
+
+      assert "$.otp" == err["entry"]
+    end
+
+    test "does not update chosen user and renders errors when data is invalid", %{conn: conn, user: user} do
+      conn = put(conn, user_path(conn, :update, user), user: @invalid_attrs)
+      assert json_response(conn, 422)["errors"] != %{}
+    end
+
+    test "deletes chosen user", %{conn: conn, user: user} do
+      conn
+      |> delete(user_path(conn, :delete, user))
+      |> response(204)
+
+      assert_error_sent(404, fn ->
+        get(conn, user_path(conn, :show, user))
+      end)
+    end
   end
 
   describe "block/unblock user" do
