@@ -96,7 +96,7 @@ defmodule Mithril.Factory do
   def user_factory do
     %Mithril.UserAPI.User{
       email: sequence("mail@example.com-"),
-      tax_id: "12342345",
+      tax_id: sequence("1234234"),
       password: Comeonin.Bcrypt.hashpwsalt("Somepassword1"),
       password_set_at: NaiveDateTime.utc_now(),
       settings: %{},
