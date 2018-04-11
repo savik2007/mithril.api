@@ -110,14 +110,14 @@ defmodule Mithril.Authorization.GrantType.Password do
   end
 
   defp create_token_by_grant_type(
-         %Factor{factor: factor},
          _,
+         %User{tax_id: tax_id},
          %{client_type: %{name: @cabinet_client_type}},
          _,
          @grant_type_password
        )
-       when is_nil(factor) or (is_binary(factor) and byte_size(factor) == 0) do
-    {:error, {:forbidden, %{message: @request_ds}}}
+       when is_nil(tax_id) or tax_id == "" do
+    {:error, {:forbidden, %{message: "User is not registered"}}}
   end
 
   defp create_token_by_grant_type(%Factor{}, %User{} = user, client, scope, grant_type) do
