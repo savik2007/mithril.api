@@ -4,7 +4,7 @@ defmodule Mithril.TokenAPI do
   use Mithril.Search
   import Ecto.{Query, Changeset}, warn: false
 
-  alias Mithril.{Repo, Error}
+  alias Mithril.{Repo, Error, Guardian}
   alias Mithril.{UserAPI, ClientAPI}
   alias Mithril.UserAPI.User
   alias Mithril.TokenAPI.Token
@@ -460,4 +460,16 @@ defmodule Mithril.TokenAPI do
   defp check_user_is_blocked(_) do
     Error.invalid_user("Authentication failed.")
   end
+
+  def generate_nonce_for_client([client_id]) when is_binary(client_id) do
+    ttl = {Confex.fetch_env!(:mithril_api, :ttl_login), :minutes}
+
+    with %{is_blocked: false} <- ClientAPI.get_client!(client_id) do
+      Guardian.encode_and_sign(:nonce, %{nonce: 123}, token_type: "access", ttl: ttl)
+    else
+      %{is_blocked: true} -> {:error, {:access_denied, "Client is blocked"}}
+    end
+  end
+
+  def generate_nonce_for_client(_), do: {:error, {:access_denied, "Client header not set"}}
 end

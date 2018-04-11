@@ -2,7 +2,7 @@ defmodule Mithril.OAuth.TokenController do
   use Mithril.Web, :controller
 
   alias Mithril.Authorization.Token
-  alias Mithril.{TokenAPI, Guardian}
+  alias Mithril.TokenAPI
   alias Mithril.Web.TokenView
 
   action_fallback(Mithril.Web.FallbackController)
@@ -48,9 +48,7 @@ defmodule Mithril.OAuth.TokenController do
   end
 
   def nonce(conn, _) do
-    ttl = {Confex.fetch_env!(:mithril_api, :ttl_login), :minutes}
-
-    with {:ok, jwt, _claims} <- Guardian.encode_and_sign(:nonce, %{nonce: 123}, token_type: "access", ttl: ttl) do
+    with {:ok, jwt, _} <- conn |> get_req_header("client-id") |> TokenAPI.generate_nonce_for_client() do
       render(conn, TokenView, "raw.json", json: %{token: jwt})
     end
   end
