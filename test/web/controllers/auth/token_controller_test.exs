@@ -586,6 +586,36 @@ defmodule Mithril.OAuth.TokenControllerTest do
       assert "Person not found." == msg
     end
 
+    test "MPI person inactive", %{conn: conn} do
+      tax_id = "12345678"
+      use SignatureExpect
+
+      expect(MPIMock, :person, fn id ->
+        {:ok, %{"data" => %{"id" => id, "tax_id" => tax_id, "status" => "INACTIVE"}}}
+      end)
+
+      user = insert(:user, tax_id: tax_id)
+      client_type = insert(:client_type, scope: "cabinet:read cabinet:write")
+
+      client =
+        insert(
+          :client,
+          user_id: user.id,
+          client_type_id: client_type.id,
+          settings: %{"allowed_grant_types" => ["password", "digital_signature"]}
+        )
+
+      payload = ds_valid_signed_content() |> ds_payload(client.id)
+
+      msg =
+        conn
+        |> post("/oauth/tokens", payload)
+        |> json_response(401)
+        |> get_in(~w(error message))
+
+      assert "Person not found." == msg
+    end
+
     test "MPI person tax_id not match with digital signature drfo", %{conn: conn} do
       use SignatureExpect
       expect(MPIMock, :person, fn id -> {:ok, %{"data" => %{"id" => id, "tax_id" => "00001111"}}} end)
