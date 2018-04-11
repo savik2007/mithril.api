@@ -132,15 +132,6 @@ defmodule Mithril.Web.UserControllerTest do
                |> get_in(~w(error invalid))
 
       assert "$.email" == err["entry"]
-
-      # duplicated tax_id
-      assert [err] =
-               conn
-               |> post(user_path(conn, :create), user: Map.put(@create_attrs, :email, "unique@example.com"))
-               |> json_response(422)
-               |> get_in(~w(error invalid))
-
-      assert "$.tax_id" == err["entry"]
     end
 
     test "password is too short", %{conn: conn} do
