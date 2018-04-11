@@ -201,7 +201,6 @@ defmodule Mithril.UserAPI do
     |> update_change(:email, &String.downcase/1)
     |> validate_email(:email)
     |> unique_constraint(:email)
-    |> unique_constraint(:tax_id)
     |> validate_length(:password, min: 12)
     |> validate_format(
       :password,
