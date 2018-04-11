@@ -16,6 +16,7 @@ defmodule Mithril.Authorization.GrantType.Signature do
   @signature_api Application.get_env(:mithril_api, :api_resolvers)[:digital_signature]
 
   @aud_login Guardian.get_aud(:login)
+  @person_inactive "INACTIVE"
 
   def authorize(attrs) do
     with %Ecto.Changeset{valid?: true} <- changeset(attrs),
@@ -29,6 +30,7 @@ defmodule Mithril.Authorization.GrantType.Signature do
          user <- UserAPI.get_user_by(tax_id: tax_id),
          {:ok, user} <- validate_user(user),
          {:ok, person} <- get_person(user.person_id),
+         :ok <- check_person_status(person),
          :ok <- validate_person_tax_id(person, tax_id),
          {:ok, token} <- create_access_token(user, client, attrs["scope"]),
          {_, nil} <- TokenAPI.deactivate_old_tokens(token) do
@@ -70,6 +72,9 @@ defmodule Mithril.Authorization.GrantType.Signature do
       _ -> {:error, {:access_denied, "Person not found."}}
     end
   end
+
+  defp check_person_status(%{"status" => @person_inactive}), do: {:error, {:access_denied, "Person not found."}}
+  defp check_person_status(_), do: :ok
 
   defp validate_person_tax_id(%{"tax_id" => person_tax_id}, tax_id) when person_tax_id == tax_id do
     :ok
