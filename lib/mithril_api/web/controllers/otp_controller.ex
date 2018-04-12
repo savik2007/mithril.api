@@ -15,8 +15,17 @@ defmodule Mithril.Web.OTPController do
 
   def send_otp(conn, params) do
     with jwt <- Plug.current_token(conn),
-         :ok <- Authentication.send_otp(params, jwt) do
-      render(conn, "send_otp.json", message: "OTP sent")
+         {:ok, code} <- Authentication.send_otp(params, jwt) do
+      conn
+      |> assign_code(code)
+      |> render("send_otp.json", message: "OTP sent")
+    end
+  end
+
+  defp assign_code(conn, code) do
+    case Confex.fetch_env!(:mithril_api, :sensitive_data_in_response) do
+      true -> assign(conn, :urgent, %{code: code})
+      false -> conn
     end
   end
 end

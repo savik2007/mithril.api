@@ -60,9 +60,9 @@ defmodule Mithril.Authentication do
          factor <- %Factor{factor: params["factor"], type: params["type"]},
          otp_key <- generate_key(email, factor.factor),
          :ok <- check_sent_otps(otp_key),
-         otp <- OTP.initialize_otp(otp_key),
+         {:ok, %OTPSchema{code: code}} = otp <- OTP.initialize_otp(otp_key),
          :ok <- maybe_send_otp(otp, factor) do
-      :ok
+      {:ok, code}
     else
       {:error, :sms_not_sent} -> {:error, {:service_unavailable, "SMS not sent. Try later"}}
       err -> err
