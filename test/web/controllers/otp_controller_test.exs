@@ -55,12 +55,27 @@ defmodule Mithril.Web.OTPControllerTest do
       insert(:otp, key: key)
       insert(:otp, key: key)
 
-      expect(SMSMock, :send, fn "+380670001122", _body, _type -> {:ok, %{"meta" => %{"code" => 200}}} end)
+      expect(SMSMock, :send, 2, fn "+380670001122", _body, _type -> {:ok, %{"meta" => %{"code" => 200}}} end)
 
-      conn
-      |> Plug.Conn.put_req_header("authorization", "Bearer " <> jwt)
-      |> post(otp_path(conn, :send_otp), %{type: "SMS", factor: "+380670001122"})
-      |> json_response(200)
+      # response contain urgent data with jwt token
+      assert conn
+             |> Plug.Conn.put_req_header("authorization", "Bearer " <> jwt)
+             |> post(otp_path(conn, :send_otp), %{type: "SMS", factor: "+380670001122"})
+             |> json_response(200)
+             |> get_in(~w(urgent code))
+
+      # response DOES NOT contain urgent data with jwt token for disabled config
+      System.put_env("SENSITIVE_DATA_IN_RESPONSE_ENABLED", "false")
+
+      refute conn
+             |> Plug.Conn.put_req_header("authorization", "Bearer " <> jwt)
+             |> post(otp_path(conn, :send_otp), %{type: "SMS", factor: "+380670001122"})
+             |> json_response(200)
+             |> get_in(~w(urgent code))
+
+      on_exit(fn ->
+        System.put_env("SENSITIVE_DATA_IN_RESPONSE_ENABLED", "true")
+      end)
     end
 
     test "invalid otp value", %{conn: conn, jwt: jwt} do
