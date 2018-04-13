@@ -79,7 +79,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
   end
 
   describe "login user via client CABINET" do
-    test "user tax_id is empty", %{conn: conn} do
+    setup %{conn: conn} do
       client_type = insert(:client_type, name: ClientType.client_type(:cabinet), scope: "app:authorize")
       user = insert(:user, tax_id: "", password: Comeonin.Bcrypt.hashpwsalt("Somepa$$word1"))
       insert(:authentication_factor, user_id: user.id, factor: "+380771114466")
@@ -102,11 +102,30 @@ defmodule Mithril.OAuth.TokenControllerTest do
         }
       }
 
+      %{conn: conn, payload: payload}
+    end
+
+    test "user tax_id is empty", %{conn: conn, payload: payload} do
       assert "User is not registered" ==
                conn
                |> post("/oauth/tokens", payload)
                |> json_response(403)
                |> get_in(~w(error message))
+    end
+
+    test "password has been expired", %{conn: conn, payload: payload} do
+      default_expiration = Confex.get_env(:mithril_api, :password)[:expiration]
+      System.put_env("PASSWORD_EXPIRATION_DAYS", "0")
+
+      assert "User is not registered" ==
+               conn
+               |> post("/oauth/tokens", payload)
+               |> json_response(403)
+               |> get_in(~w(error message))
+
+      on_exit(fn ->
+        System.put_env("PASSWORD_EXPIRATION_DAYS", to_string(default_expiration))
+      end)
     end
   end
 
@@ -329,7 +348,9 @@ defmodule Mithril.OAuth.TokenControllerTest do
     res = json_response(conn, 401)
     message = "The password expired for user: #{user.id}"
 
-    System.put_env("PASSWORD_EXPIRATION_DAYS", to_string(default_expiration))
+    on_exit(fn ->
+      System.put_env("PASSWORD_EXPIRATION_DAYS", to_string(default_expiration))
+    end)
 
     assert %{"message" => ^message, "type" => "password_expired"} = res["error"]
   end
@@ -370,7 +391,9 @@ defmodule Mithril.OAuth.TokenControllerTest do
         |> post(oauth2_token_path(conn, :create), Poison.encode!(request_payload))
         |> json_response(201)
 
-      System.put_env("PASSWORD_EXPIRATION_DAYS", to_string(default_expiration))
+      on_exit(fn ->
+        System.put_env("PASSWORD_EXPIRATION_DAYS", to_string(default_expiration))
+      end)
 
       assert resp["data"]["details"]["client_id"] == client.id
       assert resp["data"]["details"]["grant_type"] == "change_password"
@@ -401,8 +424,10 @@ defmodule Mithril.OAuth.TokenControllerTest do
         |> post(oauth2_token_path(conn, :create), Poison.encode!(request_payload))
         |> json_response(201)
 
-      System.put_env("PASSWORD_EXPIRATION_DAYS", to_string(default_expiration))
-      System.put_env("USER_2FA_ENABLED", to_string(default_2fa))
+      on_exit(fn ->
+        System.put_env("PASSWORD_EXPIRATION_DAYS", to_string(default_expiration))
+        System.put_env("USER_2FA_ENABLED", to_string(default_2fa))
+      end)
 
       assert resp["data"]["details"]["client_id"] == client.id
       assert resp["data"]["details"]["grant_type"] == "change_password"

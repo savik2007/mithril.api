@@ -1,5 +1,5 @@
 defmodule Mithril.Authorization.GrantType.PasswordTest do
-  use Mithril.DataCase, async: true
+  use Mithril.DataCase, async: false
 
   alias Mithril.UserAPI
   alias Mithril.Authorization.GrantType.Password, as: PasswordGrantType
