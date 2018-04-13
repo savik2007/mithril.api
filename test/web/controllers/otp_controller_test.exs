@@ -55,7 +55,9 @@ defmodule Mithril.Web.OTPControllerTest do
       insert(:otp, key: key)
       insert(:otp, key: key)
 
-      expect(SMSMock, :send, 2, fn "+380670001122", _body, _type -> {:ok, %{"meta" => %{"code" => 200}}} end)
+      expect(SMSMock, :send, 2, fn _, _body, _type ->
+        {:ok, %{"meta" => %{"code" => 200}}}
+      end)
 
       # response contain urgent data with jwt token
       assert conn
@@ -69,7 +71,7 @@ defmodule Mithril.Web.OTPControllerTest do
 
       refute conn
              |> Plug.Conn.put_req_header("authorization", "Bearer " <> jwt)
-             |> post(otp_path(conn, :send_otp), %{type: "SMS", factor: "+380670001122"})
+             |> post(otp_path(conn, :send_otp), %{type: "SMS", factor: "+380670001123"})
              |> json_response(200)
              |> get_in(~w(urgent code))
 

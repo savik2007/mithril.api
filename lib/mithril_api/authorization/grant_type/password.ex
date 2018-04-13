@@ -31,6 +31,7 @@ defmodule Mithril.Authorization.GrantType.Password do
          client <- Mithril.ClientAPI.get_client_with_type(attrs["client_id"]),
          :ok <- validate_client(client, "password"),
          user <- UserAPI.get_user_by(email: attrs["email"]),
+         :ok <- validate_user_by_client(user, client),
          {:ok, user} <- validate_user(user),
          :ok <- LoginHistory.check_failed_login(user, LoginHistory.type(:password)),
          {:ok, user} <- match_with_user_password(user, attrs["password"]),
@@ -76,6 +77,12 @@ defmodule Mithril.Authorization.GrantType.Password do
       false -> {:error, {:access_denied, "Client is not allowed to issue login token."}}
     end
   end
+
+  def validate_user_by_client(%User{tax_id: tax_id}, %{client_type: %{name: @cabinet_client_type}})
+      when is_nil(tax_id) or tax_id == "",
+      do: {:error, {:forbidden, %{message: "User is not registered"}}}
+
+  def validate_user_by_client(_, _), do: :ok
 
   def validate_user(%User{is_blocked: false} = user), do: {:ok, user}
   def validate_user(%User{is_blocked: true}), do: Error.user_blocked("User blocked.")
