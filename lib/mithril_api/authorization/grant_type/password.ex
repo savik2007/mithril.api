@@ -78,10 +78,8 @@ defmodule Mithril.Authorization.GrantType.Password do
     end
   end
 
-  defguard tax_id_empty(tax_id) when is_nil(tax_id) or tax_id == ""
-
   def validate_user_by_client(%User{tax_id: tax_id}, %{client_type: %{name: @cabinet_client_type}})
-      when tax_id_empty(tax_id),
+      when is_nil(tax_id) or tax_id == "",
       do: {:error, {:forbidden, %{message: "User is not registered"}}}
 
   def validate_user_by_client(_, _), do: :ok
@@ -125,7 +123,7 @@ defmodule Mithril.Authorization.GrantType.Password do
          _,
          @grant_type_password
        )
-       when tax_id_empty(tax_id) do
+       when is_nil(tax_id) or tax_id == "" do
     {:error, {:forbidden, %{message: "User is not registered"}}}
   end
 
