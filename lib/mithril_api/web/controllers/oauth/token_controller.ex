@@ -1,7 +1,7 @@
 defmodule Mithril.OAuth.TokenController do
   use Mithril.Web, :controller
 
-  alias Mithril.Authorization.Token
+  alias Mithril.Authorization.Tokens
   alias Mithril.TokenAPI
   alias Mithril.Web.TokenView
 
@@ -11,7 +11,7 @@ defmodule Mithril.OAuth.TokenController do
     with {:ok, resp} <-
            attrs
            |> put_token_value(conn)
-           |> Token.init_factor() do
+           |> Tokens.init_factor() do
       send_response(conn, resp, "token-without-details.json")
     end
   end
@@ -20,7 +20,7 @@ defmodule Mithril.OAuth.TokenController do
     with {:ok, token} <-
            attrs
            |> put_token_value(conn)
-           |> Token.approve_factor() do
+           |> Tokens.approve_factor() do
       conn
       |> put_status(:created)
       |> render(TokenView, "show.json", token: token)
@@ -42,7 +42,7 @@ defmodule Mithril.OAuth.TokenController do
            token_params
            |> put_token_value(conn)
            |> put_header_value(conn, "drfo")
-           |> Token.create_by_grant_type() do
+           |> Tokens.create_by_grant_type() do
       send_response(conn, resp, "show.json")
     end
   end
