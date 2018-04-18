@@ -9,7 +9,7 @@ defmodule Mithril.Authentication do
   alias Mithril.OTP.Schema, as: OTPSchema
   alias Mithril.UserAPI.User
   alias Mithril.TokenAPI.Token
-  alias Mithril.Authentication.{Factor, FactorSearch, OTPSearch, OTPSend}
+  alias Mithril.Authentication.{Factor, FactorSearch, OTPSend}
   alias Mithril.Authorization.LoginHistory
 
   require Logger
@@ -30,12 +30,6 @@ defmodule Mithril.Authentication do
   @sms_api Application.get_env(:mithril_api, :api_resolvers)[:sms]
 
   def type(:sms), do: @type_sms
-
-  def list_otps(params) do
-    %OTPSearch{}
-    |> changeset(params)
-    |> search(params, OTPSchema)
-  end
 
   def send_otp(%User{} = user, %Factor{factor: value} = factor, %Token{} = token)
       when is_binary(value) and byte_size(value) > 0 do
@@ -209,10 +203,6 @@ defmodule Mithril.Authentication do
 
   def changeset(%FactorSearch{} = schema, attrs) do
     cast(schema, attrs, FactorSearch.__schema__(:fields))
-  end
-
-  def changeset(%OTPSearch{} = schema, attrs) do
-    cast(schema, attrs, OTPSearch.__schema__(:fields))
   end
 
   def changeset(%OTPSend{} = schema, attrs) do

@@ -11,7 +11,7 @@ defmodule Mithril.OAuth.TokenController do
     with {:ok, resp} <-
            attrs
            |> put_token_value(conn)
-           |> TokenAPI.init_factor() do
+           |> Token.init_factor() do
       send_response(conn, resp, "token-without-details.json")
     end
   end
@@ -20,7 +20,7 @@ defmodule Mithril.OAuth.TokenController do
     with {:ok, token} <-
            attrs
            |> put_token_value(conn)
-           |> TokenAPI.approve_factor() do
+           |> Token.approve_factor() do
       conn
       |> put_status(:created)
       |> render(TokenView, "show.json", token: token)
@@ -42,7 +42,7 @@ defmodule Mithril.OAuth.TokenController do
            token_params
            |> put_token_value(conn)
            |> put_header_value(conn, "drfo")
-           |> Token.authorize() do
+           |> Token.create_by_grant_type() do
       send_response(conn, resp, "show.json")
     end
   end

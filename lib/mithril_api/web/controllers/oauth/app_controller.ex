@@ -2,7 +2,7 @@ defmodule Mithril.OAuth.AppController do
   use Mithril.Web, :controller
 
   alias Mithril.Web.TokenView
-  alias Mithril.Authorization.App
+  alias Mithril.Authorization
 
   action_fallback(Mithril.Web.FallbackController)
 
@@ -19,7 +19,7 @@ defmodule Mithril.OAuth.AppController do
 
     params = Map.merge(app_params, %{"user_id" => user_id, "api_key" => api_key})
 
-    with %{"token" => token} <- App.grant(params) do
+    with %{"token" => token} <- Authorization.create_approval(params) do
       conn
       |> put_status(:created)
       |> put_resp_header("location", generate_location(token))

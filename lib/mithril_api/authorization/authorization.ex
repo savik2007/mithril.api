@@ -1,4 +1,4 @@
-defmodule Mithril.Authorization.App do
+defmodule Mithril.Authorization do
   @moduledoc false
 
   alias Mithril.Error
@@ -10,7 +10,7 @@ defmodule Mithril.Authorization.App do
   # On every approval a new token is created.
   # Current (session) token with it's scopes is still valid until it expires.
   # E.g. session expiration should be sufficiently short.
-  def grant(%{"user_id" => _, "client_id" => _, "redirect_uri" => _, "scope" => _} = params) do
+  def create_approval(%{"user_id" => _, "client_id" => _, "redirect_uri" => _, "scope" => _} = params) do
     params
     |> find_client()
     |> check_client_is_blocked()
@@ -22,7 +22,7 @@ defmodule Mithril.Authorization.App do
     |> create_token()
   end
 
-  def grant(_) do
+  def create_approval(_) do
     message = "Request must include at least client_id, redirect_uri and scopes parameters."
     Error.invalid_request(message)
   end

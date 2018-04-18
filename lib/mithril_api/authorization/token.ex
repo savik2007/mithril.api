@@ -1,38 +1,174 @@
 defmodule Mithril.Authorization.Token do
   @moduledoc false
 
-  # Functions in this module create new access_tokens,
-  # based on grant_type the request came with
+  import Ecto.{Query, Changeset}, warn: false
 
   alias Mithril.Error
   alias Mithril.Authorization.GrantType.{Password, RefreshToken, AccessToken2FA, AuthorizationCode, Signature}
+  alias Mithril.{Repo, Error, Guardian}
+  alias Mithril.{UserAPI, ClientAPI}
+  alias Mithril.UserAPI.User
+  alias Mithril.TokenAPI.Token
+  alias Mithril.TokenAPI
+  alias Mithril.ClientAPI.Client
+  alias Mithril.TokenAPI.TokenSearch
+  alias Mithril.Authentication
+  alias Mithril.Authentication.Factor
+  alias Mithril.Authorization.GrantType.{Password, AccessToken2FA}
+  alias Ecto.Multi
 
-  # TODO: rename grant_type to response_type
-  def authorize(%{"grant_type" => grant_type} = params) when grant_type in ["password", "change_password"] do
+  @refresh_token "refresh_token"
+  @access_token "access_token"
+  @access_token_2fa "2fa_access_token"
+  @change_password_token "change_password_token"
+  @authorization_code "authorization_code"
+
+  @approve_factor "APPROVE_FACTOR"
+  @type_field "request_authentication_factor_type"
+  @factor_field "request_authentication_factor"
+
+
+  @doc """
+    Create new access_tokens based on grant_type the request came with
+  """
+  def create_by_grant_type(%{"grant_type" => grant_type} = params) when grant_type in ["password", "change_password"] do
     Password.authorize(params)
   end
 
-  def authorize(%{"grant_type" => "authorize_2fa_access_token"} = params) do
+  def create_by_grant_type(%{"grant_type" => "authorize_2fa_access_token"} = params) do
     AccessToken2FA.authorize(params)
   end
 
-  def authorize(%{"grant_type" => "refresh_2fa_access_token"} = params) do
+  def create_by_grant_type(%{"grant_type" => "refresh_2fa_access_token"} = params) do
     AccessToken2FA.refresh(params)
   end
 
-  def authorize(%{"grant_type" => "authorization_code"} = params) do
+  def create_by_grant_type(%{"grant_type" => "authorization_code"} = params) do
     AuthorizationCode.authorize(params)
   end
 
-  def authorize(%{"grant_type" => "digital_signature"} = params) do
+  def create_by_grant_type(%{"grant_type" => "digital_signature"} = params) do
     Signature.authorize(params)
   end
 
-  def authorize(%{"grant_type" => "refresh_token"} = params) do
+  def create_by_grant_type(%{"grant_type" => "refresh_token"} = params) do
     RefreshToken.authorize(params)
   end
 
-  def authorize(_) do
+  def create_by_grant_type(_) do
     Error.invalid_request("Request must include grant_type.")
+  end
+
+  def init_factor(attrs) do
+    with :ok <- AccessToken2FA.validate_authorization_header(attrs),
+         {:ok, token} <- validate_token(attrs["token_value"]),
+         user <- UserAPI.get_user(token.user_id),
+         {:ok, _} <- AccessToken2FA.validate_user(user),
+         %Ecto.Changeset{valid?: true} <- factor_changeset(attrs),
+         where_factor <- prepare_factor_where_clause(token, attrs),
+         %Factor{} = factor <- Authentication.get_factor_by!(where_factor),
+         :ok <- validate_token_type(token, factor),
+         token_data <- prepare_2fa_token_data(token, attrs),
+         {:ok, token_2fa} <- TokenAPI.create_2fa_access_token(token_data),
+         factor <- %Factor{factor: attrs["factor"], type: Authentication.type(:sms)},
+         :ok <- Authentication.send_otp(user, factor, token_2fa),
+         {_, nil} <- TokenAPI.deactivate_old_tokens(token_2fa) do
+      {:ok, %{token: token_2fa, urgent: %{next_step: @approve_factor}}}
+    else
+      {:error, :sms_not_sent} -> {:error, {:service_unavailable, "SMS not sent. Try later"}}
+      {:error, :otp_timeout} -> Error.otp_timeout()
+      err -> err
+    end
+  end
+
+  def approve_factor(attrs) do
+    with :ok <- AccessToken2FA.validate_authorization_header(attrs),
+         {:ok, token} <- validate_token(attrs["token_value"]),
+         :ok <- validate_approve_token(token),
+         user <- UserAPI.get_user(token.user_id),
+         {:ok, user} <- AccessToken2FA.validate_user(user),
+         where_factor <- prepare_factor_where_clause(token),
+         %Factor{} = factor <- Authentication.get_factor_by!(where_factor),
+         :ok <- AccessToken2FA.verify_otp(token.details[@factor_field], token, attrs["otp"], user),
+         {:ok, _} <- Authentication.update_factor(factor, %{"factor" => token.details[@factor_field]}),
+         {:ok, token_2fa} <- create_token_by_grant_type(token),
+         {_, nil} <- TokenAPI.deactivate_old_tokens(token_2fa) do
+      {:ok, token_2fa}
+    end
+  end
+
+  defp factor_changeset(attrs) do
+    types = %{type: :string, factor: :string}
+
+    {%{}, types}
+    |> cast(attrs, Map.keys(types))
+    |> validate_required(Map.keys(types))
+    |> validate_inclusion(:type, [Authentication.type(:sms)])
+    |> Authentication.validate_factor_format()
+  end
+
+  defp validate_token(token_value) do
+    with %Token{} = token <- TokenAPI.get_token_by(value: token_value),
+         false <- expired?(token) do
+      {:ok, token}
+    else
+      true -> Error.token_expired()
+      nil -> Error.token_invalid()
+    end
+  end
+
+  def expired?(%Token{} = token) do
+    token.expires_at <= :os.system_time(:seconds)
+  end
+
+  defp validate_approve_token(%Token{details: %{@factor_field => _, @type_field => _}}), do: :ok
+  defp validate_approve_token(_), do: Error.access_denied("Invalid token type. Init factor at first")
+
+  defp validate_token_type(%Token{name: @access_token_2fa}, %Factor{factor: v}) when is_nil(v) or "" == v, do: :ok
+  defp validate_token_type(%Token{name: @access_token}, %Factor{factor: val}) when byte_size(val) > 0, do: :ok
+  defp validate_token_type(_, _), do: Error.token_invalid_type()
+
+  defp prepare_factor_where_clause(%Token{user_id: user_id, details: %{@type_field => type}}) do
+    [user_id: user_id, is_active: true, type: type]
+  end
+
+  defp prepare_factor_where_clause(%Token{} = token, %{"type" => type}) do
+    [user_id: token.user_id, is_active: true, type: type]
+  end
+
+  defp create_token_by_grant_type(%Token{details: %{"grant_type" => "change_password"}} = token) do
+    token
+    |> prepare_token_data("user:change_password")
+    |> TokenAPI.create_change_password_token()
+  end
+
+  defp create_token_by_grant_type(%Token{} = token) do
+    token
+    |> prepare_token_data("app:authorize")
+    |> TokenAPI.create_access_token()
+  end
+
+  defp prepare_token_data(%Token{details: details} = token, default_scope) do
+    # changing 2FA token to access token
+    # creates token with scope that stored in detais.scope_request
+    scope = Map.get(details, "scope_request", default_scope)
+
+    details =
+      details
+      |> Map.drop(["request_authentication_factor", "request_authentication_factor_type"])
+      |> Map.put("scope", scope)
+
+    %{user_id: token.user_id, details: details}
+  end
+
+  defp prepare_2fa_token_data(%Token{} = token, attrs) do
+    %{
+      user_id: token.user_id,
+      details:
+        Map.merge(token.details, %{
+          request_authentication_factor: attrs["factor"],
+          request_authentication_factor_type: attrs["type"]
+        })
+    }
   end
 end
