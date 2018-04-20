@@ -104,6 +104,17 @@ defmodule Mithril.Web.FallbackController do
     proxy(conn, proxy_resp)
   end
 
+  @doc """
+  Guardian error messages
+  """
+  def auth_error(conn, {:invalid_token, :token_expired}, _opts) do
+    call(conn, {:error, {:access_denied, %{message: "JWT expired", type: :jwt_expired}}})
+  end
+
+  def auth_error(conn, {:invalid_token, "aud"}, _opts) do
+    call(conn, {:error, {:access_denied, %{message: "JWT is not permitted for this action", type: :jwt_aud_invalid}}})
+  end
+
   def auth_error(conn, _, _opts) do
     call(conn, {:error, :access_denied})
   end
