@@ -120,25 +120,25 @@ defmodule Mithril.Web.OTPControllerTest do
     end
 
     test "JWT expired", %{conn: conn} do
-      jwt =
-        "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJtaXRocmlsLWxvZ2luIiwiZXhwIjoxNTIyMzEzODgxLCJpYXQiOjE1Mj" <>
-          "IzMTM4MjEsImlzcyI6IkVIZWFsdGgiLCJqdGkiOiI1YzRlMjg5ZS0wNjQyLTQ0YzYtYmU0Yy1iOWZjM2EyZDllZGYiLCJuYmYiOjE" <>
-          "1MjIzMTM4MjAsIm5vbmNlIjoxMjMsInN1YiI6MTIzLCJ0eXAiOiJhY2Nlc3MifQ.g853d2Tl3J0aAeEfJyxQ1O1V4b442qSdXb9em" <>
-          "TGvhZIooT5c8JN5rdRh0x3L-Mk58Z_vcjtZcAHc9Vsn-MFLbg"
+      {:ok, jwt, _} = encode_and_sign(:email, %{email: "email@example.com", exp: 1_524_210_044}, token_type: "access")
 
-      conn
-      |> Plug.Conn.put_req_header("authorization", jwt)
-      |> post(otp_path(conn, :send_otp), %{type: "SMS", factor: "+380670001122"})
-      |> json_response(401)
+      assert "jwt_expired" ==
+               conn
+               |> Plug.Conn.put_req_header("authorization", "Bearer #{jwt}")
+               |> post(otp_path(conn, :send_otp), %{type: "SMS", factor: "+380670001122"})
+               |> json_response(401)
+               |> get_in(~w(error type))
     end
 
     test "invalid JWT aud", %{conn: conn} do
       {:ok, jwt, _} = encode_and_sign(:nonce, %{nonce: 123}, token_type: "access")
 
-      conn
-      |> Plug.Conn.put_req_header("authorization", "Bearer " <> jwt)
-      |> post(otp_path(conn, :send_otp), %{type: "SMS", factor: "+380670001122"})
-      |> json_response(401)
+      assert "jwt_aud_invalid" ==
+               conn
+               |> Plug.Conn.put_req_header("authorization", "Bearer #{jwt}")
+               |> post(otp_path(conn, :send_otp), %{type: "SMS", factor: "+380670001122"})
+               |> json_response(401)
+               |> get_in(~w(error type))
     end
 
     test "invalid type", %{conn: conn, jwt: jwt} do
