@@ -7,6 +7,7 @@ defmodule Mithril.Authentication do
 
   alias Mithril.{Repo, OTP, Error, Guardian}
   alias Mithril.OTP.Schema, as: OTPSchema
+  alias Mithril.ClientAPI
   alias Mithril.UserAPI.User
   alias Mithril.TokenAPI.Token
   alias Mithril.Authentication.{Factor, FactorSearch, OTPSend}
@@ -275,8 +276,18 @@ defmodule Mithril.Authentication do
   end
 
   defp preload_references({:ok, factor}), do: {:ok, preload_references(factor)}
-
   defp preload_references(%Factor{} = factor), do: Repo.preload(factor, :user)
-
   defp preload_references(err), do: err
+
+  def generate_nonce_for_client([client_id]) when is_binary(client_id) do
+    ttl = {Confex.fetch_env!(:mithril_api, :ttl_login), :minutes}
+
+    with %{is_blocked: false} <- ClientAPI.get_client!(client_id) do
+      Guardian.encode_and_sign(:nonce, %{nonce: 123}, token_type: "access", ttl: ttl)
+    else
+      %{is_blocked: true} -> {:error, {:access_denied, "Client is blocked"}}
+    end
+  end
+
+  def generate_nonce_for_client(_), do: {:error, {:access_denied, "Client header not set"}}
 end

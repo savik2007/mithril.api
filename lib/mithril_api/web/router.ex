@@ -36,7 +36,7 @@ defmodule MithrilWeb.Router do
     pipe_through(:api)
 
     # generate nonce for Sign in
-    get("/nonce", OAuth.TokenController, :nonce)
+    get("/nonce", OAuth.NonceController, :nonce)
 
     post("/apps/authorize", OAuth.AppController, :authorize)
     post("/tokens", OAuth.TokenController, :create)

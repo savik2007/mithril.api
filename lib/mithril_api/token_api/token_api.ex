@@ -266,16 +266,4 @@ defmodule Mithril.TokenAPI do
   end
 
   defp get_token_lifetime, do: Confex.fetch_env!(:mithril_api, :token_lifetime)
-
-  def generate_nonce_for_client([client_id]) when is_binary(client_id) do
-    ttl = {Confex.fetch_env!(:mithril_api, :ttl_login), :minutes}
-
-    with %{is_blocked: false} <- ClientAPI.get_client!(client_id) do
-      Guardian.encode_and_sign(:nonce, %{nonce: 123}, token_type: "access", ttl: ttl)
-    else
-      %{is_blocked: true} -> {:error, {:access_denied, "Client is blocked"}}
-    end
-  end
-
-  def generate_nonce_for_client(_), do: {:error, {:access_denied, "Client header not set"}}
 end

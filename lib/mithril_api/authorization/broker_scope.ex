@@ -32,11 +32,8 @@ defmodule Mithril.Authorization.BrokerScope do
 
   defp fetch_client_by_secret(api_key) do
     case ClientAPI.get_client_by(secret: api_key) do
-      %Client{} = client ->
-        client
-
-      _ ->
-        Error.invalid_request("API-KEY header is invalid.")
+      %Client{} = client -> client
+      _ -> Error.invalid_request("API-KEY header is invalid.")
     end
   end
 

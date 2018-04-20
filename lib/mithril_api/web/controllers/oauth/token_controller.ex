@@ -1,8 +1,8 @@
 defmodule Mithril.OAuth.TokenController do
   use Mithril.Web, :controller
 
-  alias Mithril.Authorization.Tokens
   alias Mithril.TokenAPI
+  alias Mithril.Authorization.Tokens
   alias Mithril.Web.TokenView
 
   action_fallback(Mithril.Web.FallbackController)
@@ -44,12 +44,6 @@ defmodule Mithril.OAuth.TokenController do
            |> put_header_value(conn, "drfo")
            |> Tokens.create_by_grant_type() do
       send_response(conn, resp, "show.json")
-    end
-  end
-
-  def nonce(conn, _) do
-    with {:ok, jwt, _} <- conn |> get_req_header("client-id") |> TokenAPI.generate_nonce_for_client() do
-      render(conn, TokenView, "raw.json", json: %{token: jwt})
     end
   end
 
