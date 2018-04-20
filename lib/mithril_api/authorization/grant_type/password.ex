@@ -1,42 +1,33 @@
 defmodule Mithril.Authorization.GrantType.Password do
   @moduledoc false
   import Ecto.Changeset
+  import Mithril.Authorization.Tokens, only: [next_step: 1]
 
-  alias Mithril.Error
-  alias Mithril.UserAPI
+  alias Mithril.{Authentication, Error, UserAPI, ClientAPI}
   alias Mithril.UserAPI.User
-  alias Mithril.Authentication
   alias Mithril.Authentication.{Factor, Factors}
   alias Mithril.Authorization.LoginHistory
   alias Mithril.ClientTypeAPI.ClientType
-
-  @request_otp "REQUEST_OTP"
-  @request_apps "REQUEST_APPS"
-  @request_factor "REQUEST_FACTOR"
-  @request_ds "REQUEST_LOGIN_VIA_DS"
 
   @grant_type_password "password"
   @grant_type_change_password "change_password"
 
   @cabinet_client_type ClientType.client_type(:cabinet)
 
-  def next_step(:request_otp), do: @request_otp
-  def next_step(:request_apps), do: @request_apps
-
   def authorize(attrs) do
     grant_type = Map.get(attrs, "grant_type", @grant_type_password)
 
     # check client_id and define process (with required DS or not)
     with %Ecto.Changeset{valid?: true} <- changeset(attrs),
-         client <- Mithril.ClientAPI.get_client_with_type(attrs["client_id"]),
-         :ok <- validate_client(client, "password"),
+         client <- ClientAPI.get_client_with_type(attrs["client_id"]),
+         :ok <- ClientAPI.validate_client_allowed_grant_types(client, "password"),
          user <- UserAPI.get_user_by(email: attrs["email"]),
          :ok <- validate_user_by_client(user, client),
          {:ok, user} <- validate_user(user),
          :ok <- LoginHistory.check_failed_login(user, LoginHistory.type(:password)),
          {:ok, user} <- match_with_user_password(user, attrs["password"]),
          :ok <- validate_user_password(user, grant_type),
-         :ok <- validate_token_scope_by_client(client.client_type.scope, attrs["scope"]),
+         :ok <- ClientAPI.validate_client_allowed_scope(client, attrs["scope"]),
          :ok <- validate_token_scope_by_grant(grant_type, attrs["scope"]),
          factor <- Factors.get_factor_by(user_id: user.id, is_active: true),
          {:ok, token} <- create_token_by_grant_type(factor, user, client, attrs["scope"], grant_type),
@@ -67,17 +58,6 @@ defmodule Mithril.Authorization.GrantType.Password do
     |> validate_required(Map.keys(types))
   end
 
-  def validate_client(nil, _grant_type) do
-    {:error, {:access_denied, "Invalid client id."}}
-  end
-
-  def validate_client(client, grant_type) do
-    case grant_type in Map.get(client.settings, "allowed_grant_types", []) do
-      true -> :ok
-      false -> {:error, {:access_denied, "Client is not allowed to issue login token."}}
-    end
-  end
-
   def validate_user_by_client(%User{tax_id: tax_id}, %{client_type: %{name: @cabinet_client_type}})
       when is_nil(tax_id) or tax_id == "",
       do: {:error, {:forbidden, %{message: "User is not registered"}}}
@@ -98,22 +78,12 @@ defmodule Mithril.Authorization.GrantType.Password do
     end
   end
 
-  def validate_token_scope_by_client(client_scope, requested_scope) do
-    allowed_scopes = String.split(client_scope, " ", trim: true)
-    requested_scopes = String.split(requested_scope, " ", trim: true)
-
-    case Mithril.Utils.List.subset?(allowed_scopes, requested_scopes) do
-      true -> :ok
-      _ -> Error.invalid_scope(allowed_scopes)
-    end
-  end
-
   defp validate_token_scope_by_grant(@grant_type_change_password, "user:change_password"), do: :ok
   defp validate_token_scope_by_grant(@grant_type_change_password, _), do: Error.invalid_scope(["user:change_password"])
   defp validate_token_scope_by_grant(_, _requested_scope), do: :ok
 
   defp create_token_by_grant_type(nil, _, %{client_type: %{name: @cabinet_client_type}}, _, @grant_type_password) do
-    {:error, {:forbidden, %{message: @request_ds}}}
+    {:error, {:forbidden, %{message: next_step(:request_ds)}}}
   end
 
   defp create_token_by_grant_type(
@@ -174,9 +144,9 @@ defmodule Mithril.Authorization.GrantType.Password do
   defp maybe_send_otp(user, %Factor{} = factor, token), do: Authentication.send_otp(user, factor, token)
   defp maybe_send_otp(_, _, _), do: {:ok, :request_app}
 
-  def map_next_step(:ok), do: {:ok, @request_otp}
-  def map_next_step({:ok, :request_app}), do: {:ok, @request_apps}
-  def map_next_step({:error, :factor_not_set}), do: {:ok, @request_factor}
-  def map_next_step({:error, :sms_not_sent}), do: {:error, {:service_unavailable, "SMS not sent. Try later"}}
-  def map_next_step({:error, :otp_timeout}), do: Error.otp_timeout()
+  defp map_next_step(:ok), do: {:ok, next_step(:request_otp)}
+  defp map_next_step({:ok, :request_app}), do: {:ok, next_step(:request_apps)}
+  defp map_next_step({:error, :factor_not_set}), do: {:ok, next_step(:request_factor)}
+  defp map_next_step({:error, :sms_not_sent}), do: {:error, {:service_unavailable, "SMS not sent. Try later"}}
+  defp map_next_step({:error, :otp_timeout}), do: Error.otp_timeout()
 end

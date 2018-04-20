@@ -3,16 +3,13 @@ defmodule Mithril.Authorization.Tokens do
 
   import Ecto.{Query, Changeset}, warn: false
 
-  alias Mithril.Error
-  alias Mithril.Authorization.GrantType.{Password, RefreshToken, AccessToken2FA, AuthorizationCode, Signature}
-  alias Mithril.{UserAPI, ClientAPI, TokenAPI}
+  alias Mithril.{Authentication, Error, UserAPI, ClientAPI, TokenAPI}
   alias Mithril.UserAPI.User
   alias Mithril.TokenAPI.Token
   alias Mithril.ClientAPI.Client
-  alias Mithril.Authentication
   alias Mithril.Authentication.{Factor, Factors}
   alias Mithril.Authorization.BrokerScope
-  alias Mithril.Authorization.GrantType.{Password, AccessToken2FA}
+  alias Mithril.Authorization.GrantType.{Password, RefreshToken, AccessToken2FA, AuthorizationCode, Signature}
 
   @access_token TokenAPI.token_type(:access)
   @access_token_2fa TokenAPI.token_type(:access_2fa)
@@ -20,6 +17,16 @@ defmodule Mithril.Authorization.Tokens do
   @approve_factor "APPROVE_FACTOR"
   @type_field "request_authentication_factor_type"
   @factor_field "request_authentication_factor"
+
+  @request_otp "REQUEST_OTP"
+  @request_apps "REQUEST_APPS"
+  @request_factor "REQUEST_FACTOR"
+  @request_ds "REQUEST_LOGIN_VIA_DS"
+
+  def next_step(:request_ds), do: @request_ds
+  def next_step(:request_otp), do: @request_otp
+  def next_step(:request_apps), do: @request_apps
+  def next_step(:request_factor), do: @request_factor
 
   @doc """
     Create new access_tokens based on grant_type the request came with

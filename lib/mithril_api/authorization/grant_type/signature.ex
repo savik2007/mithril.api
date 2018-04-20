@@ -2,9 +2,7 @@ defmodule Mithril.Authorization.GrantType.Signature do
   @moduledoc false
 
   import Ecto.{Query, Changeset}, warn: false
-
-  import Mithril.Authorization.GrantType.Password,
-    only: [validate_client: 2, next_step: 1, validate_token_scope_by_client: 2]
+  import Mithril.Authorization.Tokens, only: [next_step: 1]
 
   alias Mithril.{UserAPI, ClientAPI, TokenAPI, Error, Guardian}
   alias Mithril.Ecto.Base64
@@ -25,8 +23,8 @@ defmodule Mithril.Authorization.GrantType.Signature do
          :ok <- validate_content_jwt(content),
          {:ok, tax_id} <- validate_signer_tax_id(signer),
          client <- ClientAPI.get_client_with_type(attrs["client_id"]),
-         :ok <- validate_client(client, "digital_signature"),
-         :ok <- validate_token_scope_by_client(client.client_type.scope, attrs["scope"]),
+         :ok <- ClientAPI.validate_client_allowed_grant_types(client, "digital_signature"),
+         :ok <- ClientAPI.validate_client_allowed_scope(client, attrs["scope"]),
          user <- UserAPI.get_user_by(tax_id: tax_id),
          {:ok, user} <- validate_user(user),
          {:ok, person} <- get_person(user.person_id),

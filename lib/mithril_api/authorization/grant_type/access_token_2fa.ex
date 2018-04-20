@@ -1,15 +1,13 @@
 defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   @moduledoc false
   import Ecto.Changeset
+  import Mithril.Authorization.Tokens, only: [next_step: 1]
 
-  alias Mithril.Error
-  alias Mithril.UserAPI
+  alias Mithril.{Error, UserAPI, TokenAPI}
   alias Mithril.UserAPI.User
-  alias Mithril.TokenAPI
   alias Mithril.TokenAPI.Token
   alias Mithril.Authentication
   alias Mithril.Authentication.{Factor, Factors}
-  alias Mithril.Authorization.GrantType.Password
 
   def authorize(params) do
     with %Ecto.Changeset{valid?: true} <- changeset(params),
@@ -23,7 +21,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
          :ok <- verify_otp(factor, token_2fa, params["otp"], user),
          {:ok, token} <- create_access_token(token_2fa),
          {_, nil} <- TokenAPI.deactivate_old_tokens(token) do
-      {:ok, %{token: token, urgent: %{next_step: Password.next_step(:request_apps)}}}
+      {:ok, %{token: token, urgent: %{next_step: next_step(:request_apps)}}}
     end
   end
 
@@ -38,7 +36,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
          {:ok, token} <- create_2fa_access_token(token_2fa),
          :ok <- Authentication.send_otp(user, factor, token),
          {_, nil} <- TokenAPI.deactivate_old_tokens(token) do
-      {:ok, %{token: token, urgent: %{next_step: Password.next_step(:request_otp)}}}
+      {:ok, %{token: token, urgent: %{next_step: next_step(:request_otp)}}}
     else
       {:error, :otp_timeout} -> Error.otp_timeout()
       {:error, :sms_not_sent} -> {:error, {:service_unavailable, "SMS not sent. Try later"}}
@@ -116,7 +114,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
     # creates token with scope that stored in detais.scope_request
     scope = Map.get(details, "scope_request", "user:change_password")
 
-    Mithril.TokenAPI.create_change_password_token(%{
+    TokenAPI.create_change_password_token(%{
       user_id: token.user_id,
       details: Map.put(details, "scope", scope)
     })
@@ -127,14 +125,14 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
     # creates token with scope that stored in detais.scope_request
     scope = Map.get(details, "scope_request", "app:authorize")
 
-    Mithril.TokenAPI.create_access_token(%{
+    TokenAPI.create_access_token(%{
       user_id: token.user_id,
       details: Map.put(details, "scope", scope)
     })
   end
 
   defp create_2fa_access_token(%Token{details: details} = token_2fa) do
-    Mithril.TokenAPI.create_2fa_access_token(%{
+    TokenAPI.create_2fa_access_token(%{
       user_id: token_2fa.user_id,
       details: Map.put(details, "scope", "")
     })

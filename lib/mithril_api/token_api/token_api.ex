@@ -6,10 +6,9 @@ defmodule Mithril.TokenAPI do
 
   alias Ecto.Multi
   alias Mithril.{Repo, Error}
-  alias Mithril.{UserAPI, ClientAPI}
+  alias Mithril.{UserAPI, ClientAPI, TokenAPI}
   alias Mithril.UserAPI.User
   alias Mithril.TokenAPI.{Token, TokenSearch}
-  alias Mithril.Authorization.GrantType.Password
 
   @refresh_token "refresh_token"
   @access_token "access_token"
@@ -72,10 +71,10 @@ defmodule Mithril.TokenAPI do
 
   def create_access_token(%User{} = user, %{"client_id" => client_id, "scope" => scope}) do
     with client <- ClientAPI.get_client_with_type(client_id),
-         :ok <- Password.validate_client(client, "password"),
-         :ok <- Password.validate_token_scope_by_client(client.client_type.scope, scope),
+         :ok <- ClientAPI.validate_client_allowed_grant_types(client, "password"),
+         :ok <- ClientAPI.validate_client_allowed_scope(client, scope),
          {:ok, token} <- create_access_token(user, client, scope),
-         {_, nil} <- Mithril.TokenAPI.deactivate_old_tokens(token) do
+         {_, nil} <- TokenAPI.deactivate_old_tokens(token) do
       {:ok, token}
     end
   end
@@ -204,7 +203,7 @@ defmodule Mithril.TokenAPI do
     query =
       Token
       |> join(:inner, [t], u in User, t.user_id == u.id)
-      |> where([t], t.name not in ["2fa_access_token", "change_password_token"])
+      |> where([t], t.name not in [@access_token_2fa, @change_password_token])
       |> where([t], t.expires_at >= ^:os.system_time(:seconds))
       |> where([t, u], fragment("now() >= ?", datetime_add(u.password_set_at, ^expiration_days, "day")))
 

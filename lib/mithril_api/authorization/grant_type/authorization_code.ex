@@ -1,8 +1,10 @@
 defmodule Mithril.Authorization.GrantType.AuthorizationCode do
   @moduledoc false
 
-  alias Mithril.Error
+  alias Mithril.{Error, TokenAPI}
   alias Mithril.Utils.RedirectUriChecker
+
+  @authorization_code TokenAPI.token_type(:authorization_code)
 
   def authorize(%{
         "client_id" => client_id,
@@ -23,8 +25,9 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCode do
   defp do_authorize(nil, _, _), do: Error.invalid_client("Invalid client id or secret.")
 
   defp do_authorize(client, code, redirect_uri) do
-    token = Mithril.TokenAPI.get_token_by(value: code, name: "authorization_code")
-    create_token(token, client, redirect_uri)
+    [value: code, name: @authorization_code]
+    |> TokenAPI.get_token_by()
+    |> create_token(client, redirect_uri)
   end
 
   defp create_token(nil, _, _), do: Error.invalid_grant("Token not found.")
@@ -47,7 +50,7 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCode do
       Mithril.TokenAPI.create_refresh_token(%{
         user_id: token.user_id,
         details: %{
-          grant_type: "authorization_code",
+          grant_type: @authorization_code,
           client_id: token.details["client_id"],
           scope: ""
         }
@@ -56,7 +59,7 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCode do
     Mithril.TokenAPI.create_access_token(%{
       user_id: token.user_id,
       details: %{
-        grant_type: "authorization_code",
+        grant_type: @authorization_code,
         client_id: token.details["client_id"],
         scope: token.details["scope_request"],
         refresh_token: refresh_token.value,
