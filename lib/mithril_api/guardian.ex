@@ -9,21 +9,10 @@ defmodule Mithril.Guardian do
   def get_aud(:login), do: @aud_login
   def get_aud(:registration), do: @aud_registration
 
-  def subject_for_token(:email, %{"email" => email}) do
-    {:ok, email}
-  end
+  def subject_for_token(:email, %{"email" => email}), do: {:ok, email}
+  def subject_for_token(:nonce, %{"nonce" => nonce}), do: {:ok, nonce}
 
-  def subject_for_token(:nonce, %{"nonce" => nonce}) do
-    {:ok, nonce}
-  end
-
-  def build_claims(claims, :nonce, _opts) do
-    {:ok, Map.put(claims, "aud", @aud_login)}
-  end
-
-  def build_claims(claims, :email, _opts) do
-    {:ok, Map.put(claims, "aud", @aud_registration)}
-  end
-
+  def build_claims(claims, :nonce, _opts), do: {:ok, Map.put(claims, "aud", @aud_login)}
+  def build_claims(claims, :email, _opts), do: {:ok, Map.put(claims, "aud", @aud_registration)}
   def build_claims(claims, _resource, _opts), do: {:ok, claims}
 end
