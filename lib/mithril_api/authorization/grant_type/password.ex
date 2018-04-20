@@ -6,7 +6,7 @@ defmodule Mithril.Authorization.GrantType.Password do
   alias Mithril.UserAPI
   alias Mithril.UserAPI.User
   alias Mithril.Authentication
-  alias Mithril.Authentication.Factor
+  alias Mithril.Authentication.{Factor, Factors}
   alias Mithril.Authorization.LoginHistory
   alias Mithril.ClientTypeAPI.ClientType
 
@@ -38,7 +38,7 @@ defmodule Mithril.Authorization.GrantType.Password do
          :ok <- validate_user_password(user, grant_type),
          :ok <- validate_token_scope_by_client(client.client_type.scope, attrs["scope"]),
          :ok <- validate_token_scope_by_grant(grant_type, attrs["scope"]),
-         factor <- Authentication.get_factor_by(user_id: user.id, is_active: true),
+         factor <- Factors.get_factor_by(user_id: user.id, is_active: true),
          {:ok, token} <- create_token_by_grant_type(factor, user, client, attrs["scope"], grant_type),
          {_, nil} <- Mithril.TokenAPI.deactivate_old_tokens(token),
          sms_send_response <- maybe_send_otp(user, factor, token),

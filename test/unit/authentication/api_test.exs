@@ -4,7 +4,7 @@ defmodule Mithril.Authentication.APITest do
   alias Ecto.Changeset
   alias Mithril.UserAPI
   alias Mithril.Authentication
-  alias Mithril.Authentication.Factor
+  alias Mithril.Authentication.{Factor, Factors}
   alias Mithril.Authorization.LoginHistory
   alias Mithril.UserAPI.User.PrivSettings
 
@@ -22,7 +22,7 @@ defmodule Mithril.Authentication.APITest do
         "type" => Authentication.type(:sms)
       }
 
-      assert {:ok, %Factor{}} = Authentication.create_factor(data)
+      assert {:ok, %Factor{}} = Factors.create_factor(data)
     end
 
     test "success without factor", %{user: user} do
@@ -31,7 +31,7 @@ defmodule Mithril.Authentication.APITest do
         "type" => Authentication.type(:sms)
       }
 
-      assert {:ok, %Factor{}} = Authentication.create_factor(data)
+      assert {:ok, %Factor{}} = Factors.create_factor(data)
     end
 
     test "cannot create factor without otp", %{user: user} do
@@ -41,7 +41,7 @@ defmodule Mithril.Authentication.APITest do
         "factor" => "+380881002030"
       }
 
-      assert {:error, %Changeset{valid?: false, errors: [otp: _]}} = Authentication.create_factor(data)
+      assert {:error, %Changeset{valid?: false, errors: [otp: _]}} = Factors.create_factor(data)
     end
 
     test "invalid type", %{user: user} do
@@ -50,11 +50,11 @@ defmodule Mithril.Authentication.APITest do
         "type" => "INVALID"
       }
 
-      assert {:error, %Changeset{valid?: false, errors: [type: _]}} = Authentication.create_factor(data)
+      assert {:error, %Changeset{valid?: false, errors: [type: _]}} = Factors.create_factor(data)
     end
 
     test "factor already exists", %{user: user} do
-      key = Authentication.generate_key("email@example.com", "+380901002030")
+      key = Authentication.generate_otp_key("email@example.com", "+380901002030")
       insert(:otp, key: key, code: 9912)
 
       data = %{
@@ -65,11 +65,11 @@ defmodule Mithril.Authentication.APITest do
         "otp" => 9912
       }
 
-      key = Authentication.generate_key("email@example.com", "+380901002030")
+      key = Authentication.generate_otp_key("email@example.com", "+380901002030")
       insert(:otp, key: key, code: 9912)
 
-      assert {:ok, %Factor{}} = Authentication.create_factor(data)
-      assert {:error, %Changeset{valid?: false, errors: [user_id: _]}} = Authentication.create_factor(data)
+      assert {:ok, %Factor{}} = Factors.create_factor(data)
+      assert {:error, %Changeset{valid?: false, errors: [user_id: _]}} = Factors.create_factor(data)
     end
 
     test "user does not exists" do
@@ -78,7 +78,7 @@ defmodule Mithril.Authentication.APITest do
         "type" => Authentication.type(:sms)
       }
 
-      assert {:error, %Changeset{valid?: false, errors: [user: _]}} = Authentication.create_factor(data)
+      assert {:error, %Changeset{valid?: false, errors: [user: _]}} = Factors.create_factor(data)
     end
   end
 
@@ -86,14 +86,14 @@ defmodule Mithril.Authentication.APITest do
     test "success" do
       assert {:ok, user} = UserAPI.create_user(@create_attr)
       assert %{login_hstr: [], otp_error_counter: 0} = user.priv_settings
-      assert %Factor{} = Authentication.get_factor_by!(user_id: user.id)
+      assert %Factor{} = Factors.get_factor_by!(user_id: user.id)
     end
 
     test "2fa not enabled in ENV" do
       System.put_env("USER_2FA_ENABLED", "false")
 
       assert {:ok, user} = UserAPI.create_user(@create_attr)
-      assert_raise Ecto.NoResultsError, fn -> Authentication.get_factor_by!(user_id: user.id) end
+      assert_raise Ecto.NoResultsError, fn -> Factors.get_factor_by!(user_id: user.id) end
 
       System.put_env("USER_2FA_ENABLED", "true")
     end
@@ -102,20 +102,20 @@ defmodule Mithril.Authentication.APITest do
       System.put_env("USER_2FA_ENABLED", "false")
       data = Map.put(@create_attr, "2fa_enable", true)
       assert {:ok, user} = UserAPI.create_user(data)
-      assert %Factor{} = Authentication.get_factor_by!(user_id: user.id)
+      assert %Factor{} = Factors.get_factor_by!(user_id: user.id)
       System.put_env("USER_2FA_ENABLED", "true")
     end
 
     test "2fa enabled in ENV but passed param 2fa_enable FALSE" do
       data = Map.put(@create_attr, "2fa_enable", false)
       assert {:ok, user} = UserAPI.create_user(data)
-      assert_raise Ecto.NoResultsError, fn -> Authentication.get_factor_by!(user_id: user.id) end
+      assert_raise Ecto.NoResultsError, fn -> Factors.get_factor_by!(user_id: user.id) end
     end
 
     test "invalid 2fa_enable param" do
       data = Map.put(@create_attr, "2fa_enable", "yes")
       assert {:ok, user} = UserAPI.create_user(data)
-      assert_raise Ecto.NoResultsError, fn -> Authentication.get_factor_by!(user_id: user.id) end
+      assert_raise Ecto.NoResultsError, fn -> Factors.get_factor_by!(user_id: user.id) end
     end
 
     test "invalid params for user" do
@@ -129,7 +129,7 @@ defmodule Mithril.Authentication.APITest do
       System.put_env(@env, "template <otp.code>")
 
       code = 1234
-      assert "template 1234" == Authentication.generate_message(code)
+      assert "template 1234" == Authentication.generate_otp_message(code)
 
       System.put_env(@env, "Код підтвердження: <otp.code>")
     end
@@ -138,7 +138,7 @@ defmodule Mithril.Authentication.APITest do
       System.put_env(@env, "template without code mask")
 
       code = 1230
-      assert "1230" == Authentication.generate_message(code)
+      assert "1230" == Authentication.generate_otp_message(code)
 
       System.put_env(@env, "Код підтвердження: <otp.code>")
     end

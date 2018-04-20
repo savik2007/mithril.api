@@ -5,21 +5,17 @@ defmodule Mithril.Authorization.Tokens do
 
   alias Mithril.Error
   alias Mithril.Authorization.GrantType.{Password, RefreshToken, AccessToken2FA, AuthorizationCode, Signature}
-  alias Mithril.{Error, Guardian}
   alias Mithril.{UserAPI, ClientAPI, TokenAPI}
   alias Mithril.UserAPI.User
   alias Mithril.TokenAPI.Token
   alias Mithril.ClientAPI.Client
   alias Mithril.Authentication
-  alias Mithril.Authentication.Factor
-  alias Mithril.Authorization.GrantType.{Password, AccessToken2FA}
+  alias Mithril.Authentication.{Factor, Factors}
   alias Mithril.Authorization.BrokerScope
+  alias Mithril.Authorization.GrantType.{Password, AccessToken2FA}
 
-  @refresh_token "refresh_token"
-  @access_token "access_token"
-  @access_token_2fa "2fa_access_token"
-  @change_password_token "change_password_token"
-  @authorization_code "authorization_code"
+  @access_token TokenAPI.token_type(:access)
+  @access_token_2fa TokenAPI.token_type(:access_2fa)
 
   @approve_factor "APPROVE_FACTOR"
   @type_field "request_authentication_factor_type"
@@ -63,7 +59,7 @@ defmodule Mithril.Authorization.Tokens do
          {:ok, _} <- AccessToken2FA.validate_user(user),
          %Ecto.Changeset{valid?: true} <- factor_changeset(attrs),
          where_factor <- prepare_factor_where_clause(token, attrs),
-         %Factor{} = factor <- Authentication.get_factor_by!(where_factor),
+         %Factor{} = factor <- Factors.get_factor_by!(where_factor),
          :ok <- validate_token_type(token, factor),
          token_data <- prepare_2fa_token_data(token, attrs),
          {:ok, token_2fa} <- TokenAPI.create_2fa_access_token(token_data),
@@ -85,9 +81,9 @@ defmodule Mithril.Authorization.Tokens do
          user <- UserAPI.get_user(token.user_id),
          {:ok, user} <- AccessToken2FA.validate_user(user),
          where_factor <- prepare_factor_where_clause(token),
-         %Factor{} = factor <- Authentication.get_factor_by!(where_factor),
+         %Factor{} = factor <- Factors.get_factor_by!(where_factor),
          :ok <- AccessToken2FA.verify_otp(token.details[@factor_field], token, attrs["otp"], user),
-         {:ok, _} <- Authentication.update_factor(factor, %{"factor" => token.details[@factor_field]}),
+         {:ok, _} <- Factors.update_factor(factor, %{"factor" => token.details[@factor_field]}),
          {:ok, token_2fa} <- create_token_by_grant_type(token),
          {_, nil} <- TokenAPI.deactivate_old_tokens(token_2fa) do
       {:ok, token_2fa}
@@ -101,7 +97,7 @@ defmodule Mithril.Authorization.Tokens do
     |> cast(attrs, Map.keys(types))
     |> validate_required(Map.keys(types))
     |> validate_inclusion(:type, [Authentication.type(:sms)])
-    |> Authentication.validate_factor_format()
+    |> Factors.validate_factor_format()
   end
 
   defp validate_token(token_value) do

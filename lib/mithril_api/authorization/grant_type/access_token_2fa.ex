@@ -8,7 +8,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   alias Mithril.TokenAPI
   alias Mithril.TokenAPI.Token
   alias Mithril.Authentication
-  alias Mithril.Authentication.Factor
+  alias Mithril.Authentication.{Factor, Factors}
   alias Mithril.Authorization.GrantType.Password
 
   def authorize(params) do
@@ -80,7 +80,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   def validate_user(_), do: {:error, {:access_denied, "User not found."}}
 
   defp get_auth_factor_by_user_id(user_id) do
-    case Authentication.get_factor_by(user_id: user_id, is_active: true) do
+    case Factors.get_factor_by(user_id: user_id, is_active: true) do
       %Factor{} = factor -> factor
       _ -> {:error, %{conflict: "Not found authentication factor for user."}}
     end

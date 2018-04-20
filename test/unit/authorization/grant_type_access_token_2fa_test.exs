@@ -33,7 +33,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
     role = insert(:role, scope: "legal_entity:read legal_entity:write")
     insert(:user_role, user_id: user.id, role_id: role.id, client_id: client.id)
     token = insert(:token, user_id: user.id, name: "2fa_access_token")
-    otp_key = Authentication.generate_key(token, factor_value)
+    otp_key = Authentication.generate_otp_key(token, factor_value)
     otp = insert(:otp, key: otp_key, code: 1234)
 
     {:ok, %{token: token, user: user, otp: otp, factor: factor}}
@@ -134,7 +134,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
     test "successfully created new OTP", %{token: token_2fa, factor: factor} do
       assert {:ok, %{token: token}} = AccessToken2FA.refresh(%{"token_value" => token_2fa.value})
       # generated new OTP
-      otp_key = Authentication.generate_key(token, factor.factor)
+      otp_key = Authentication.generate_otp_key(token, factor.factor)
       assert %OTPSchema{active: true} = OTP.get_otp_by(key: otp_key)
     end
 

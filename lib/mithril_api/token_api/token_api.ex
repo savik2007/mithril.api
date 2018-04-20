@@ -4,19 +4,12 @@ defmodule Mithril.TokenAPI do
   use Mithril.Search
   import Ecto.{Query, Changeset}, warn: false
 
-  alias Mithril.{Repo, Error, Guardian}
+  alias Ecto.Multi
+  alias Mithril.{Repo, Error}
   alias Mithril.{UserAPI, ClientAPI}
   alias Mithril.UserAPI.User
-  alias Mithril.TokenAPI.Token
-  alias Mithril.ClientAPI.Client
-  alias Mithril.TokenAPI.TokenSearch
-  alias Mithril.Authentication
-  alias Mithril.Authentication.Factor
-  alias Mithril.Authorization.GrantType.{Password, AccessToken2FA}
-  alias Ecto.Multi
-
-  @direct ClientAPI.access_type(:direct)
-  @broker ClientAPI.access_type(:broker)
+  alias Mithril.TokenAPI.{Token, TokenSearch}
+  alias Mithril.Authorization.GrantType.Password
 
   @refresh_token "refresh_token"
   @access_token "access_token"
@@ -24,8 +17,11 @@ defmodule Mithril.TokenAPI do
   @change_password_token "change_password_token"
   @authorization_code "authorization_code"
 
-  @type_field "request_authentication_factor_type"
-  @factor_field "request_authentication_factor"
+  def token_type(:refresh), do: @refresh_token
+  def token_type(:access), do: @access_token
+  def token_type(:access_2fa), do: @access_token_2fa
+  def token_type(:change_password), do: @change_password_token
+  def token_type(:authorization_code), do: @authorization_code
 
   def list_tokens(params) do
     %TokenSearch{}

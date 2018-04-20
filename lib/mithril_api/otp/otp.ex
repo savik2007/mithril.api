@@ -41,6 +41,13 @@ defmodule Mithril.OTP do
     |> search(params, OTPSchema)
   end
 
+  def list_otps_by_key_and_inserted_at(key, inserted_at) when is_binary(key) do
+    OTPSchema
+    |> where([o], o.key == ^key)
+    |> where([o], o.inserted_at >= ^inserted_at)
+    |> Repo.all()
+  end
+
   @doc """
   Gets a single OTP.
 

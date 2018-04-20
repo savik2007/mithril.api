@@ -14,7 +14,7 @@ defmodule Mithril.UserAPI do
   alias Mithril.UserAPI.User.PrivSettings
   alias Mithril.UserAPI.PasswordHistory
   alias Mithril.Authentication
-  alias Mithril.Authentication.Factor
+  alias Mithril.Authentication.{Factor, Factors}
 
   @fields_optional ~w(tax_id person_id settings current_password is_blocked block_reason)a
   @fields_required ~w(email password)a
@@ -82,7 +82,7 @@ defmodule Mithril.UserAPI do
       true ->
         attrs
         |> Map.merge(%{"type" => Authentication.type(:sms), "user_id" => user.id, "email" => user.email})
-        |> Authentication.create_factor()
+        |> Factors.create_factor()
 
       false ->
         {:ok, :not_enabled}
@@ -95,7 +95,7 @@ defmodule Mithril.UserAPI do
 
   defp create_or_update_user_factor(%{user: %{factor: %Factor{} = factor} = user}, %{"factor" => _} = attrs) do
     case enabled_2fa?(attrs) do
-      true -> Authentication.update_factor(factor, Map.put(attrs, "email", user.email), :with_otp_validation)
+      true -> Factors.update_factor(factor, Map.put(attrs, "email", user.email), :with_otp_validation)
       false -> {:ok, :not_enabled}
     end
   end

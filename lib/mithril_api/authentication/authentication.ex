@@ -1,8 +1,6 @@
 defmodule Mithril.Authentication do
   @doc false
 
-  use Mithril.Search
-
   import Ecto.{Query, Changeset, DateTime}, warn: false
 
   alias Mithril.{Repo, OTP, Error, Guardian}
@@ -10,22 +8,10 @@ defmodule Mithril.Authentication do
   alias Mithril.ClientAPI
   alias Mithril.UserAPI.User
   alias Mithril.TokenAPI.Token
-  alias Mithril.Authentication.{Factor, FactorSearch, OTPSend}
+  alias Mithril.Authentication.{Factor, Factors, FactorSearch, OTPSend}
   alias Mithril.Authorization.LoginHistory
 
   require Logger
-
-  @fields_required ~w(
-    type
-    user_id
-  )a
-
-  @fields_optional ~w(
-    otp
-    email
-    factor
-    is_active
-  )a
 
   @type_sms "SMS"
   @sms_api Application.get_env(:mithril_api, :api_resolvers)[:sms]
@@ -37,7 +23,7 @@ defmodule Mithril.Authentication do
     with :ok <- LoginHistory.check_sent_otps(user),
          otp <-
            token
-           |> generate_key(value)
+           |> generate_otp_key(value)
            |> OTP.initialize_otp(),
          _ <- LoginHistory.add_login(user, LoginHistory.type(:otp), true),
          :ok <- maybe_send_otp(otp, factor) do
@@ -53,7 +39,7 @@ defmodule Mithril.Authentication do
     with {:ok, %{"email" => email}} <- Guardian.decode_and_verify(jwt),
          %Ecto.Changeset{valid?: true} <- changeset(%OTPSend{}, params),
          factor <- %Factor{factor: params["factor"], type: params["type"]},
-         otp_key <- generate_key(email, factor.factor),
+         otp_key <- generate_otp_key(email, factor.factor),
          :ok <- check_sent_otps(otp_key),
          {:ok, %OTPSchema{code: code}} = otp <- OTP.initialize_otp(otp_key),
          :ok <- maybe_send_otp(otp, factor) do
@@ -64,21 +50,26 @@ defmodule Mithril.Authentication do
     end
   end
 
-  def check_sent_otps(otp_key) do
+  defp changeset(%OTPSend{} = schema, attrs) do
+    fields = OTPSend.__schema__(:fields)
+
+    schema
+    |> cast(attrs, fields)
+    |> validate_required(fields)
+    |> validate_inclusion(:type, [@type_sms])
+    |> Factors.validate_factor_format()
+  end
+
+  defp check_sent_otps(otp_key) do
     conf = Confex.get_env(:mithril_api, :"2fa")
     timeout = conf[:otp_send_timeout]
     max_otps = conf[:otp_send_counter_max]
-    do_check_login(otp_key, max_otps, timeout)
+    do_check_sent_otps(otp_key, max_otps, timeout)
   end
 
-  defp do_check_login(otp_key, max_otps, timeout) do
+  defp do_check_sent_otps(otp_key, max_otps, timeout) do
     inserted_at = NaiveDateTime.add(NaiveDateTime.utc_now(), -timeout * 60, :second)
-
-    otps =
-      OTPSchema
-      |> where([o], o.key == ^otp_key)
-      |> where([o], o.inserted_at >= ^inserted_at)
-      |> Repo.all()
+    otps = OTP.list_otps_by_key_and_inserted_at(otp_key, inserted_at)
 
     case length(otps) >= max_otps do
       true -> Error.otp_timeout()
@@ -94,7 +85,7 @@ defmodule Mithril.Authentication do
   end
 
   defp send_otp_by_factor({:ok, %OTPSchema{code: code}}, %Factor{factor: factor, type: @type_sms}) do
-    case @sms_api.send(factor, generate_message(code), "2FA") do
+    case @sms_api.send(factor, generate_otp_message(code), "2FA") do
       {:ok, _} ->
         :ok
 
@@ -115,7 +106,7 @@ defmodule Mithril.Authentication do
 
   def verify_otp(value, %Token{} = token, otp) when is_binary(value) and byte_size(value) > 1 do
     token
-    |> generate_key(value)
+    |> generate_otp_key(value)
     |> OTP.verify(otp)
   end
 
@@ -123,16 +114,16 @@ defmodule Mithril.Authentication do
     {:error, :factor_not_set}
   end
 
-  def generate_key(%Token{id: id}, value), do: generate_key(id, value)
-  def generate_key(prefix, value) when is_binary(prefix) and is_binary(value), do: prefix <> "===" <> value
+  def generate_otp_key(%Token{id: id}, value), do: generate_otp_key(id, value)
+  def generate_otp_key(prefix, value) when is_binary(prefix) and is_binary(value), do: prefix <> "===" <> value
 
-  def generate_message(code) when is_integer(code) do
+  def generate_otp_message(code) when is_integer(code) do
     code
     |> Integer.to_string()
-    |> generate_message()
+    |> generate_otp_message()
   end
 
-  def generate_message(code) do
+  def generate_otp_message(code) do
     code_mask = "<otp.code>"
     sms_template = Confex.get_env(:mithril_api, :"2fa")[:otp_sms_template]
 
@@ -146,138 +137,7 @@ defmodule Mithril.Authentication do
     String.contains?(sms_template, code_mask)
   end
 
-  defp valid_sms_template?(_, _) do
-    false
-  end
-
-  def get_factor!(id),
-    do:
-      Factor
-      |> Repo.get!(id)
-      |> Repo.preload(:user)
-
-  def get_factor_by(params),
-    do:
-      Factor
-      |> Repo.get_by(params)
-      |> Repo.preload(:user)
-
-  def get_factor_by!(params),
-    do:
-      Factor
-      |> Repo.get_by!(params)
-      |> Repo.preload(:user)
-
-  def list_factors(params \\ %{}) do
-    %FactorSearch{}
-    |> changeset(params)
-    |> search(params, Factor)
-  end
-
-  def create_factor(attrs) do
-    attrs
-    |> create_factor_changeset()
-    |> Repo.insert()
-    |> preload_references()
-  end
-
-  def update_factor(%Factor{} = factor, attrs) do
-    factor
-    |> changeset(attrs)
-    |> Repo.update()
-    |> preload_references()
-  end
-
-  def update_factor(%Factor{} = factor, attrs, :with_otp_validation) do
-    factor
-    |> changeset(attrs)
-    |> validate_factor_and_otp()
-    |> Repo.update()
-    |> preload_references()
-  end
-
-  def create_factor_changeset(attrs) do
-    %Factor{}
-    |> changeset(attrs)
-    |> validate_factor_and_otp()
-  end
-
-  def changeset(%FactorSearch{} = schema, attrs) do
-    cast(schema, attrs, FactorSearch.__schema__(:fields))
-  end
-
-  def changeset(%OTPSend{} = schema, attrs) do
-    fields = OTPSend.__schema__(:fields)
-
-    schema
-    |> cast(attrs, fields)
-    |> validate_required(fields)
-    |> validate_inclusion(:type, [@type_sms])
-    |> validate_factor_format()
-  end
-
-  def changeset(%Factor{} = schema, attrs) do
-    schema
-    |> cast(attrs, @fields_required ++ @fields_optional)
-    |> validate_required(@fields_required)
-    |> validate_inclusion(:type, [@type_sms])
-    |> validate_factor_format()
-    |> unique_constraint(:user_id, name: "authentication_factors_user_id_type_index")
-    |> assoc_constraint(:user)
-  end
-
-  def validate_factor_and_otp(changeset) do
-    validate_change(changeset, :factor, fn :factor, factor ->
-      otp = fetch_change(changeset, :otp)
-      email = fetch_change(changeset, :email)
-      validate_otp(otp, email, factor)
-    end)
-  end
-
-  defp validate_otp(:error, _email, _factor), do: [otp: {"can't be blank", [validation: "required"]}]
-  defp validate_otp(_otp, :error, _factor), do: [email: {"can't be blank", [validation: "required"]}]
-
-  defp validate_otp({_, otp}, {_, email}, factor) do
-    email
-    |> generate_key(factor)
-    |> OTP.verify(otp)
-    |> case do
-      {:error, _} -> [otp: {"invalid code", [validation: "invalid"]}]
-      {:ok, _, :invalid_code} -> [otp: {"invalid code", [validation: "invalid"]}]
-      {:ok, _, :verified} -> []
-    end
-  end
-
-  def validate_factor_format(changeset) do
-    validate_change(changeset, :factor, fn :factor, factor ->
-      changeset
-      |> fetch_field(:type)
-      |> case do
-        :error -> :error
-        {_, value} -> value
-      end
-      |> validate_factor_format(factor)
-    end)
-  end
-
-  defp validate_factor_format(@type_sms, nil) do
-    []
-  end
-
-  defp validate_factor_format(@type_sms, value) do
-    case value =~ ~r/^\+380[0-9]{9}$/ do
-      true -> []
-      false -> [factor: {"invalid phone", [validation: "format"]}]
-    end
-  end
-
-  defp validate_factor_format(_, _) do
-    []
-  end
-
-  defp preload_references({:ok, factor}), do: {:ok, preload_references(factor)}
-  defp preload_references(%Factor{} = factor), do: Repo.preload(factor, :user)
-  defp preload_references(err), do: err
+  defp valid_sms_template?(_, _), do: false
 
   def generate_nonce_for_client([client_id]) when is_binary(client_id) do
     ttl = {Confex.fetch_env!(:mithril_api, :ttl_login), :minutes}
