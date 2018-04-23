@@ -4,7 +4,7 @@ defmodule Mithril.Authentication.OTPSend do
   use Ecto.Schema
 
   @primary_key false
-  schema "otp_send" do
+  embedded_schema do
     field(:type, :string)
     field(:factor, :string)
   end

@@ -1,4 +1,4 @@
-defmodule Mithril.Authorization.App do
+defmodule Mithril.Authorization do
   @moduledoc false
 
   alias Mithril.Error
@@ -10,7 +10,7 @@ defmodule Mithril.Authorization.App do
   # On every approval a new token is created.
   # Current (session) token with it's scopes is still valid until it expires.
   # E.g. session expiration should be sufficiently short.
-  def grant(%{"user_id" => _, "client_id" => _, "redirect_uri" => _, "scope" => _} = params) do
+  def create_approval(%{"user_id" => _, "client_id" => _, "redirect_uri" => _, "scope" => _} = params) do
     params
     |> find_client()
     |> check_client_is_blocked()
@@ -22,7 +22,7 @@ defmodule Mithril.Authorization.App do
     |> create_token()
   end
 
-  def grant(_) do
+  def create_approval(_) do
     message = "Request must include at least client_id, redirect_uri and scopes parameters."
     Error.invalid_request(message)
   end
@@ -57,29 +57,25 @@ defmodule Mithril.Authorization.App do
   defp validate_client_scope({:error, _} = err), do: err
 
   defp validate_client_scope(%{"client" => %{client_type: %{scope: client_type_scope}}, "scope" => scope} = params) do
-    allowed_scopes = String.split(client_type_scope, " ", trim: true)
-    requested_scopes = String.split(scope, " ", trim: true)
-
-    if Mithril.Utils.List.subset?(allowed_scopes, requested_scopes) do
-      params
-    else
-      message = "Scope is not allowed by client type."
-      Error.invalid_request(message)
+    case requested_scope_allowed?(client_type_scope, scope) do
+      true -> params
+      false -> Error.invalid_request("Scope is not allowed by client type.")
     end
   end
 
   defp validate_user_scope({:error, _} = err), do: err
 
   defp validate_user_scope(%{"user" => %{roles: user_roles}, "scope" => scope} = params) do
-    allowed_scopes = user_roles |> Enum.map_join(" ", & &1.scope) |> String.split(" ", trim: true)
-    requested_scopes = String.split(scope, " ", trim: true)
-
-    if Mithril.Utils.List.subset?(allowed_scopes, requested_scopes) do
-      params
-    else
-      message = "User requested scope that is not allowed by role based access policies."
-      Error.invalid_request(message)
+    case requested_scope_allowed?(Enum.map_join(user_roles, " ", & &1.scope), scope) do
+      true -> params
+      false -> Error.invalid_request("User requested scope that is not allowed by role based access policies.")
     end
+  end
+
+  defp requested_scope_allowed?(allowed_scope, requested_scope) do
+    allowed_scope = String.split(allowed_scope, " ", trim: true)
+    requested_scope = String.split(requested_scope, " ", trim: true)
+    Mithril.Utils.List.subset?(allowed_scope, requested_scope)
   end
 
   defp update_or_create_app({:error, _} = err), do: err

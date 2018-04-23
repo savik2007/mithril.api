@@ -211,7 +211,7 @@ defmodule Mithril.Web.UserControllerTest do
     end
 
     test "create user with factor", %{conn: conn} do
-      key = Authentication.generate_key("email@example.com", "+380631112233")
+      key = Authentication.generate_otp_key("email@example.com", "+380631112233")
       insert(:otp, key: key, code: 1234)
       attrs = Map.merge(@create_attrs, %{factor: "+380631112233", otp: 1234})
 
@@ -255,7 +255,7 @@ defmodule Mithril.Web.UserControllerTest do
     end
 
     test "create user with factor but invalid OTP", %{conn: conn} do
-      key = Authentication.generate_key("email@example.com", "+380631112233")
+      key = Authentication.generate_otp_key("email@example.com", "+380631112233")
       insert(:otp, key: key, code: 1234)
 
       attrs = Map.merge(@create_attrs, %{factor: "+380631112233", otp: 1235})
@@ -310,7 +310,7 @@ defmodule Mithril.Web.UserControllerTest do
     end
 
     test "update user with factor when factor don't exist and otp valid", %{conn: conn, user: user} do
-      key = Authentication.generate_key("email@example.com", "+380551112233")
+      key = Authentication.generate_otp_key("email@example.com", "+380551112233")
       insert(:otp, key: key, code: 2233)
 
       person_id = UUID.generate()
@@ -341,7 +341,7 @@ defmodule Mithril.Web.UserControllerTest do
     end
 
     test "update user with factor when factor don't exist and otp invalid", %{conn: conn, user: user} do
-      key = Authentication.generate_key("email@example.com", "+380551112233")
+      key = Authentication.generate_otp_key("email@example.com", "+380551112233")
       insert(:otp, key: key, code: 2233)
 
       update = %{
@@ -363,7 +363,7 @@ defmodule Mithril.Web.UserControllerTest do
 
     test "update user with factor when factor exist and otp valid", %{conn: conn, user: user} do
       insert(:authentication_factor, user_id: user.id)
-      key = Authentication.generate_key("email@example.com", "+380551112233")
+      key = Authentication.generate_otp_key("email@example.com", "+380551112233")
       insert(:otp, key: key, code: 1234)
 
       update = %{

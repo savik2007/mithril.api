@@ -3,10 +3,13 @@ defmodule Mithril.OTP do
   The boundary for the OTP system.
   """
 
+  use Mithril.Search
+
   import Ecto.{Query, Changeset}, warn: false
 
   alias Mithril.Repo
   alias Mithril.OTP.Schema, as: OTPSchema
+  alias Mithril.OTP.Search
 
   @status_new "NEW"
   @status_verified "VERIFIED"
@@ -30,6 +33,19 @@ defmodule Mithril.OTP do
   @spec list_otps :: [OTPSchema.t()] | []
   def list_otps do
     Repo.all(OTPSchema)
+  end
+
+  def list_otps(params) do
+    %Search{}
+    |> changeset(params)
+    |> search(params, OTPSchema)
+  end
+
+  def list_otps_by_key_and_inserted_at(key, inserted_at) when is_binary(key) do
+    OTPSchema
+    |> where([o], o.key == ^key)
+    |> where([o], o.inserted_at >= ^inserted_at)
+    |> Repo.all()
   end
 
   @doc """
@@ -197,6 +213,10 @@ defmodule Mithril.OTP do
       @status_completed,
       @status_expired
     ])
+  end
+
+  defp changeset(%Search{} = schema, attrs) do
+    cast(schema, attrs, Search.__schema__(:fields))
   end
 
   @spec generate_otp_code(number_length :: pos_integer()) :: pos_integer()

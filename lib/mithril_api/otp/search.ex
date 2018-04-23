@@ -1,4 +1,4 @@
-defmodule Mithril.Authentication.OTPSearch do
+defmodule Mithril.OTP.Search do
   @moduledoc false
 
   use Ecto.Schema
@@ -6,7 +6,7 @@ defmodule Mithril.Authentication.OTPSearch do
   alias Mithril.Ecto.StringLike
 
   @primary_key false
-  schema "otp_search" do
+  embedded_schema do
     field(:key, StringLike)
     field(:status, :string)
     field(:active, :boolean)

@@ -4,19 +4,11 @@ defmodule Mithril.TokenAPI do
   use Mithril.Search
   import Ecto.{Query, Changeset}, warn: false
 
-  alias Mithril.{Repo, Error, Guardian}
-  alias Mithril.{UserAPI, ClientAPI}
-  alias Mithril.UserAPI.User
-  alias Mithril.TokenAPI.Token
-  alias Mithril.ClientAPI.Client
-  alias Mithril.TokenAPI.TokenSearch
-  alias Mithril.Authentication
-  alias Mithril.Authentication.Factor
-  alias Mithril.Authorization.GrantType.{Password, AccessToken2FA}
   alias Ecto.Multi
-
-  @direct ClientAPI.access_type(:direct)
-  @broker ClientAPI.access_type(:broker)
+  alias Mithril.{Repo, Error}
+  alias Mithril.{UserAPI, ClientAPI, TokenAPI}
+  alias Mithril.UserAPI.User
+  alias Mithril.TokenAPI.{Token, TokenSearch}
 
   @refresh_token "refresh_token"
   @access_token "access_token"
@@ -24,10 +16,11 @@ defmodule Mithril.TokenAPI do
   @change_password_token "change_password_token"
   @authorization_code "authorization_code"
 
-  @type_field "request_authentication_factor_type"
-  @factor_field "request_authentication_factor"
-
-  @approve_factor "APPROVE_FACTOR"
+  def token_type(:refresh), do: @refresh_token
+  def token_type(:access), do: @access_token
+  def token_type(:access_2fa), do: @access_token_2fa
+  def token_type(:change_password), do: @change_password_token
+  def token_type(:authorization_code), do: @authorization_code
 
   def list_tokens(params) do
     %TokenSearch{}
@@ -78,10 +71,10 @@ defmodule Mithril.TokenAPI do
 
   def create_access_token(%User{} = user, %{"client_id" => client_id, "scope" => scope}) do
     with client <- ClientAPI.get_client_with_type(client_id),
-         :ok <- Password.validate_client(client, "password"),
-         :ok <- Password.validate_token_scope_by_client(client.client_type.scope, scope),
+         :ok <- ClientAPI.validate_client_allowed_grant_types(client, "password"),
+         :ok <- ClientAPI.validate_client_allowed_scope(client, scope),
          {:ok, token} <- create_access_token(user, client, scope),
-         {_, nil} <- Mithril.TokenAPI.deactivate_old_tokens(token) do
+         {_, nil} <- TokenAPI.deactivate_old_tokens(token) do
       {:ok, token}
     end
   end
@@ -120,44 +113,6 @@ defmodule Mithril.TokenAPI do
     |> Repo.insert()
   end
 
-  def init_factor(attrs) do
-    with :ok <- AccessToken2FA.validate_authorization_header(attrs),
-         {:ok, token} <- validate_token(attrs["token_value"]),
-         user <- UserAPI.get_user(token.user_id),
-         {:ok, _} <- AccessToken2FA.validate_user(user),
-         %Ecto.Changeset{valid?: true} <- factor_changeset(attrs),
-         where_factor <- prepare_factor_where_clause(token, attrs),
-         %Factor{} = factor <- Authentication.get_factor_by!(where_factor),
-         :ok <- validate_token_type(token, factor),
-         token_data <- prepare_2fa_token_data(token, attrs),
-         {:ok, token_2fa} <- create_2fa_access_token(token_data),
-         factor <- %Factor{factor: attrs["factor"], type: Authentication.type(:sms)},
-         :ok <- Authentication.send_otp(user, factor, token_2fa),
-         {_, nil} <- deactivate_old_tokens(token_2fa) do
-      {:ok, %{token: token_2fa, urgent: %{next_step: @approve_factor}}}
-    else
-      {:error, :sms_not_sent} -> {:error, {:service_unavailable, "SMS not sent. Try later"}}
-      {:error, :otp_timeout} -> Error.otp_timeout()
-      err -> err
-    end
-  end
-
-  def approve_factor(attrs) do
-    with :ok <- AccessToken2FA.validate_authorization_header(attrs),
-         {:ok, token} <- validate_token(attrs["token_value"]),
-         :ok <- validate_approve_token(token),
-         user <- UserAPI.get_user(token.user_id),
-         {:ok, user} <- AccessToken2FA.validate_user(user),
-         where_factor <- prepare_factor_where_clause(token),
-         %Factor{} = factor <- Authentication.get_factor_by!(where_factor),
-         :ok <- AccessToken2FA.verify_otp(token.details[@factor_field], token, attrs["otp"], user),
-         {:ok, _} <- Authentication.update_factor(factor, %{"factor" => token.details[@factor_field]}),
-         {:ok, token_2fa} <- create_token_by_grant_type(token),
-         {_, nil} <- deactivate_old_tokens(token_2fa) do
-      {:ok, token_2fa}
-    end
-  end
-
   def update_user_password(%{"user" => user} = attrs) do
     with {:ok, token} <- validate_token(attrs["token_value"]),
          :ok <- validate_change_pwd_token(token),
@@ -177,57 +132,6 @@ defmodule Mithril.TokenAPI do
 
   defp validate_change_pwd_token(%Token{name: @change_password_token}), do: :ok
   defp validate_change_pwd_token(_), do: Error.token_invalid_type()
-
-  defp validate_approve_token(%Token{details: %{@factor_field => _, @type_field => _}}), do: :ok
-  defp validate_approve_token(_), do: Error.access_denied("Invalid token type. Init factor at first")
-
-  defp validate_token_type(%Token{name: @access_token_2fa}, %Factor{factor: v}) when is_nil(v) or "" == v, do: :ok
-  defp validate_token_type(%Token{name: @access_token}, %Factor{factor: val}) when byte_size(val) > 0, do: :ok
-  defp validate_token_type(_, _), do: Error.token_invalid_type()
-
-  defp prepare_factor_where_clause(%Token{user_id: user_id, details: %{@type_field => type}}) do
-    [user_id: user_id, is_active: true, type: type]
-  end
-
-  defp prepare_factor_where_clause(%Token{} = token, %{"type" => type}) do
-    [user_id: token.user_id, is_active: true, type: type]
-  end
-
-  defp create_token_by_grant_type(%Token{details: %{"grant_type" => "change_password"}} = token) do
-    token
-    |> prepare_token_data("user:change_password")
-    |> create_change_password_token()
-  end
-
-  defp create_token_by_grant_type(%Token{} = token) do
-    token
-    |> prepare_token_data("app:authorize")
-    |> create_access_token()
-  end
-
-  defp prepare_token_data(%Token{details: details} = token, default_scope) do
-    # changing 2FA token to access token
-    # creates token with scope that stored in detais.scope_request
-    scope = Map.get(details, "scope_request", default_scope)
-
-    details =
-      details
-      |> Map.drop(["request_authentication_factor", "request_authentication_factor_type"])
-      |> Map.put("scope", scope)
-
-    %{user_id: token.user_id, details: details}
-  end
-
-  defp prepare_2fa_token_data(%Token{} = token, attrs) do
-    %{
-      user_id: token.user_id,
-      details:
-        Map.merge(token.details, %{
-          request_authentication_factor: attrs["factor"],
-          request_authentication_factor_type: attrs["type"]
-        })
-    }
-  end
 
   def update_token(%Token{} = token, attrs) do
     token
@@ -260,89 +164,8 @@ defmodule Mithril.TokenAPI do
     token_changeset(token, %{})
   end
 
-  def verify(token_value) do
-    token = get_token_by_value!(token_value)
-
-    with false <- expired?(token),
-         _app <- Mithril.AppAPI.approval(token.user_id, token.details["client_id"]) do
-      # if token is authorization_code or password - make sure was not used previously
-      {:ok, token}
-    else
-      _ ->
-        Error.invalid_grant("Token expired or client approval was revoked.")
-    end
-  end
-
-  def verify_client_token(token_value, api_key) do
-    token = get_token_by_value!(token_value)
-
-    with false <- expired?(token),
-         _app <- Mithril.AppAPI.approval(token.user_id, token.details["client_id"]),
-         client <- ClientAPI.get_client!(token.details["client_id"]),
-         :ok <- check_client_is_blocked(client),
-         user <- UserAPI.get_user!(token.user_id),
-         :ok <- check_user_is_blocked(user),
-         {:ok, token} <- put_broker_scopes(token, client, api_key) do
-      {:ok, token}
-    else
-      {:error, _} = err -> err
-      _ -> Error.invalid_grant("Token expired or client approval was revoked.")
-    end
-  end
-
   def expired?(%Token{} = token) do
     token.expires_at <= :os.system_time(:seconds)
-  end
-
-  defp put_broker_scopes(token, client, api_key) do
-    case Map.get(client.priv_settings, "access_type") do
-      nil ->
-        Error.access_denied("Client settings must contain access_type.")
-
-      # Clients such as NHS Admin, MIS
-      @direct ->
-        {:ok, token}
-
-      # Clients such as MSP, PHARMACY
-      @broker ->
-        api_key
-        |> validate_api_key()
-        |> fetch_client_by_secret()
-        |> fetch_broker_scope()
-        |> put_broker_scope_into_token_details(token)
-    end
-  end
-
-  defp validate_api_key(api_key) when is_binary(api_key), do: api_key
-  defp validate_api_key(_), do: Error.invalid_request("API-KEY header required.")
-
-  defp fetch_client_by_secret({:error, _} = err), do: err
-
-  defp fetch_client_by_secret(api_key) do
-    case ClientAPI.get_client_by(secret: api_key) do
-      %ClientAPI.Client{} = client ->
-        client
-
-      _ ->
-        Error.invalid_request("API-KEY header is invalid.")
-    end
-  end
-
-  defp fetch_broker_scope({:error, _} = err), do: err
-
-  defp fetch_broker_scope(%ClientAPI.Client{priv_settings: %{"broker_scope" => broker_scope}}) do
-    broker_scope
-  end
-
-  defp fetch_broker_scope(_) do
-    Error.invalid_request("Incorrect broker settings.")
-  end
-
-  defp put_broker_scope_into_token_details({:error, _} = err, _token), do: err
-
-  defp put_broker_scope_into_token_details(broker_scope, token) do
-    details = Map.put(token.details, "broker_scope", broker_scope)
-    {:ok, Map.put(token, :details, details)}
   end
 
   def deactivate_tokens_by_user(%User{id: id}) do
@@ -380,7 +203,7 @@ defmodule Mithril.TokenAPI do
     query =
       Token
       |> join(:inner, [t], u in User, t.user_id == u.id)
-      |> where([t], t.name not in ["2fa_access_token", "change_password_token"])
+      |> where([t], t.name not in [@access_token_2fa, @change_password_token])
       |> where([t], t.expires_at >= ^:os.system_time(:seconds))
       |> where([t, u], fragment("now() >= ?", datetime_add(u.password_set_at, ^expiration_days, "day")))
 
@@ -390,16 +213,6 @@ defmodule Mithril.TokenAPI do
   end
 
   @uuid_regex ~r|[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}|
-
-  defp factor_changeset(attrs) do
-    types = %{type: :string, factor: :string}
-
-    {%{}, types}
-    |> cast(attrs, Map.keys(types))
-    |> validate_required(Map.keys(types))
-    |> validate_inclusion(:type, [Authentication.type(:sms)])
-    |> Authentication.validate_factor_format()
-  end
 
   defp token_changeset(%Token{} = token, attrs) do
     token
@@ -448,28 +261,4 @@ defmodule Mithril.TokenAPI do
   end
 
   defp get_token_lifetime, do: Confex.fetch_env!(:mithril_api, :token_lifetime)
-
-  defp check_client_is_blocked(%Client{is_blocked: false}), do: :ok
-
-  defp check_client_is_blocked(_) do
-    Error.invalid_client("Authentication failed.")
-  end
-
-  defp check_user_is_blocked(%User{is_blocked: false}), do: :ok
-
-  defp check_user_is_blocked(_) do
-    Error.invalid_user("Authentication failed.")
-  end
-
-  def generate_nonce_for_client([client_id]) when is_binary(client_id) do
-    ttl = {Confex.fetch_env!(:mithril_api, :ttl_login), :minutes}
-
-    with %{is_blocked: false} <- ClientAPI.get_client!(client_id) do
-      Guardian.encode_and_sign(:nonce, %{nonce: 123}, token_type: "access", ttl: ttl)
-    else
-      %{is_blocked: true} -> {:error, {:access_denied, "Client is blocked"}}
-    end
-  end
-
-  def generate_nonce_for_client(_), do: {:error, {:access_denied, "Client header not set"}}
 end

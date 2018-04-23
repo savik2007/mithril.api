@@ -4,7 +4,7 @@ defmodule Mithril.Authentication.FactorSearch do
   use Ecto.Schema
 
   @primary_key false
-  schema "factor_search" do
+  embedded_schema do
     field(:type, :string)
     field(:user_id, Ecto.UUID)
     field(:is_active, :boolean)

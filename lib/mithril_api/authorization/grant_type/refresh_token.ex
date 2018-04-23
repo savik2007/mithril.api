@@ -1,7 +1,9 @@
 defmodule Mithril.Authorization.GrantType.RefreshToken do
   @moduledoc false
 
-  alias Mithril.Error
+  alias Mithril.{Error, TokenAPI}
+
+  @refresh_token TokenAPI.token_type(:refresh)
 
   def authorize(%{"client_id" => client_id, "client_secret" => client_secret, "refresh_token" => token})
       when not (is_nil(client_id) or is_nil(client_secret) or is_nil(token)) do
@@ -32,7 +34,7 @@ defmodule Mithril.Authorization.GrantType.RefreshToken do
   defp load_token({:error, _} = err), do: err
 
   defp load_token({:ok, client, value}) do
-    case Mithril.TokenAPI.get_token_by(value: value, name: "refresh_token") do
+    case Mithril.TokenAPI.get_token_by(value: value, name: @refresh_token) do
       nil ->
         Error.invalid_grant("Token not found.")
 
@@ -81,7 +83,7 @@ defmodule Mithril.Authorization.GrantType.RefreshToken do
     Mithril.TokenAPI.create_access_token(%{
       user_id: token.user_id,
       details: %{
-        grant_type: "refresh_token",
+        grant_type: @refresh_token,
         client_id: client.id,
         scope: app.scope
       }
