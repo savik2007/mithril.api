@@ -76,7 +76,7 @@ defmodule Ecto.LoggerJSON do
           "query" => query,
           "query_time" => query_time,
           "queue_time" => queue_time,
-          "params" => Enum.map(params, &param_to_string/1)
+          "query_params" => Enum.map(params, &param_to_string/1)
         }
         |> Poison.encode!()
       end)
