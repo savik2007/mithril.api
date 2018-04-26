@@ -42,7 +42,6 @@ defmodule Mithril.UserRoleAPI do
     end)
   end
 
-  # get_by
   def get_user_role!(id), do: Repo.get!(UserRole, id)
 
   def create_user_role(attrs \\ %{}) do
