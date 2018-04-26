@@ -1,6 +1,7 @@
 defmodule Mithril.Authorization.GrantType.Password do
   @moduledoc false
   import Ecto.Changeset
+  import Mithril.Authorization.GrantType, only: [prepare_scope_by_client: 2]
   import Mithril.Authorization.Tokens, only: [next_step: 1]
 
   alias Mithril.{Authentication, Error, UserAPI, ClientAPI}
@@ -30,7 +31,8 @@ defmodule Mithril.Authorization.GrantType.Password do
          :ok <- ClientAPI.validate_client_allowed_scope(client, attrs["scope"]),
          :ok <- validate_token_scope_by_grant(grant_type, attrs["scope"]),
          factor <- Factors.get_factor_by(user_id: user.id, is_active: true),
-         {:ok, token} <- create_token_by_grant_type(factor, user, client, attrs["scope"], grant_type),
+         {:ok, scope} <- prepare_scope_by_client(client, attrs["scope"]),
+         {:ok, token} <- create_token_by_grant_type(factor, user, client, scope, grant_type),
          {_, nil} <- Mithril.TokenAPI.deactivate_old_tokens(token),
          sms_send_response <- maybe_send_otp(user, factor, token),
          {:ok, next_step} <- map_next_step(sms_send_response) do

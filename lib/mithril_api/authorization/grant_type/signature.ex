@@ -2,11 +2,12 @@ defmodule Mithril.Authorization.GrantType.Signature do
   @moduledoc false
 
   import Ecto.{Query, Changeset}, warn: false
-  import Mithril.Authorization.Tokens, only: [next_step: 1]
+  import Mithril.Authorization.GrantType
 
   alias Mithril.{UserAPI, ClientAPI, TokenAPI, Error, Guardian}
   alias Mithril.Ecto.Base64
   alias Mithril.UserAPI.User
+  alias Mithril.ClientAPI.Client
 
   require Logger
 
@@ -15,6 +16,7 @@ defmodule Mithril.Authorization.GrantType.Signature do
 
   @aud_login Guardian.get_aud(:login)
   @person_inactive "INACTIVE"
+  @ehealth_cabinet_client_id "30074b6e-fbab-4dc1-9d37-88c21dab1847"
 
   def authorize(attrs) do
     with %Ecto.Changeset{valid?: true} <- changeset(attrs),
@@ -30,9 +32,10 @@ defmodule Mithril.Authorization.GrantType.Signature do
          {:ok, person} <- get_person(user.person_id),
          :ok <- check_person_status(person),
          :ok <- validate_person_tax_id(person, tax_id),
-         {:ok, token} <- create_access_token(user, client, attrs["scope"]),
+         {:ok, scope} <- prepare_scope_by_client(client, attrs["scope"]),
+         {:ok, token} <- create_access_token(user, client, scope),
          {_, nil} <- TokenAPI.deactivate_old_tokens(token) do
-      {:ok, %{token: token, urgent: %{next_step: next_step(:request_apps)}}}
+      {:ok, %{token: token, urgent: %{next_step: map_next_step(token)}}}
     end
   end
 
@@ -81,6 +84,29 @@ defmodule Mithril.Authorization.GrantType.Signature do
   defp validate_person_tax_id(%{"id" => person_id}, _) do
     Logger.error("EDRPOU from Digital Signature not matched with tax_id from MPI person. Person ID #{person_id}")
     Error.tax_id_invalid("Tax id not matched with MPI person.")
+  end
+
+  defp create_access_token(%User{} = user, %Client{id: @ehealth_cabinet_client_id} = client, scope) do
+    {:ok, refresh_token} =
+      Mithril.TokenAPI.create_refresh_token(%{
+        user_id: user.id,
+        details: %{
+          "grant_type" => "authorize_2fa_access_token",
+          "client_id" => client.id,
+          "scope" => ""
+        }
+      })
+
+    TokenAPI.create_access_token(%{
+      user_id: user.id,
+      details: %{
+        "grant_type" => "digital_signature",
+        "client_id" => client.id,
+        "scope" => scope,
+        "redirect_uri" => client.redirect_uri,
+        "refresh_token" => refresh_token.value
+      }
+    })
   end
 
   defp create_access_token(%User{} = user, client, scope) do
