@@ -47,6 +47,8 @@ defmodule Mithril.ClientTypeAPI do
   """
   def get_client_type!(id), do: Repo.get!(ClientType, id)
 
+  def get_client_type_by(attrs), do: Repo.get_by(ClientType, attrs)
+
   @doc """
   Creates a client_type.
 

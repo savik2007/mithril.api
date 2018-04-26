@@ -1,6 +1,7 @@
 defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   @moduledoc false
   import Ecto.Changeset
+  import Mithril.Authorization.GrantType
   import Mithril.Authorization.Tokens, only: [next_step: 1]
 
   alias Mithril.{Error, UserAPI, TokenAPI}
@@ -8,6 +9,8 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   alias Mithril.TokenAPI.Token
   alias Mithril.Authentication
   alias Mithril.Authentication.{Factor, Factors}
+
+  @ehealth_cabinet_client_id "30074b6e-fbab-4dc1-9d37-88c21dab1847"
 
   def authorize(params) do
     with %Ecto.Changeset{valid?: true} <- changeset(params),
@@ -21,7 +24,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
          :ok <- verify_otp(factor, token_2fa, params["otp"], user),
          {:ok, token} <- create_access_token(token_2fa),
          {_, nil} <- TokenAPI.deactivate_old_tokens(token) do
-      {:ok, %{token: token, urgent: %{next_step: next_step(:request_apps)}}}
+      {:ok, %{token: token, urgent: %{next_step: map_next_step(token)}}}
     end
   end
 
@@ -117,6 +120,27 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
     TokenAPI.create_change_password_token(%{
       user_id: token.user_id,
       details: Map.put(details, "scope", scope)
+    })
+  end
+
+  defp create_access_token(%Token{details: %{"client_id" => @ehealth_cabinet_client_id} = details} = token) do
+    # changing 2FA token to access token
+    # creates token with scope that stored in detais.scope_request
+    scope = Map.get(details, "scope_request", "app:authorize")
+
+    {:ok, refresh_token} =
+      Mithril.TokenAPI.create_refresh_token(%{
+        user_id: token.user_id,
+        details: %{
+          "grant_type" => "authorize_2fa_access_token",
+          "client_id" => details["client_id"],
+          "scope" => ""
+        }
+      })
+
+    TokenAPI.create_access_token(%{
+      user_id: token.user_id,
+      details: Map.merge(details, %{"scope" => scope, "refresh_token" => refresh_token.value})
     })
   end
 

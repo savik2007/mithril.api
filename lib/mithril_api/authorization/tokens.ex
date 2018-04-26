@@ -18,15 +18,21 @@ defmodule Mithril.Authorization.Tokens do
   @type_field "request_authentication_factor_type"
   @factor_field "request_authentication_factor"
 
+  @request_api "REQUEST_API"
   @request_otp "REQUEST_OTP"
   @request_apps "REQUEST_APPS"
   @request_factor "REQUEST_FACTOR"
   @request_ds "REQUEST_LOGIN_VIA_DS"
 
+  @grant_type_2fa_authorize "authorize_2fa_access_token"
+
   def next_step(:request_ds), do: @request_ds
   def next_step(:request_otp), do: @request_otp
+  def next_step(:request_api), do: @request_api
   def next_step(:request_apps), do: @request_apps
   def next_step(:request_factor), do: @request_factor
+
+  def grant_type(:"2fa_auth"), do: @grant_type_2fa_authorize
 
   @doc """
     Create new access_tokens based on grant_type the request came with
@@ -35,7 +41,7 @@ defmodule Mithril.Authorization.Tokens do
     Password.authorize(params)
   end
 
-  def create_by_grant_type(%{"grant_type" => "authorize_2fa_access_token"} = params) do
+  def create_by_grant_type(%{"grant_type" => @grant_type_2fa_authorize} = params) do
     AccessToken2FA.authorize(params)
   end
 
