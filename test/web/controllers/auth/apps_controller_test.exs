@@ -122,7 +122,7 @@ defmodule Mithril.OAuth.AppControllerTest do
       |> post("/oauth/apps/authorize", Poison.encode!(request))
 
     resp = json_response(conn, 401)
-    assert %{"error" => %{"message" => "Authentication failed"}} = resp
+    assert %{"error" => %{"message" => "Client is blocked."}} = resp
   end
 
   test "incorrectly crafted body is still treated nicely", %{conn: conn} do
@@ -132,19 +132,16 @@ defmodule Mithril.OAuth.AppControllerTest do
   end
 
   test "errors are rendered as json", %{conn: conn} do
-    request = %{
-      "app" => %{
-        "scope" => "legal_entity:read"
-      }
-    }
+    request = %{"scope" => "legal_entity:read"}
 
-    conn =
+    errors =
       conn
       |> put_req_header("x-consumer-id", "F003D59D-3E7A-40E0-8207-7EC05C3303FF")
-      |> post("/oauth/apps/authorize", Poison.encode!(request))
+      |> post(oauth2_app_path(conn, :authorize), app: request)
+      |> json_response(422)
+      |> get_in(~w(error invalid))
 
-    result = json_response(conn, 422)["error"]
-    assert result["message"] == "Request must include at least client_id, redirect_uri and scopes parameters."
+    assert 2 == length(errors)
   end
 
   test "returns error when redirect uri is not whitelisted", %{conn: conn} do

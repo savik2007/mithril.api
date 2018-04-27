@@ -1,7 +1,12 @@
 defmodule Mithril.Authorization do
   @moduledoc false
 
-  alias Mithril.Error
+  import Ecto.Changeset
+  import Mithril.Authorization.GrantType
+
+  alias Ecto.UUID
+  alias Mithril.{AppAPI, UserAPI, Error}
+  alias Mithril.UserAPI.User
   alias Mithril.ClientAPI.Client
   alias Mithril.Utils.RedirectUriChecker
 
@@ -10,112 +15,73 @@ defmodule Mithril.Authorization do
   # On every approval a new token is created.
   # Current (session) token with it's scopes is still valid until it expires.
   # E.g. session expiration should be sufficiently short.
-  def create_approval(%{"user_id" => _, "client_id" => _, "redirect_uri" => _, "scope" => _} = params) do
-    params
-    |> find_client()
-    |> check_client_is_blocked()
-    |> find_user()
-    |> validate_redirect_uri()
-    |> validate_client_scope()
-    |> validate_user_scope()
-    |> update_or_create_app()
-    |> create_token()
-  end
-
-  def create_approval(_) do
-    message = "Request must include at least client_id, redirect_uri and scopes parameters."
-    Error.invalid_request(message)
-  end
-
-  defp find_client(%{"client_id" => client_id} = params) do
-    case Mithril.ClientAPI.get_client_with_type(client_id) do
-      nil -> Error.invalid_client("Client not found.")
-      client -> Map.put(params, "client", client)
+  def create_approval(params) do
+    with %Ecto.Changeset{valid?: true} = changeset <- changeset(params),
+         client_id <- get_change(changeset, :client_id),
+         {:ok, client} <- fetch_client(client_id),
+         # user validation
+         user <- UserAPI.get_full_user(get_change(changeset, :user_id), client_id),
+         :ok <- validate_user_is_blocked(user),
+         # client validation
+         {:ok, scope} <- prepare_scope_by_client(client, user, get_change(changeset, :scope)),
+         redirect_uri <- get_change(changeset, :redirect_uri),
+         :ok <- validate_redirect_uri(client, redirect_uri),
+         # scope validation
+         :ok <- validate_client_allowed_scope(client, scope),
+         :ok <- validate_user_allowed_scope(user, scope),
+         # entities creation
+         :ok <- create_or_update_app(user, client, scope),
+         {:ok, token} <- create_token(user, client, scope, redirect_uri) do
+      {:ok, token}
     end
   end
 
-  defp find_user({:error, _} = err), do: err
+  defp changeset(attrs) do
+    types = %{user_id: UUID, client_id: UUID, redirect_uri: :string, scope: :string}
+    required = ~w(user_id client_id redirect_uri)a
+    optional = ~w(scope)a
 
-  defp find_user(%{"user_id" => user_id, "client" => %{id: client_id}} = params) do
-    case Mithril.UserAPI.get_full_user(user_id, client_id) do
-      nil -> Error.invalid_user("User not found.")
-      user -> Map.put(params, "user", user)
-    end
+    {%{}, types}
+    |> cast(attrs, required ++ optional)
+    |> validate_required(required)
   end
 
-  defp validate_redirect_uri({:error, _} = err), do: err
-
-  defp validate_redirect_uri(%{"client" => client, "redirect_uri" => redirect_uri} = params) do
+  defp validate_redirect_uri(%{} = client, redirect_uri) do
     if Regex.match?(RedirectUriChecker.generate_redirect_uri_regexp(client.redirect_uri), redirect_uri) do
-      params
+      :ok
     else
       message = "The redirection URI provided does not match a pre-registered value."
       Error.access_denied(message)
     end
   end
 
-  defp validate_client_scope({:error, _} = err), do: err
+  defp create_or_update_app(%User{} = user, %Client{} = client, scope) do
+    case AppAPI.get_app_by(user_id: user.id, client_id: client.id) do
+      nil ->
+        {:ok, _} = AppAPI.create_app(%{user_id: user.id, client_id: client.id, scope: scope})
 
-  defp validate_client_scope(%{"client" => %{client_type: %{scope: client_type_scope}}, "scope" => scope} = params) do
-    case requested_scope_allowed?(client_type_scope, scope) do
-      true -> params
-      false -> Error.invalid_request("Scope is not allowed by client type.")
+      app ->
+        aggregated_scopes = String.split(scope, " ", trim: true) ++ String.split(app.scope, " ", trim: true)
+        aggregated_scope = aggregated_scopes |> Enum.uniq() |> Enum.join(" ")
+
+        AppAPI.update_app(app, %{scope: aggregated_scope})
     end
+
+    :ok
   end
 
-  defp validate_user_scope({:error, _} = err), do: err
+  defp create_token(user, client, scope, redirect_uri) do
+    # get grant_type from token
+    grant_type = "password"
 
-  defp validate_user_scope(%{"user" => %{roles: user_roles}, "scope" => scope} = params) do
-    case requested_scope_allowed?(Enum.map_join(user_roles, " ", & &1.scope), scope) do
-      true -> params
-      false -> Error.invalid_request("User requested scope that is not allowed by role based access policies.")
-    end
+    Mithril.TokenAPI.create_authorization_code(%{
+      user_id: user.id,
+      details: %{
+        client_id: client.id,
+        grant_type: grant_type,
+        redirect_uri: redirect_uri,
+        scope_request: scope
+      }
+    })
   end
-
-  defp requested_scope_allowed?(allowed_scope, requested_scope) do
-    allowed_scope = String.split(allowed_scope, " ", trim: true)
-    requested_scope = String.split(requested_scope, " ", trim: true)
-    Mithril.Utils.List.subset?(allowed_scope, requested_scope)
-  end
-
-  defp update_or_create_app({:error, _} = err), do: err
-
-  defp update_or_create_app(%{"user" => user, "client_id" => client_id, "scope" => scope} = params) do
-    app =
-      case Mithril.AppAPI.get_app_by(user_id: user.id, client_id: client_id) do
-        nil ->
-          {:ok, app} = Mithril.AppAPI.create_app(%{user_id: user.id, client_id: client_id, scope: scope})
-
-          app
-
-        app ->
-          aggregated_scopes = String.split(scope, " ", trim: true) ++ String.split(app.scope, " ", trim: true)
-          aggregated_scope = aggregated_scopes |> Enum.uniq() |> Enum.join(" ")
-
-          Mithril.AppAPI.update_app(app, %{scope: aggregated_scope})
-      end
-
-    Map.put(params, "app", app)
-  end
-
-  defp create_token({:error, _} = err), do: err
-
-  defp create_token(%{"user" => user, "client" => client, "redirect_uri" => redirect_uri, "scope" => scope} = params) do
-    {:ok, token} =
-      Mithril.TokenAPI.create_authorization_code(%{
-        user_id: user.id,
-        details: %{
-          client_id: client.id,
-          grant_type: "password",
-          redirect_uri: redirect_uri,
-          scope_request: scope
-        }
-      })
-
-    Map.put(params, "token", token)
-  end
-
-  defp check_client_is_blocked({:error, _} = err), do: err
-  defp check_client_is_blocked(%{"client" => %Client{is_blocked: false}} = params), do: params
-  defp check_client_is_blocked(%{"client" => _client}), do: Error.access_denied("Authentication failed")
 end

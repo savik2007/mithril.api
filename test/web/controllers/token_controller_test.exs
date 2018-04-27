@@ -157,10 +157,10 @@ defmodule Mithril.Web.TokenControllerTest do
       assert msg =
                conn
                |> post(user_token_path(conn, :create_access_token, user.id), token: payload)
-               |> json_response(401)
+               |> json_response(422)
                |> get_in(~w(error message))
 
-      assert "Allowed scopes for the token are cabinet:read." == msg
+      assert "Scope is not allowed by client type." == msg
     end
 
     test "user not found", %{conn: conn} do

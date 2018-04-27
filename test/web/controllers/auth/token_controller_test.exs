@@ -502,7 +502,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
       assert token["details"]["client_id"] == client.id
       assert token["details"]["grant_type"] == "digital_signature"
       assert token["details"]["redirect_uri"] == client.redirect_uri
-      assert token["details"]["scope"] == "cabinet:read"
+      assert token["details"]["scope"] == "app:authorize"
     end
 
     test "DS tax_id does not contain drfo", %{conn: conn} do
@@ -730,10 +730,10 @@ defmodule Mithril.OAuth.TokenControllerTest do
       msg =
         conn
         |> post("/oauth/tokens", payload)
-        |> json_response(401)
+        |> json_response(422)
         |> get_in(~w(error message))
 
-      assert "Allowed scopes for the token are cabinet:read, cabinet:write." == msg
+      assert "Scope is not allowed by client type." == msg
     end
 
     test "DS cannot decode signed content", %{conn: conn} do

@@ -1,8 +1,8 @@
 defmodule Mithril.Authorization.GrantType.Password do
   @moduledoc false
+
   import Ecto.Changeset
-  import Mithril.Authorization.GrantType, only: [prepare_scope_by_client: 2]
-  import Mithril.Authorization.Tokens, only: [next_step: 1]
+  import Mithril.Authorization.GrantType
 
   alias Mithril.{Authentication, Error, UserAPI, ClientAPI}
   alias Mithril.UserAPI.User
@@ -10,6 +10,8 @@ defmodule Mithril.Authorization.GrantType.Password do
   alias Mithril.Authorization.LoginHistory
   alias Mithril.ClientTypeAPI.ClientType
 
+  @scope_app_authorize scope_app_authorize()
+  @scope_change_password "user:change_password"
   @grant_type_password "password"
   @grant_type_change_password "change_password"
 
@@ -21,23 +23,30 @@ defmodule Mithril.Authorization.GrantType.Password do
     # check client_id and define process (with required DS or not)
     with %Ecto.Changeset{valid?: true} <- changeset(attrs),
          client <- ClientAPI.get_client_with_type(attrs["client_id"]),
-         :ok <- ClientAPI.validate_client_allowed_grant_types(client, "password"),
+         :ok <- validate_client_allowed_grant_types(client, "password"),
          user <- UserAPI.get_user_by(email: attrs["email"]),
          :ok <- validate_user_by_client(user, client),
-         {:ok, user} <- validate_user(user),
+         :ok <- validate_user_is_blocked(user),
          :ok <- LoginHistory.check_failed_login(user, LoginHistory.type(:password)),
          {:ok, user} <- match_with_user_password(user, attrs["password"]),
          :ok <- validate_user_password(user, grant_type),
-         :ok <- ClientAPI.validate_client_allowed_scope(client, attrs["scope"]),
+         :ok <- validate_client_allowed_scope(client, attrs["scope"]),
          :ok <- validate_token_scope_by_grant(grant_type, attrs["scope"]),
          factor <- Factors.get_factor_by(user_id: user.id, is_active: true),
-         {:ok, scope} <- prepare_scope_by_client(client, attrs["scope"]),
-         {:ok, token} <- create_token_by_grant_type(factor, user, client, scope, grant_type),
+         {:ok, token} <- create_token_by_grant_type(factor, user, client, attrs["scope"], grant_type),
          {_, nil} <- Mithril.TokenAPI.deactivate_old_tokens(token),
          sms_send_response <- maybe_send_otp(user, factor, token),
          {:ok, next_step} <- map_next_step(sms_send_response) do
       {:ok, %{token: token, urgent: %{next_step: next_step}}}
     end
+  end
+
+  defp changeset(attrs) do
+    types = %{email: :string, password: :string, client_id: :string, scope: :string}
+
+    {%{}, types}
+    |> cast(attrs, Map.keys(types))
+    |> validate_required(Map.keys(types))
   end
 
   defp validate_user_password(_, @grant_type_change_password), do: :ok
@@ -52,23 +61,11 @@ defmodule Mithril.Authorization.GrantType.Password do
     end
   end
 
-  defp changeset(attrs) do
-    types = %{email: :string, password: :string, client_id: :string, scope: :string}
+  defp validate_user_by_client(%User{tax_id: tax_id}, %{client_type: %{name: @cabinet_client_type}})
+       when is_nil(tax_id) or tax_id == "",
+       do: {:error, {:forbidden, %{message: "User is not registered"}}}
 
-    {%{}, types}
-    |> cast(attrs, Map.keys(types))
-    |> validate_required(Map.keys(types))
-  end
-
-  def validate_user_by_client(%User{tax_id: tax_id}, %{client_type: %{name: @cabinet_client_type}})
-      when is_nil(tax_id) or tax_id == "",
-      do: {:error, {:forbidden, %{message: "User is not registered"}}}
-
-  def validate_user_by_client(_, _), do: :ok
-
-  def validate_user(%User{is_blocked: false} = user), do: {:ok, user}
-  def validate_user(%User{is_blocked: true}), do: Error.user_blocked("User blocked.")
-  def validate_user(_), do: {:error, {:access_denied, "Identity, password combination is wrong."}}
+  defp validate_user_by_client(_, _), do: :ok
 
   defp match_with_user_password(user, password) do
     if Comeonin.Bcrypt.checkpw(password, Map.get(user, :password, "")) do
@@ -99,15 +96,14 @@ defmodule Mithril.Authorization.GrantType.Password do
     {:error, {:forbidden, %{message: "User is not registered"}}}
   end
 
-  defp create_token_by_grant_type(%Factor{}, %User{} = user, client, scope, grant_type) do
+  defp create_token_by_grant_type(%Factor{}, %User{} = user, client, _scope, grant_type) do
     data = %{
       user_id: user.id,
       details: %{
         "grant_type" => grant_type,
         "client_id" => client.id,
-        # 2FA access token requires no scopes
         "scope" => "",
-        "scope_request" => scope,
+        "scope_request" => get_scope_by_grant(grant_type),
         "redirect_uri" => client.redirect_uri
       }
     }
@@ -121,7 +117,8 @@ defmodule Mithril.Authorization.GrantType.Password do
       details: %{
         "grant_type" => "password",
         "client_id" => client.id,
-        "scope" => scope,
+        "scope" => get_scope_by_grant(@grant_type_password),
+        "scope_request" => scope,
         "redirect_uri" => client.redirect_uri
       }
     }
@@ -135,13 +132,17 @@ defmodule Mithril.Authorization.GrantType.Password do
       details: %{
         "grant_type" => "change_password",
         "client_id" => client.id,
-        "scope" => scope,
+        "scope" => get_scope_by_grant(@grant_type_change_password),
+        "scope_request" => scope,
         "redirect_uri" => client.redirect_uri
       }
     }
 
     Mithril.TokenAPI.create_change_password_token(data)
   end
+
+  defp get_scope_by_grant(@grant_type_password), do: @scope_app_authorize
+  defp get_scope_by_grant(@grant_type_change_password), do: @scope_change_password
 
   defp maybe_send_otp(user, %Factor{} = factor, token), do: Authentication.send_otp(user, factor, token)
   defp maybe_send_otp(_, _, _), do: {:ok, :request_app}
