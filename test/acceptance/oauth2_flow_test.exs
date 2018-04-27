@@ -7,6 +7,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
   alias Mithril.OTP
   alias Mithril.Authorization.Tokens
   alias Mithril.ClientTypeAPI.ClientType
+  alias Mithril.Authorization.GrantType
 
   @direct Mithril.ClientAPI.access_type(:direct)
 
@@ -154,7 +155,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       assert "REQUEST_OTP" == resp["urgent"]["next_step"]
       assert "2fa_access_token" == resp["data"]["name"]
       assert "" == resp["data"]["details"]["scope"]
-      assert "app:authorize legal_entity:read" == resp["data"]["details"]["scope_request"]
+      assert "app:authorize" == resp["data"]["details"]["scope_request"]
       otp_token_value = resp["data"]["value"]
 
       # OTP code will sent by third party. Let's get it from DB
@@ -181,7 +182,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
 
       assert "REQUEST_APPS" == resp["urgent"]["next_step"]
       assert "access_token" == resp["data"]["name"]
-      assert "app:authorize legal_entity:read" == resp["data"]["details"]["scope"]
+      assert "app:authorize" == resp["data"]["details"]["scope"]
       assert resp["data"]["value"]
 
       # 3. Create approval.
@@ -316,8 +317,10 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
         scope: "cabinet:read cabinet:write"
       })
 
-      role = insert(:role, scope: "cabinet:read cabinet:write")
-      insert(:user_role, user_id: user.id, role_id: role.id, client_id: client.id)
+      role_1 = insert(:role, scope: "cabinet:read")
+      role_2 = insert(:role, scope: "cabinet:write")
+      insert(:user_role, user_id: user.id, role_id: role_1.id, client_id: client.id)
+      insert(:user_role, user_id: user.id, role_id: role_2.id, client_id: client.id)
 
       System.put_env("SMS_ENABLED", "true")
 
@@ -388,7 +391,6 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
         client_id: client.id,
         client_secret: client.secret,
         code: code_grant,
-        scope: "cabinet:read cabinet:write",
         redirect_uri: client.redirect_uri
       }
 
@@ -396,16 +398,18 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
         conn
         |> put_req_header("accept", "application/json")
         |> post(oauth2_token_path(conn, :create), token: tokens_request_body)
-        |> Map.get(:resp_body)
-        |> Poison.decode!()
-        |> IO.inspect()
+        |> json_response(201)
+        |> Map.get("data")
 
-      assert tokens_response["data"]["name"] == "access_token"
-      assert tokens_response["data"]["value"]
-      assert tokens_response["data"]["details"]["refresh_token"]
+      scope = "cabinet:read cabinet:write"
+      assert byte_size(scope) == byte_size(tokens_response["details"]["scope"])
+      assert assert_scope_allowed(scope, tokens_response["details"]["scope"])
+      assert tokens_response["name"] == "access_token"
+      assert tokens_response["value"]
+      assert tokens_response["details"]["refresh_token"]
     end
 
-    test "by Digital Signature", %{conn: conn, client: client} do
+    test "by Digital Signature", %{conn: conn, user: user, client: client} do
       # 1. Login vis DS that do not need OTP confirmation and approval for EHealth client
       tax_id = "12345678"
 
@@ -437,15 +441,48 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
         |> post(oauth2_token_path(conn, :create), payload)
         |> json_response(201)
 
-      # Without approval token allowed calls API.
-      assert "REQUEST_API" == resp["urgent"]["next_step"]
+      # For DS login do not need 2 factor auth, request approval next
+      assert "REQUEST_APPS" == resp["urgent"]["next_step"]
       assert "access_token" == resp["data"]["name"]
-      assert "app:authorize cabinet:read cabinet:write" == resp["data"]["details"]["scope"]
+      assert "app:authorize" == resp["data"]["details"]["scope"]
       assert "digital_signature" == resp["data"]["details"]["grant_type"]
       assert client.redirect_uri == resp["data"]["details"]["redirect_uri"]
       assert resp["data"]["value"]
-      assert resp["data"]["details"]["refresh_token"]
+      refute resp["data"]["details"]["refresh_token"]
+
+      # 3. Create approval.
+      code_grant = post_approval(conn, user.id, client.id, client.redirect_uri, nil)
+
+      # 4. After authorization server responds and
+      # user-agent is redirected to client server,
+      # client issues an access_token request
+      tokens_request_body = %{
+        grant_type: "authorization_code",
+        client_id: client.id,
+        client_secret: client.secret,
+        code: code_grant,
+        scope: "cabinet:read cabinet:write",
+        redirect_uri: client.redirect_uri
+      }
+
+      tokens_response =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> post(oauth2_token_path(conn, :create), token: tokens_request_body)
+        |> json_response(201)
+        |> Map.get("data")
+
+      scope = "cabinet:read cabinet:write"
+      assert byte_size(scope) == byte_size(tokens_response["details"]["scope"])
+      assert tokens_response["name"] == "access_token"
+      assert tokens_response["value"]
+      assert tokens_response["details"]["refresh_token"]
+      assert tokens_response["details"]["scope"]
     end
+  end
+
+  defp assert_scope_allowed(allowed, requested) do
+    assert GrantType.requested_scope_allowed?(allowed, requested), "Scope #{requested} not in #{allowed}"
   end
 
   # The request goes through Gateway, which

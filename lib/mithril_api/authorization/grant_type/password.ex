@@ -10,7 +10,8 @@ defmodule Mithril.Authorization.GrantType.Password do
   alias Mithril.Authorization.LoginHistory
   alias Mithril.ClientTypeAPI.ClientType
 
-  @scope_app_authorize "app:authorize"
+  @scope_app_authorize scope_app_authorize()
+  @scope_change_password "user:change_password"
   @grant_type_password "password"
   @grant_type_change_password "change_password"
 
@@ -32,8 +33,7 @@ defmodule Mithril.Authorization.GrantType.Password do
          :ok <- validate_client_allowed_scope(client, attrs["scope"]),
          :ok <- validate_token_scope_by_grant(grant_type, attrs["scope"]),
          factor <- Factors.get_factor_by(user_id: user.id, is_active: true),
-         {:ok, scope} <- prepare_scope_by_client(client, user, attrs["scope"]),
-         {:ok, token} <- create_token_by_grant_type(factor, user, client, scope, grant_type),
+         {:ok, token} <- create_token_by_grant_type(factor, user, client, attrs["scope"], grant_type),
          {_, nil} <- Mithril.TokenAPI.deactivate_old_tokens(token),
          sms_send_response <- maybe_send_otp(user, factor, token),
          {:ok, next_step} <- map_next_step(sms_send_response) do
@@ -96,14 +96,14 @@ defmodule Mithril.Authorization.GrantType.Password do
     {:error, {:forbidden, %{message: "User is not registered"}}}
   end
 
-  defp create_token_by_grant_type(%Factor{}, %User{} = user, client, scope, grant_type) do
+  defp create_token_by_grant_type(%Factor{}, %User{} = user, client, _scope, grant_type) do
     data = %{
       user_id: user.id,
       details: %{
         "grant_type" => grant_type,
         "client_id" => client.id,
         "scope" => "",
-        "scope_request" => @scope_app_authorize,
+        "scope_request" => get_scope_by_grant(grant_type),
         "redirect_uri" => client.redirect_uri
       }
     }
@@ -117,7 +117,7 @@ defmodule Mithril.Authorization.GrantType.Password do
       details: %{
         "grant_type" => "password",
         "client_id" => client.id,
-        "scope" => @scope_app_authorize,
+        "scope" => get_scope_by_grant(@grant_type_password),
         "scope_request" => scope,
         "redirect_uri" => client.redirect_uri
       }
@@ -132,7 +132,7 @@ defmodule Mithril.Authorization.GrantType.Password do
       details: %{
         "grant_type" => "change_password",
         "client_id" => client.id,
-        "scope" => @scope_app_authorize,
+        "scope" => get_scope_by_grant(@grant_type_change_password),
         "scope_request" => scope,
         "redirect_uri" => client.redirect_uri
       }
@@ -140,6 +140,9 @@ defmodule Mithril.Authorization.GrantType.Password do
 
     Mithril.TokenAPI.create_change_password_token(data)
   end
+
+  defp get_scope_by_grant(@grant_type_password), do: @scope_app_authorize
+  defp get_scope_by_grant(@grant_type_change_password), do: @scope_change_password
 
   defp maybe_send_otp(user, %Factor{} = factor, token), do: Authentication.send_otp(user, factor, token)
   defp maybe_send_otp(_, _, _), do: {:ok, :request_app}

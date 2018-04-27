@@ -85,7 +85,8 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       assert token["details"]["client_id"] == client.id
       assert token["details"]["grant_type"] == "password"
       assert token["details"]["redirect_uri"] == client.redirect_uri
-      assert token["details"]["scope"] == "app:authorize legal_entity:read"
+      assert token["details"]["scope"] == "app:authorize"
+      assert token["details"]["scope_request"] == "app:authorize"
     end
 
     test "invalid token", %{conn: conn, otp: otp} do
@@ -306,7 +307,8 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       assert "access_token" == token["name"]
       assert user.id == token["user_id"]
       assert "password" == token["details"]["grant_type"]
-      assert "app:authorize legal_entity:read" == token["details"]["scope"]
+      assert "app:authorize" == token["details"]["scope"]
+      assert "app:authorize" == token["details"]["scope_request"]
       refute Map.has_key?(token["details"], "request_authentication_factor")
       refute Map.has_key?(token["details"], "request_authentication_factor_type")
     end

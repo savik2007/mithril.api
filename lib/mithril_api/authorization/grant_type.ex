@@ -6,6 +6,7 @@ defmodule Mithril.Authorization.GrantType do
   alias Mithril.ClientAPI.Client
   alias Mithril.ClientTypeAPI.ClientType
 
+  @scope_app_authorize "app:authorize"
   @trusted_client_id "30074b6e-fbab-4dc1-9d37-88c21dab1847"
 
   @request_api "REQUEST_API"
@@ -21,6 +22,7 @@ defmodule Mithril.Authorization.GrantType do
   def next_step(:request_factor), do: @request_factor
 
   def trusted_client_id, do: @trusted_client_id
+  def scope_app_authorize, do: @scope_app_authorize
 
   def fetch_client(client_id) do
     client_id
@@ -29,6 +31,7 @@ defmodule Mithril.Authorization.GrantType do
   end
 
   defp validate_client_is_blocked(%Client{is_blocked: false} = client), do: {:ok, client}
+  defp validate_client_is_blocked(%Client{is_blocked: true}), do: Error.access_denied("Client is blocked.")
   defp validate_client_is_blocked(_), do: Error.access_denied("Invalid client id.")
 
   def validate_user_is_blocked(%User{is_blocked: false}), do: :ok
@@ -58,7 +61,7 @@ defmodule Mithril.Authorization.GrantType do
     end
   end
 
-  defp requested_scope_allowed?(allowed_scope, requested_scope) do
+  def requested_scope_allowed?(allowed_scope, requested_scope) do
     allowed_scope = String.split(allowed_scope, " ", trim: true)
     requested_scope = String.split(requested_scope, " ", trim: true)
     Mithril.Utils.List.subset?(allowed_scope, requested_scope)

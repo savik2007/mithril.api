@@ -94,7 +94,7 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
 
       conn
       |> post(oauth2_token_path(conn, :create), Poison.encode!(request_body))
-      |> json_response(401)
+      |> json_response(422)
     end
 
     test "invalid grant type", %{conn: conn, user: user, client: client} do

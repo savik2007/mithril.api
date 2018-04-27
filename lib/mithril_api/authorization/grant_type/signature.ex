@@ -10,6 +10,7 @@ defmodule Mithril.Authorization.GrantType.Signature do
 
   require Logger
 
+  @scope_app_authorize scope_app_authorize()
   @mpi_api Application.get_env(:mithril_api, :api_resolvers)[:mpi]
   @signature_api Application.get_env(:mithril_api, :api_resolvers)[:digital_signature]
 
@@ -90,7 +91,8 @@ defmodule Mithril.Authorization.GrantType.Signature do
       details: %{
         "grant_type" => "digital_signature",
         "client_id" => client.id,
-        "scope" => scope,
+        "scope" => @scope_app_authorize,
+        "scope_request" => scope,
         "redirect_uri" => client.redirect_uri
       }
     }

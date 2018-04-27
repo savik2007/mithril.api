@@ -19,11 +19,13 @@ defmodule Mithril.OAuth.AppController do
 
     params = Map.merge(app_params, %{"user_id" => user_id, "api_key" => api_key})
 
-    with {:ok, %{token: token, urgent: urgent}} <- Authorization.create_approval(params) do
+    with {:ok, token} <- Authorization.create_approval(params) do
+      location = generate_location(token)
+
       conn
       |> put_status(:created)
-      |> assign(:urgent, urgent)
-      |> put_resp_header("location", generate_location(token))
+      |> assign(:urgent, %{redirect_uri: location})
+      |> put_resp_header("location", location)
       |> render(TokenView, "show.json", token: token)
     end
   end

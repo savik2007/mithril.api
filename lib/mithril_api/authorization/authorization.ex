@@ -5,12 +5,10 @@ defmodule Mithril.Authorization do
   import Mithril.Authorization.GrantType
 
   alias Ecto.UUID
-  alias Mithril.{AppAPI, ClientAPI, UserAPI, Error}
+  alias Mithril.{AppAPI, UserAPI, Error}
   alias Mithril.UserAPI.User
   alias Mithril.ClientAPI.Client
   alias Mithril.Utils.RedirectUriChecker
-
-  @trusted_client_id trusted_client_id()
 
   # NOTE: Mark password token as used.
   #
@@ -34,7 +32,7 @@ defmodule Mithril.Authorization do
          # entities creation
          :ok <- create_or_update_app(user, client, scope),
          {:ok, token} <- create_token(user, client, scope, redirect_uri) do
-      {:ok, %{token: token, urgent: %{redirect_uri: redirect_uri}}}
+      {:ok, token}
     end
   end
 
@@ -60,7 +58,7 @@ defmodule Mithril.Authorization do
   defp create_or_update_app(%User{} = user, %Client{} = client, scope) do
     case AppAPI.get_app_by(user_id: user.id, client_id: client.id) do
       nil ->
-        {:ok, app} = AppAPI.create_app(%{user_id: user.id, client_id: client.id, scope: scope})
+        {:ok, _} = AppAPI.create_app(%{user_id: user.id, client_id: client.id, scope: scope})
 
       app ->
         aggregated_scopes = String.split(scope, " ", trim: true) ++ String.split(app.scope, " ", trim: true)
@@ -68,10 +66,11 @@ defmodule Mithril.Authorization do
 
         AppAPI.update_app(app, %{scope: aggregated_scope})
     end
+
     :ok
   end
 
-  defp create_token(user, %Client{id: @trusted_client_id} = client, scope, redirect_uri) do
+  defp create_token(user, client, scope, redirect_uri) do
     # get grant_type from token
     grant_type = "password"
 
@@ -79,19 +78,7 @@ defmodule Mithril.Authorization do
       user_id: user.id,
       details: %{
         client_id: client.id,
-        grant_type: "password",
-        redirect_uri: redirect_uri,
-        scope_request: scope
-      }
-    })
-  end
-
-  defp create_token(user, %Client{id: @trusted_client_id} = client, scope, redirect_uri) do
-    Mithril.TokenAPI.create_authorization_code(%{
-      user_id: user.id,
-      details: %{
-        client_id: client.id,
-        grant_type: "password",
+        grant_type: grant_type,
         redirect_uri: redirect_uri,
         scope_request: scope
       }

@@ -10,7 +10,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   alias Mithril.Authentication
   alias Mithril.Authentication.{Factor, Factors}
 
-  @ehealth_cabinet_client_id "30074b6e-fbab-4dc1-9d37-88c21dab1847"
+  @scope_app_authorize scope_app_authorize()
 
   def authorize(params) do
     with %Ecto.Changeset{valid?: true} <- changeset(params),
@@ -122,7 +122,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   defp create_access_token(%Token{details: details} = token) do
     # changing 2FA token to access token
     # creates token with scope that stored in detais.scope_request
-    scope = Map.get(details, "scope_request", "app:authorize")
+    scope = Map.get(details, "scope_request", @scope_app_authorize)
 
     TokenAPI.create_access_token(%{
       user_id: token.user_id,
