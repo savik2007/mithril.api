@@ -336,7 +336,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
         email: user.email,
         password: "super$ecre7",
         client_id: client.id,
-        scope: "app:authorize"
+        scope: "app:authorize cabinet:read cabinet:write"
       }
 
       resp =
@@ -347,7 +347,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       assert "REQUEST_OTP" == resp["urgent"]["next_step"]
       assert "2fa_access_token" == resp["data"]["name"]
       assert "" == resp["data"]["details"]["scope"]
-      assert "app:authorize cabinet:read cabinet:write" == resp["data"]["details"]["scope_request"]
+      assert "app:authorize" == resp["data"]["details"]["scope_request"]
       otp_token_value = resp["data"]["value"]
 
       # OTP code will sent by third party. Let's get it from DB
@@ -370,12 +370,39 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
         |> post(oauth2_token_path(conn, :create), token: otp_request_body)
         |> json_response(201)
 
-      # Without approval token allowed calls API.
-      assert "REQUEST_API" == resp["urgent"]["next_step"]
+      assert "REQUEST_APPS" == resp["urgent"]["next_step"]
       assert "access_token" == resp["data"]["name"]
-      assert "app:authorize cabinet:read cabinet:write" == resp["data"]["details"]["scope"]
+      assert "app:authorize" == resp["data"]["details"]["scope"]
+      assert "app:authorize" == resp["data"]["details"]["scope_request"]
       assert resp["data"]["value"]
-      assert resp["data"]["details"]["refresh_token"]
+      refute resp["data"]["details"]["refresh_token"]
+
+      # 3. Create approval.
+      code_grant = post_approval(conn, user.id, client.id, client.redirect_uri, nil)
+
+      # 4. After authorization server responds and
+      # user-agent is redirected to client server,
+      # client issues an access_token request
+      tokens_request_body = %{
+        grant_type: "authorization_code",
+        client_id: client.id,
+        client_secret: client.secret,
+        code: code_grant,
+        scope: "cabinet:read cabinet:write",
+        redirect_uri: client.redirect_uri
+      }
+
+      tokens_response =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> post(oauth2_token_path(conn, :create), token: tokens_request_body)
+        |> Map.get(:resp_body)
+        |> Poison.decode!()
+        |> IO.inspect()
+
+      assert tokens_response["data"]["name"] == "access_token"
+      assert tokens_response["data"]["value"]
+      assert tokens_response["data"]["details"]["refresh_token"]
     end
 
     test "by Digital Signature", %{conn: conn, client: client} do
@@ -419,6 +446,33 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       assert resp["data"]["value"]
       assert resp["data"]["details"]["refresh_token"]
     end
+  end
+
+  # The request goes through Gateway, which
+  # converts login_response["data"]["value"] into user_id
+  # and puts it in as "x-consumer-id" header
+  defp post_approval(conn, user_id, client_id, redirect_uri, scope) do
+    payload = %{
+      "app" => %{
+        client_id: client_id,
+        redirect_uri: redirect_uri,
+        scope: scope
+      }
+    }
+
+    raw_response =
+      conn
+      |> put_req_header("x-consumer-id", user_id)
+      |> post(oauth2_app_path(conn, :authorize), payload)
+
+    response = json_response(raw_response, 201)
+    code_grant = get_in(response, ["data", "value"])
+    redirect_uri = "http://localhost?code=#{code_grant}"
+
+    assert redirect_uri == response["urgent"]["redirect_uri"]
+    assert [^redirect_uri] = get_resp_header(raw_response, "location")
+
+    code_grant
   end
 
   defp ds_valid_signed_content() do
