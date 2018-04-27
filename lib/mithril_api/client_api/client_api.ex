@@ -3,11 +3,9 @@ defmodule Mithril.ClientAPI do
   use Mithril.Search
 
   import Ecto.{Query, Changeset}, warn: false
-  import Mithril.Utils.List, only: [subset?: 2]
 
   alias Mithril.Repo
   alias Mithril.ClientAPI.{Client, ClientSearch}
-  alias Mithril.ClientTypeAPI.ClientType
 
   @access_type_direct "DIRECT"
   @access_type_broker "BROKER"
