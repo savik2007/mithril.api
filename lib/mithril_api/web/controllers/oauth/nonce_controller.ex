@@ -3,11 +3,15 @@ defmodule Mithril.OAuth.NonceController do
 
   alias Mithril.Web.TokenView
   alias Mithril.Authentication
+  alias Mithril.NonceValidator
+  alias Mithril.Web.FallbackController
+
+  plug(Plugination, [validator: NonceValidator, error_handler: FallbackController] when action in [:nonce])
 
   action_fallback(Mithril.Web.FallbackController)
 
-  def nonce(conn, _) do
-    with {:ok, jwt, _} <- conn |> get_req_header("client-id") |> Authentication.generate_nonce_for_client() do
+  def nonce(conn, %{"client_id" => client_id}) do
+    with {:ok, jwt, _} <- Authentication.generate_nonce_for_client(client_id) do
       render(conn, TokenView, "raw.json", json: %{token: jwt})
     end
   end

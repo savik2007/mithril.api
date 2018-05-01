@@ -138,7 +138,7 @@ defmodule Mithril.Authentication do
 
   defp valid_sms_template?(_, _), do: false
 
-  def generate_nonce_for_client([client_id]) when is_binary(client_id) do
+  def generate_nonce_for_client(client_id) when is_binary(client_id) do
     ttl = {Confex.fetch_env!(:mithril_api, :ttl_login), :minutes}
 
     with %{is_blocked: false} <- ClientAPI.get_client!(client_id) do
@@ -147,6 +147,4 @@ defmodule Mithril.Authentication do
       %{is_blocked: true} -> {:error, {:access_denied, "Client is blocked"}}
     end
   end
-
-  def generate_nonce_for_client(_), do: {:error, {:access_denied, "Client header not set"}}
 end

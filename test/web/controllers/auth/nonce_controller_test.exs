@@ -9,8 +9,7 @@ defmodule Mithril.OAuth.NonceControllerTest do
 
       nonce =
         conn
-        |> put_req_header("client-id", id)
-        |> get(oauth2_nonce_path(conn, :nonce))
+        |> post(oauth2_nonce_path(conn, :nonce, client_id: id))
         |> json_response(200)
         |> get_in(~w(data token))
 
@@ -18,12 +17,14 @@ defmodule Mithril.OAuth.NonceControllerTest do
       assert {:ok, %{"nonce" => _, "aud" => ^aud}} = decode_and_verify(nonce)
     end
 
-    test "client_id header not set", %{conn: conn} do
-      assert "Client header not set" =
+    test "client_id not set", %{conn: conn} do
+      assert [err] =
                conn
-               |> get(oauth2_nonce_path(conn, :nonce))
-               |> json_response(401)
-               |> get_in(~w(error message))
+               |> post(oauth2_nonce_path(conn, :nonce))
+               |> json_response(422)
+               |> get_in(~w(error invalid))
+
+      assert "$.client_id" == err["entry"]
     end
   end
 end
