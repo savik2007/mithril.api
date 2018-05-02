@@ -22,7 +22,9 @@ defmodule Mithril.UserAPI.User do
 
     has_one(:factor, Mithril.Authentication.Factor)
     has_many(:user_roles, Mithril.UserRoleAPI.UserRole)
+    has_many(:global_user_roles, Mithril.GlobalUserRoleAPI.GlobalUserRole)
     has_many(:roles, through: [:user_roles, :role])
+    has_many(:global_roles, through: [:global_user_roles, :role])
 
     timestamps()
   end

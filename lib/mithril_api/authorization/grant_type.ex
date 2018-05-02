@@ -54,8 +54,8 @@ defmodule Mithril.Authorization.GrantType do
     end
   end
 
-  def validate_user_allowed_scope(%User{roles: user_roles}, requested_scope) do
-    case requested_scope_allowed?(join_user_role_scopes(user_roles), requested_scope) do
+  def validate_user_allowed_scope(%User{roles: user_roles, global_roles: global_roles}, requested_scope) do
+    case requested_scope_allowed?(join_user_role_scopes(user_roles ++ global_roles), requested_scope) do
       true -> :ok
       false -> Error.invalid_request("User requested scope that is not allowed by role based access policies.")
     end
@@ -71,10 +71,10 @@ defmodule Mithril.Authorization.GrantType do
   Fetch scope by itself for trusted Client and empty scope param
   """
   def prepare_scope_by_client(%Client{id: @trusted_client_id}, %User{roles: user_roles}, nil) do
-    {:ok, join_user_role_scopes(user_roles)}
+    join_user_role_scopes(user_roles)
   end
 
-  def prepare_scope_by_client(_client_id, _user, scope), do: {:ok, scope}
+  def prepare_scope_by_client(_client_id, _user, scope), do: scope
 
   defp join_user_role_scopes(user_roles), do: Enum.map_join(user_roles, " ", & &1.scope)
 end

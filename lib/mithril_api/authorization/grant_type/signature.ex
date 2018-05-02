@@ -31,8 +31,7 @@ defmodule Mithril.Authorization.GrantType.Signature do
          {:ok, person} <- get_person(user.person_id),
          :ok <- check_person_status(person),
          :ok <- validate_person_tax_id(person, tax_id),
-         {:ok, scope} <- prepare_scope_by_client(client, user, attrs["scope"]),
-         {:ok, token} <- create_access_token(user, client, scope),
+         {:ok, token} <- create_access_token(user, client, attrs["scope"]),
          {_, nil} <- TokenAPI.deactivate_old_tokens(token) do
       {:ok, %{token: token, urgent: %{next_step: next_step(:request_apps)}}}
     end
