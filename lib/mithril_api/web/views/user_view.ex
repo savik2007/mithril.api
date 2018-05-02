@@ -2,7 +2,7 @@ defmodule Mithril.Web.UserView do
   @moduledoc false
 
   use Mithril.Web, :view
-  alias Mithril.Web.UserView
+  alias Mithril.Web.{UserView, RoleView}
 
   @fields ~w(id email tax_id person_id settings is_blocked block_reason inserted_at updated_at)a
 
@@ -20,7 +20,8 @@ defmodule Mithril.Web.UserView do
 
   def render("urgent.json", %{user: user, urgent: true, expires_at: expires_at}) do
     urgent = %{
-      roles: render_many(user.roles, Mithril.Web.RoleView, "show.json"),
+      roles: render_many(user.roles, RoleView, "show.json"),
+      global_roles: render_many(user.global_roles, RoleView, "show.json"),
       token: %{
         expires_at: expires_at
       }

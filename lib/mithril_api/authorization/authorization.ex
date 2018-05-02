@@ -20,10 +20,10 @@ defmodule Mithril.Authorization do
          client_id <- get_change(changeset, :client_id),
          {:ok, client} <- fetch_client(client_id),
          # user validation
-         user <- UserAPI.get_full_user(get_change(changeset, :user_id), client_id),
+         user <- UserAPI.get_user_with_roles(get_change(changeset, :user_id), client_id),
          :ok <- validate_user_is_blocked(user),
          # client validation
-         {:ok, scope} <- prepare_scope_by_client(client, user, get_change(changeset, :scope)),
+         scope <- prepare_scope_by_client(client, user, get_change(changeset, :scope)),
          redirect_uri <- get_change(changeset, :redirect_uri),
          :ok <- validate_redirect_uri(client, redirect_uri),
          # scope validation

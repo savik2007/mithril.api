@@ -381,6 +381,9 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       refute resp["data"]["details"]["refresh_token"]
 
       # 3. Create approval.
+      # The request goes through Gateway, which
+      # converts login_response["data"]["value"] into user_id
+      # and puts it in as "x-consumer-id" header
       code_grant = post_approval(conn, user.id, client.id, client.redirect_uri, nil)
 
       # 4. After authorization server responds and
@@ -451,6 +454,9 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       refute resp["data"]["details"]["refresh_token"]
 
       # 3. Create approval.
+      # The request goes through Gateway, which
+      # converts login_response["data"]["value"] into user_id
+      # and puts it in as "x-consumer-id" header
       code_grant = post_approval(conn, user.id, client.id, client.redirect_uri, nil)
 
       # 4. After authorization server responds and
@@ -483,33 +489,6 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
 
   defp assert_scope_allowed(allowed, requested) do
     assert GrantType.requested_scope_allowed?(allowed, requested), "Scope #{requested} not in #{allowed}"
-  end
-
-  # The request goes through Gateway, which
-  # converts login_response["data"]["value"] into user_id
-  # and puts it in as "x-consumer-id" header
-  defp post_approval(conn, user_id, client_id, redirect_uri, scope) do
-    payload = %{
-      "app" => %{
-        client_id: client_id,
-        redirect_uri: redirect_uri,
-        scope: scope
-      }
-    }
-
-    raw_response =
-      conn
-      |> put_req_header("x-consumer-id", user_id)
-      |> post(oauth2_app_path(conn, :authorize), payload)
-
-    response = json_response(raw_response, 201)
-    code_grant = get_in(response, ["data", "value"])
-    redirect_uri = "http://localhost?code=#{code_grant}"
-
-    assert redirect_uri == response["urgent"]["redirect_uri"]
-    assert [^redirect_uri] = get_resp_header(raw_response, "location")
-
-    code_grant
   end
 
   defp ds_valid_signed_content() do

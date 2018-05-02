@@ -52,6 +52,8 @@ defmodule MithrilWeb.Router do
     pipe_through(:api)
 
     resources "/users", UserController, except: [:new, :edit] do
+      post("/global_roles", GlobalUserRoleController, :create, as: :global_role)
+      get("/global_roles/:id", GlobalUserRoleController, :show, as: :global_role)
       resources("/roles", UserRoleController, except: [:new, :edit, :update, :delete], as: :role)
       delete("/roles", UserRoleController, :delete_by_user, as: :role)
       delete("/tokens", TokenController, :delete_by_user)

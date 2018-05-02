@@ -42,17 +42,21 @@ defmodule Mithril.UserAPI do
   def get_user!(id), do: Repo.get!(User, id)
   def get_user_by(attrs), do: Repo.get_by(User, attrs)
 
-  def get_full_user(user_id, client_id) do
+  def get_user_with_roles(user_id, client_id) do
     query =
       from(
         u in User,
         left_join: ur in assoc(u, :user_roles),
+        on: ur.user_id == u.id and ur.client_id == ^client_id,
         left_join: r in assoc(ur, :role),
+        left_join: gur in assoc(u, :global_user_roles),
+        on: gur.user_id == u.id,
+        left_join: gr in assoc(gur, :role),
+        where: u.id == ^user_id,
         preload: [
-          roles: r
-        ],
-        where: ur.user_id == ^user_id,
-        where: ur.client_id == ^client_id
+          roles: r,
+          global_roles: gr
+        ]
       )
 
     Repo.one(query)

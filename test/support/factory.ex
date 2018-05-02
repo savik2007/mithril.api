@@ -134,6 +134,13 @@ defmodule Mithril.Factory do
     }
   end
 
+  def global_user_role_factory do
+    %Mithril.GlobalUserRoleAPI.GlobalUserRole{
+      user_id: insert(:user).id,
+      role_id: insert(:role).id
+    }
+  end
+
   def app_factory do
     %Mithril.AppAPI.App{
       scope: "some scope",
