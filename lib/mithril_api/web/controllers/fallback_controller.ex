@@ -91,6 +91,12 @@ defmodule Mithril.Web.FallbackController do
     |> render(Error, :"400", %{message: error})
   end
 
+  def call(conn, {:error, {:internal_error, reason}}) do
+    conn
+    |> put_status(:internal_error)
+    |> render(Error, :"500", %{message: reason})
+  end
+
   def call(conn, {:error, {:service_unavailable, reason}}) do
     conn
     |> put_status(:service_unavailable)

@@ -1,7 +1,8 @@
 defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   @moduledoc false
+
   import Ecto.Changeset
-  import Mithril.Authorization.Tokens, only: [next_step: 1]
+  import Mithril.Authorization.GrantType
 
   alias Mithril.{Error, UserAPI, TokenAPI}
   alias Mithril.UserAPI.User
@@ -9,12 +10,14 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   alias Mithril.Authentication
   alias Mithril.Authentication.{Factor, Factors}
 
+  @scope_app_authorize scope_app_authorize()
+
   def authorize(params) do
     with %Ecto.Changeset{valid?: true} <- changeset(params),
          :ok <- validate_authorization_header(params),
          {:ok, non_validated_token} <- get_token(params["token_value"]),
          user <- UserAPI.get_user(non_validated_token.user_id),
-         {:ok, user} <- validate_user(user),
+         :ok <- validate_user_is_blocked(user),
          {:ok, token_2fa} <- validate_token(non_validated_token),
          %Factor{} = factor <- get_auth_factor_by_user_id(user.id),
          :ok <- check_factor_value(factor),
@@ -29,7 +32,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
     with :ok <- validate_authorization_header(params),
          {:ok, non_validated_token} <- get_token(params["token_value"]),
          user <- UserAPI.get_user(non_validated_token.user_id),
-         {:ok, user} <- validate_user(user),
+         :ok <- validate_user_is_blocked(user),
          {:ok, token_2fa} <- validate_token(non_validated_token),
          %Factor{} = factor <- get_auth_factor_by_user_id(user.id),
          :ok <- check_factor_value(factor),
@@ -72,10 +75,6 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   defp validate_token(%Token{}) do
     {:error, {:access_denied, "Invalid token type"}}
   end
-
-  def validate_user(%User{is_blocked: false} = user), do: {:ok, user}
-  def validate_user(%User{is_blocked: true}), do: Error.user_blocked("User blocked.")
-  def validate_user(_), do: {:error, {:access_denied, "User not found."}}
 
   defp get_auth_factor_by_user_id(user_id) do
     case Factors.get_factor_by(user_id: user_id, is_active: true) do
@@ -123,7 +122,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   defp create_access_token(%Token{details: details} = token) do
     # changing 2FA token to access token
     # creates token with scope that stored in detais.scope_request
-    scope = Map.get(details, "scope_request", "app:authorize")
+    scope = Map.get(details, "scope_request", @scope_app_authorize)
 
     TokenAPI.create_access_token(%{
       user_id: token.user_id,

@@ -3,11 +3,9 @@ defmodule Mithril.ClientAPI do
   use Mithril.Search
 
   import Ecto.{Query, Changeset}, warn: false
-  import Mithril.Utils.List, only: [subset?: 2]
 
-  alias Mithril.{Error, Repo}
+  alias Mithril.Repo
   alias Mithril.ClientAPI.{Client, ClientSearch}
-  alias Mithril.ClientTypeAPI.ClientType
 
   @access_type_direct "DIRECT"
   @access_type_broker "BROKER"
@@ -149,27 +147,6 @@ defmodule Mithril.ClientAPI do
 
       _ ->
         changeset
-    end
-  end
-
-  def validate_client_allowed_grant_types(nil, _grant_type) do
-    {:error, {:access_denied, "Invalid client id."}}
-  end
-
-  def validate_client_allowed_grant_types(%Client{} = client, grant_type) do
-    case grant_type in Map.get(client.settings, "allowed_grant_types", []) do
-      true -> :ok
-      false -> {:error, {:access_denied, "Client is not allowed to issue login token."}}
-    end
-  end
-
-  def validate_client_allowed_scope(%Client{client_type: %ClientType{} = client_type}, requested_scope) do
-    allowed_scopes = String.split(client_type.scope, " ", trim: true)
-    requested_scopes = String.split(requested_scope, " ", trim: true)
-
-    case subset?(allowed_scopes, requested_scopes) do
-      true -> :ok
-      _ -> Error.invalid_scope(allowed_scopes)
     end
   end
 end

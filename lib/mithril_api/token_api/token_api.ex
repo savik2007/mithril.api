@@ -8,6 +8,7 @@ defmodule Mithril.TokenAPI do
   alias Mithril.{Repo, Error}
   alias Mithril.{UserAPI, ClientAPI, TokenAPI}
   alias Mithril.UserAPI.User
+  alias Mithril.Authorization.GrantType
   alias Mithril.TokenAPI.{Token, TokenSearch}
 
   @refresh_token "refresh_token"
@@ -71,8 +72,8 @@ defmodule Mithril.TokenAPI do
 
   def create_access_token(%User{} = user, %{"client_id" => client_id, "scope" => scope}) do
     with client <- ClientAPI.get_client_with_type(client_id),
-         :ok <- ClientAPI.validate_client_allowed_grant_types(client, "password"),
-         :ok <- ClientAPI.validate_client_allowed_scope(client, scope),
+         :ok <- GrantType.validate_client_allowed_grant_types(client, "password"),
+         :ok <- GrantType.validate_client_allowed_scope(client, scope),
          {:ok, token} <- create_access_token(user, client, scope),
          {_, nil} <- TokenAPI.deactivate_old_tokens(token) do
       {:ok, token}

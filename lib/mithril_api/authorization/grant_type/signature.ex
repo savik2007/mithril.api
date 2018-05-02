@@ -1,8 +1,8 @@
 defmodule Mithril.Authorization.GrantType.Signature do
   @moduledoc false
 
+  import Mithril.Authorization.GrantType
   import Ecto.{Query, Changeset}, warn: false
-  import Mithril.Authorization.Tokens, only: [next_step: 1]
 
   alias Mithril.{UserAPI, ClientAPI, TokenAPI, Error, Guardian}
   alias Mithril.Ecto.Base64
@@ -10,6 +10,7 @@ defmodule Mithril.Authorization.GrantType.Signature do
 
   require Logger
 
+  @scope_app_authorize scope_app_authorize()
   @mpi_api Application.get_env(:mithril_api, :api_resolvers)[:mpi]
   @signature_api Application.get_env(:mithril_api, :api_resolvers)[:digital_signature]
 
@@ -23,14 +24,15 @@ defmodule Mithril.Authorization.GrantType.Signature do
          :ok <- validate_content_jwt(content),
          {:ok, tax_id} <- validate_signer_tax_id(signer),
          client <- ClientAPI.get_client_with_type(attrs["client_id"]),
-         :ok <- ClientAPI.validate_client_allowed_grant_types(client, "digital_signature"),
-         :ok <- ClientAPI.validate_client_allowed_scope(client, attrs["scope"]),
+         :ok <- validate_client_allowed_grant_types(client, "digital_signature"),
+         :ok <- validate_client_allowed_scope(client, attrs["scope"]),
          user <- UserAPI.get_user_by(tax_id: tax_id),
          {:ok, user} <- validate_user(user),
          {:ok, person} <- get_person(user.person_id),
          :ok <- check_person_status(person),
          :ok <- validate_person_tax_id(person, tax_id),
-         {:ok, token} <- create_access_token(user, client, attrs["scope"]),
+         {:ok, scope} <- prepare_scope_by_client(client, user, attrs["scope"]),
+         {:ok, token} <- create_access_token(user, client, scope),
          {_, nil} <- TokenAPI.deactivate_old_tokens(token) do
       {:ok, %{token: token, urgent: %{next_step: next_step(:request_apps)}}}
     end
@@ -89,7 +91,8 @@ defmodule Mithril.Authorization.GrantType.Signature do
       details: %{
         "grant_type" => "digital_signature",
         "client_id" => client.id,
-        "scope" => scope,
+        "scope" => @scope_app_authorize,
+        "scope_request" => scope,
         "redirect_uri" => client.redirect_uri
       }
     }

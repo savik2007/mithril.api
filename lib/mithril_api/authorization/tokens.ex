@@ -7,6 +7,7 @@ defmodule Mithril.Authorization.Tokens do
   alias Mithril.UserAPI.User
   alias Mithril.TokenAPI.Token
   alias Mithril.ClientAPI.Client
+  alias Mithril.Authorization.GrantType
   alias Mithril.Authentication.{Factor, Factors}
   alias Mithril.Authorization.BrokerScope
   alias Mithril.Authorization.GrantType.{Password, RefreshToken, AccessToken2FA, AuthorizationCode, Signature}
@@ -18,15 +19,9 @@ defmodule Mithril.Authorization.Tokens do
   @type_field "request_authentication_factor_type"
   @factor_field "request_authentication_factor"
 
-  @request_otp "REQUEST_OTP"
-  @request_apps "REQUEST_APPS"
-  @request_factor "REQUEST_FACTOR"
-  @request_ds "REQUEST_LOGIN_VIA_DS"
+  @grant_type_2fa_authorize "authorize_2fa_access_token"
 
-  def next_step(:request_ds), do: @request_ds
-  def next_step(:request_otp), do: @request_otp
-  def next_step(:request_apps), do: @request_apps
-  def next_step(:request_factor), do: @request_factor
+  def grant_type(:"2fa_auth"), do: @grant_type_2fa_authorize
 
   @doc """
     Create new access_tokens based on grant_type the request came with
@@ -35,7 +30,7 @@ defmodule Mithril.Authorization.Tokens do
     Password.authorize(params)
   end
 
-  def create_by_grant_type(%{"grant_type" => "authorize_2fa_access_token"} = params) do
+  def create_by_grant_type(%{"grant_type" => @grant_type_2fa_authorize} = params) do
     AccessToken2FA.authorize(params)
   end
 
@@ -63,7 +58,7 @@ defmodule Mithril.Authorization.Tokens do
     with :ok <- AccessToken2FA.validate_authorization_header(attrs),
          {:ok, token} <- validate_token(attrs["token_value"]),
          user <- UserAPI.get_user(token.user_id),
-         {:ok, _} <- AccessToken2FA.validate_user(user),
+         :ok <- GrantType.validate_user_is_blocked(user),
          %Ecto.Changeset{valid?: true} <- factor_changeset(attrs),
          where_factor <- prepare_factor_where_clause(token, attrs),
          %Factor{} = factor <- Factors.get_factor_by!(where_factor),
@@ -86,7 +81,7 @@ defmodule Mithril.Authorization.Tokens do
          {:ok, token} <- validate_token(attrs["token_value"]),
          :ok <- validate_approve_token(token),
          user <- UserAPI.get_user(token.user_id),
-         {:ok, user} <- AccessToken2FA.validate_user(user),
+         :ok <- GrantType.validate_user_is_blocked(user),
          where_factor <- prepare_factor_where_clause(token),
          %Factor{} = factor <- Factors.get_factor_by!(where_factor),
          :ok <- AccessToken2FA.verify_otp(token.details[@factor_field], token, attrs["otp"], user),
