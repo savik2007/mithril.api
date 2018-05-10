@@ -34,7 +34,7 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
     assert token.details["client_id"] == client.id
     assert token.details["grant_type"] == "password"
     assert token.details["redirect_uri"] == client.redirect_uri
-    assert token.details["scope"] == "app:authorize"
+    assert token.details["scope"] == "legal_entity:read"
 
     System.put_env("USER_2FA_ENABLED", "true")
   end
