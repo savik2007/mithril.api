@@ -112,9 +112,7 @@ defmodule Mithril.ClientAPI do
   end
 
   defp client_changeset(%ClientSearch{} = client, attrs) do
-    client
-    |> cast(attrs, ~w(name user_id is_blocked)a)
-    |> set_like_attributes([:name])
+    cast(client, attrs, ClientSearch.__schema__(:fields))
   end
 
   defp client_changeset(%Client{} = client, attrs) do
