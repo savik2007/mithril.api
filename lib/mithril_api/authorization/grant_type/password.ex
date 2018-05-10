@@ -96,14 +96,15 @@ defmodule Mithril.Authorization.GrantType.Password do
     {:error, {:forbidden, %{message: "User is not registered"}}}
   end
 
-  defp create_token_by_grant_type(%Factor{}, %User{} = user, client, _scope, grant_type) do
+  defp create_token_by_grant_type(%Factor{}, %User{} = user, client, scope, grant_type) do
     data = %{
       user_id: user.id,
       details: %{
         "grant_type" => grant_type,
         "client_id" => client.id,
+        # 2FA access token requires no scopes
         "scope" => "",
-        "scope_request" => get_scope_by_grant(grant_type),
+        "scope_request" => scope,
         "redirect_uri" => client.redirect_uri
       }
     }
@@ -117,8 +118,7 @@ defmodule Mithril.Authorization.GrantType.Password do
       details: %{
         "grant_type" => "password",
         "client_id" => client.id,
-        "scope" => get_scope_by_grant(@grant_type_password),
-        "scope_request" => scope,
+        "scope" => scope,
         "redirect_uri" => client.redirect_uri
       }
     }
@@ -132,8 +132,7 @@ defmodule Mithril.Authorization.GrantType.Password do
       details: %{
         "grant_type" => "change_password",
         "client_id" => client.id,
-        "scope" => get_scope_by_grant(@grant_type_change_password),
-        "scope_request" => scope,
+        "scope" => scope,
         "redirect_uri" => client.redirect_uri
       }
     }

@@ -155,7 +155,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       assert "REQUEST_OTP" == resp["urgent"]["next_step"]
       assert "2fa_access_token" == resp["data"]["name"]
       assert "" == resp["data"]["details"]["scope"]
-      assert "app:authorize" == resp["data"]["details"]["scope_request"]
+      assert "app:authorize legal_entity:read" == resp["data"]["details"]["scope_request"]
       otp_token_value = resp["data"]["value"]
 
       # OTP code will sent by third party. Let's get it from DB
@@ -182,7 +182,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
 
       assert "REQUEST_APPS" == resp["urgent"]["next_step"]
       assert "access_token" == resp["data"]["name"]
-      assert "app:authorize" == resp["data"]["details"]["scope"]
+      assert "app:authorize legal_entity:read" == resp["data"]["details"]["scope"]
       assert resp["data"]["value"]
 
       # 3. Create approval.
@@ -350,7 +350,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       assert "REQUEST_OTP" == resp["urgent"]["next_step"]
       assert "2fa_access_token" == resp["data"]["name"]
       assert "" == resp["data"]["details"]["scope"]
-      assert "app:authorize" == resp["data"]["details"]["scope_request"]
+      assert "app:authorize cabinet:read cabinet:write" == resp["data"]["details"]["scope_request"]
       otp_token_value = resp["data"]["value"]
 
       # OTP code will sent by third party. Let's get it from DB
@@ -375,9 +375,9 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
 
       assert "REQUEST_APPS" == resp["urgent"]["next_step"]
       assert "access_token" == resp["data"]["name"]
-      assert "app:authorize" == resp["data"]["details"]["scope"]
-      assert "app:authorize" == resp["data"]["details"]["scope_request"]
+      assert "app:authorize cabinet:read cabinet:write" == resp["data"]["details"]["scope"]
       assert resp["data"]["value"]
+      refute resp["data"]["details"]["scope_request"]
       refute resp["data"]["details"]["refresh_token"]
 
       # 3. Create approval.
