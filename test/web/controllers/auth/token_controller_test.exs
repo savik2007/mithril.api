@@ -445,12 +445,17 @@ defmodule Mithril.OAuth.TokenControllerTest do
           content = signed_content |> Base.decode64!() |> Poison.decode!()
 
           data = %{
-            "signer" => %{
-              "drfo" => "12345678"
-            },
+            "content" => content,
             "signed_content" => signed_content,
-            "is_valid" => true,
-            "content" => content
+            "signatures" => [
+              %{
+                "is_valid" => true,
+                "signer" => %{
+                  "drfo" => "12345678"
+                },
+                "validation_error_message" => ""
+              }
+            ]
           }
 
           {:ok, %{"data" => data}}
@@ -510,10 +515,17 @@ defmodule Mithril.OAuth.TokenControllerTest do
         content = signed_content |> Base.decode64!() |> Poison.decode!()
 
         data = %{
-          "signer" => %{"edrpou" => "12345678"},
+          "content" => content,
           "signed_content" => signed_content,
-          "is_valid" => true,
-          "content" => content
+          "signatures" => [
+            %{
+              "is_valid" => true,
+              "signer" => %{
+                "edrpou" => "12345678"
+              },
+              "validation_error_message" => ""
+            }
+          ]
         }
 
         {:ok, %{"data" => data}}
@@ -738,7 +750,35 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
     test "DS cannot decode signed content", %{conn: conn} do
       expect(SignatureMock, :decode_and_validate, fn _signed_content, "base64", _attrs ->
-        {:error, %{"data" => %{"is_valid" => false}, "meta" => %{"code" => 422, "type" => "list"}}}
+        err_resp = %{
+          "error" => %{
+            "invalid" => [
+              %{
+                "entry" => "$.signed_content",
+                "entry_type" => "json_data_property",
+                "rules" => [
+                  %{
+                    "description" => "Not a base64 string",
+                    "params" => [],
+                    "rule" => "invalid"
+                  }
+                ]
+              }
+            ],
+            "message" =>
+              "Validation failed. You can find validators description at our API Manifest:" <>
+                " http://docs.apimanifest.apiary.io/#introduction/interacting-with-api/errors.",
+            "type" => "validation_failed"
+          },
+          "meta" => %{
+            "code" => 422,
+            "request_id" => "2kmaguf9ec791885t40008s2",
+            "type" => "object",
+            "url" => "http://www.example.com/digital_signatures"
+          }
+        }
+
+        {:error, err_resp}
       end)
 
       user = insert(:user, tax_id: "12345678")
@@ -754,13 +794,13 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
       payload = ds_valid_signed_content() |> ds_payload(client.id)
 
-      err =
+      resp =
         conn
         |> post("/oauth/tokens", payload)
         |> json_response(422)
-        |> Map.get("error")
 
-      assert %{"is_valid" => false} == err
+      %{"error" => %{"invalid" => [%{"rules" => [%{"description" => err_desc}]}]}} = resp
+      assert "Not a base64 string" == err_desc
     end
 
     defp ds_valid_signed_content() do

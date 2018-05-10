@@ -30,7 +30,7 @@ defmodule Mithril.API.Signature do
         })
       end)
 
-      check_is_valid(result)
+      result
     else
       data = Base.decode64(signed_content)
 
@@ -47,28 +47,20 @@ defmodule Mithril.API.Signature do
     end
   end
 
-  defp check_is_valid({:ok, %{"data" => %{"is_valid" => false, "validation_error_message" => error}}}) do
-    {:error, {:bad_request, error}}
-  end
-
-  defp check_is_valid({:ok, %{"data" => %{"is_valid" => true}} = result}) do
-    {_empty_message, result} = pop_in(result, ["data", "validation_error_message"])
-    {:ok, result}
-  end
-
-  defp check_is_valid({:error, error}) do
-    {:error, error}
-  end
-
   defp data_is_valid_resp(data, attrs) do
     data =
       %{
         "content" => data,
-        "is_valid" => true,
-        "signer" => %{
-          "edrpou" => Map.get(attrs, "edrpou"),
-          "drfo" => Map.get(attrs, "drfo")
-        }
+        "signatures" => [
+          %{
+            "is_valid" => true,
+            "signer" => %{
+              "edrpou" => Map.get(attrs, "edrpou"),
+              "drfo" => Map.get(attrs, "drfo")
+            },
+            "validation_error_message" => ""
+          }
+        ]
       }
       |> wrap_response(200)
       |> Poison.encode!()
@@ -78,8 +70,33 @@ defmodule Mithril.API.Signature do
 
   defp data_is_invalid_resp do
     data =
-      %{"is_valid" => false}
-      |> wrap_response(422)
+      %{
+        "error" => %{
+          "invalid" => [
+            %{
+              "entry" => "$.signed_content",
+              "entry_type" => "json_data_property",
+              "rules" => [
+                %{
+                  "description" => "Not a base64 string",
+                  "params" => [],
+                  "rule" => "invalid"
+                }
+              ]
+            }
+          ],
+          "message" =>
+            "Validation failed. You can find validators description at our API Manifest:" <>
+              " http://docs.apimanifest.apiary.io/#introduction/interacting-with-api/errors.",
+          "type" => "validation_failed"
+        },
+        "meta" => %{
+          "code" => 422,
+          "request_id" => "2kmaguf9ec791885t40008s2",
+          "type" => "object",
+          "url" => "http://www.example.com/digital_signatures"
+        }
+      }
       |> Poison.encode!()
 
     ResponseDecoder.check_response(%HTTPoison.Response{body: data, status_code: 422})

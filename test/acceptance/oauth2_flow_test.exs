@@ -420,12 +420,17 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
         content = signed_content |> Base.decode64!() |> Poison.decode!()
 
         data = %{
-          "signer" => %{
-            "drfo" => tax_id
-          },
+          "content" => content,
           "signed_content" => signed_content,
-          "is_valid" => true,
-          "content" => content
+          "signatures" => [
+            %{
+              "is_valid" => true,
+              "signer" => %{
+                "drfo" => tax_id
+              },
+              "validation_error_message" => ""
+            }
+          ]
         }
 
         {:ok, %{"data" => data}}
