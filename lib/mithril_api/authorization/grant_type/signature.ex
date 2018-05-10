@@ -21,7 +21,7 @@ defmodule Mithril.Authorization.GrantType.Signature do
     with %Ecto.Changeset{valid?: true} <- changeset(attrs),
          {:ok, %{"data" => data}} <-
            @signature_api.decode_and_validate(attrs["signed_content"], attrs["signed_content_encoding"], attrs),
-         {:ok, %{"content" => content, "signer" => signer}} <- check_is_valid(data),
+         {:ok, %{"content" => content, "signer" => signer}} <- process_digital_signature_data(data),
          :ok <- validate_content_jwt(content),
          {:ok, tax_id} <- validate_signer_tax_id(signer),
          client <- ClientAPI.get_client_with_type(attrs["client_id"]),
@@ -38,13 +38,16 @@ defmodule Mithril.Authorization.GrantType.Signature do
     end
   end
 
-  defp check_is_valid(%{"content" => content, "signatures" => [%{"is_valid" => true, "signer" => signer}]}),
-    do: {:ok, %{"content" => content, "signer" => signer}}
+  defp process_digital_signature_data(%{
+         "content" => content,
+         "signatures" => [%{"is_valid" => true, "signer" => signer}]
+       }),
+       do: {:ok, %{"content" => content, "signer" => signer}}
 
-  defp check_is_valid(%{"signatures" => [%{"is_valid" => false, "validation_error_message" => error}]}),
+  defp process_digital_signature_data(%{"signatures" => [%{"is_valid" => false, "validation_error_message" => error}]}),
     do: {:error, error}
 
-  defp check_is_valid(%{"signatures" => signatures}) when is_list(signatures),
+  defp process_digital_signature_data(%{"signatures" => signatures}) when is_list(signatures),
     do: {:error, "document must be signed by 1 signer but contains #{Enum.count(signatures)} signatures"}
 
   defp changeset(attrs) do
