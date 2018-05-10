@@ -10,8 +10,6 @@ defmodule Mithril.Authorization.GrantType.Password do
   alias Mithril.Authorization.LoginHistory
   alias Mithril.ClientTypeAPI.ClientType
 
-  @scope_app_authorize scope_app_authorize()
-  @scope_change_password "user:change_password"
   @grant_type_password "password"
   @grant_type_change_password "change_password"
 
@@ -139,9 +137,6 @@ defmodule Mithril.Authorization.GrantType.Password do
 
     Mithril.TokenAPI.create_change_password_token(data)
   end
-
-  defp get_scope_by_grant(@grant_type_password), do: @scope_app_authorize
-  defp get_scope_by_grant(@grant_type_change_password), do: @scope_change_password
 
   defp maybe_send_otp(user, %Factor{} = factor, token), do: Authentication.send_otp(user, factor, token)
   defp maybe_send_otp(_, _, _), do: {:ok, :request_app}

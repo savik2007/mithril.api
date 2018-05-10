@@ -226,9 +226,8 @@ defmodule Mithril.TokenAPI do
 
   defp token_changeset(%TokenSearch{} = token, attrs) do
     token
-    |> cast(attrs, [:name, :value, :user_id, :client_id])
+    |> cast(attrs, TokenSearch.__schema__(:fields))
     |> validate_format(:user_id, @uuid_regex)
-    |> set_like_attributes([:name, :value])
   end
 
   defp token_changeset(%Token{} = token, attrs, type, name) do
