@@ -320,7 +320,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       role_1 = insert(:role, scope: "cabinet:read")
       role_2 = insert(:role, scope: "cabinet:write")
       insert(:user_role, user_id: user.id, role_id: role_1.id, client_id: client.id)
-      insert(:user_role, user_id: user.id, role_id: role_2.id, client_id: client.id)
+      insert(:global_user_role, user_id: user.id, role_id: role_2.id)
 
       System.put_env("SMS_ENABLED", "true")
 

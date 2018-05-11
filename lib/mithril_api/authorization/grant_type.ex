@@ -68,11 +68,11 @@ defmodule Mithril.Authorization.GrantType do
   @doc """
   Fetch scope by itself for trusted Client and empty scope param
   """
-  def prepare_scope_by_client(%Client{id: id}, %User{roles: user_roles}, nil) do
+  def prepare_scope_by_client(%Client{id: id}, %User{roles: user_roles, global_roles: global_roles}, nil) do
     trusted_client_ids = Confex.get_env(:mithril_api, :trusted_clients)
 
     case id in trusted_client_ids do
-      true -> join_user_role_scopes(user_roles)
+      true -> join_user_role_scopes(user_roles ++ global_roles)
       false -> ""
     end
   end
