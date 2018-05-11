@@ -100,6 +100,7 @@ defmodule Mithril.Authentication.Factors do
     |> case do
       {:error, _} -> [otp: {"invalid code", [validation: "invalid"]}]
       {:ok, _, :invalid_code} -> [otp: {"invalid code", [validation: "invalid"]}]
+      {:ok, _, :expired} -> [otp: {"expired", [validation: "invalid"]}]
       {:ok, _, :verified} -> []
     end
   end
