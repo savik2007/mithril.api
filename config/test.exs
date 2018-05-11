@@ -8,6 +8,7 @@ config :mithril_api,
   sql_sandbox: true,
   sensitive_data_in_response: {:system, :boolean, "SENSITIVE_DATA_IN_RESPONSE_ENABLED", true},
   ttl_login: 1,
+  trusted_clients: {:system, :list, "TRUSTED_CLIENT_IDS", ["30074b6e-fbab-4dc1-9d37-88c21dab1847"]},
   api_resolvers: [
     sms: SMSMock,
     mpi: MPIMock,

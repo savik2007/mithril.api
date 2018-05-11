@@ -28,6 +28,7 @@ config :mithril_api,
   ecto_repos: [Mithril.Repo],
   system_user: {:system, "EHEALTH_SYSTEM_USER", "4261eacf-8008-4e62-899f-de1e2f7065f0"},
   sensitive_data_in_response: {:system, :boolean, "SENSITIVE_DATA_IN_RESPONSE_ENABLED", false},
+  trusted_clients: {:system, :list, "TRUSTED_CLIENT_IDS", []},
   namespace: Mithril
 
 # Configure your database

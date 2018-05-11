@@ -7,7 +7,6 @@ defmodule Mithril.Authorization.GrantType do
   alias Mithril.ClientTypeAPI.ClientType
 
   @scope_app_authorize "app:authorize"
-  @trusted_client_id "30074b6e-fbab-4dc1-9d37-88c21dab1847"
 
   @request_api "REQUEST_API"
   @request_otp "REQUEST_OTP"
@@ -21,7 +20,6 @@ defmodule Mithril.Authorization.GrantType do
   def next_step(:request_apps), do: @request_apps
   def next_step(:request_factor), do: @request_factor
 
-  def trusted_client_id, do: @trusted_client_id
   def scope_app_authorize, do: @scope_app_authorize
 
   def fetch_client(client_id) do
@@ -70,11 +68,16 @@ defmodule Mithril.Authorization.GrantType do
   @doc """
   Fetch scope by itself for trusted Client and empty scope param
   """
-  def prepare_scope_by_client(%Client{id: @trusted_client_id}, %User{roles: user_roles}, nil) do
-    join_user_role_scopes(user_roles)
+  def prepare_scope_by_client(%Client{id: id}, %User{roles: user_roles}, nil) do
+    trusted_client_ids = Confex.get_env(:mithril_api, :trusted_clients)
+
+    case id in trusted_client_ids do
+      true -> join_user_role_scopes(user_roles)
+      false -> ""
+    end
   end
 
-  def prepare_scope_by_client(_client_id, _user, scope), do: scope
+  def prepare_scope_by_client(_client, _user, scope), do: scope
 
   defp join_user_role_scopes(user_roles), do: Enum.map_join(user_roles, " ", & &1.scope)
 end
