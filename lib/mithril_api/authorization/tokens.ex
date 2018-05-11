@@ -166,8 +166,7 @@ defmodule Mithril.Authorization.Tokens do
   def verify(token_value) do
     token = TokenAPI.get_token_by_value!(token_value)
 
-    with false <- expired?(token),
-         _app <- Mithril.AppAPI.approval(token.user_id, token.details["client_id"]) do
+    with false <- expired?(token) do
       # if token is authorization_code or password - make sure was not used previously
       {:ok, token}
     else
@@ -192,7 +191,6 @@ defmodule Mithril.Authorization.Tokens do
     token = TokenAPI.get_token_by_value!(token_value)
 
     with false <- expired?(token),
-         _app <- Mithril.AppAPI.approval(token.user_id, token.details["client_id"]),
          client <- ClientAPI.get_client!(token.details["client_id"]),
          :ok <- check_client_is_blocked(client),
          user <- UserAPI.get_user!(token.user_id),

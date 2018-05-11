@@ -5,9 +5,10 @@ defmodule Mithril.AppAPI do
   use Mithril.Search
   import Ecto.{Query, Changeset}, warn: false
 
+  alias Ecto.{Multi, Changeset}
   alias Mithril.Repo
-  alias Mithril.AppAPI.App
-  alias Mithril.AppAPI.AppSearch
+  alias Mithril.AppAPI.{App, AppSearch}
+  alias Mithril.TokenAPI.Token
 
   def list_apps(params) do
     %AppSearch{}
@@ -32,20 +33,44 @@ defmodule Mithril.AppAPI do
   end
 
   def delete_app(%App{} = app) do
-    Repo.delete(app)
+    Multi.new()
+    |> Multi.delete(:delete_apps, app)
+    |> Multi.run(:expire_tokens, &deactivate_old_tokens(&1))
+    |> Repo.transaction()
   end
 
   def delete_apps_by_params(params) do
-    %AppSearch{}
-    |> app_changeset(params)
-    |> case do
-      %Ecto.Changeset{valid?: true, changes: changes} ->
-        App |> get_search_query(changes) |> Repo.delete_all()
+    Multi.new()
+    |> Multi.run(:delete_apps, fn _ -> delete_apps(params) end)
+    |> Multi.run(:expire_tokens, &deactivate_old_tokens(&1))
+    |> Repo.transaction()
+  end
 
-      changeset ->
-        changeset
+  defp delete_apps(params) do
+    with %Changeset{valid?: true, changes: changes} <- app_changeset(%AppSearch{}, params),
+         {_, nil} <- App |> get_search_query(changes) |> Repo.delete_all() do
+      {:ok, changes}
     end
   end
+
+  defp deactivate_old_tokens(%{delete_apps: %{user_id: user_id} = expire_params}) do
+    now = :os.system_time(:seconds)
+
+    with {_, nil} <-
+           Token
+           |> where([t], t.expires_at >= ^now)
+           |> where([t], t.user_id == ^user_id)
+           |> where_token_client(expire_params)
+           |> Repo.update_all(set: [expires_at: now]) do
+      {:ok, expire_params}
+    end
+  end
+
+  defp where_token_client(query, %{client_id: client_id}) when is_binary(client_id) do
+    where(query, [t], fragment("?->>'client_id' = ?", t.details, ^client_id))
+  end
+
+  defp where_token_client(query, _), do: query
 
   def change_app(%App{} = app) do
     app_changeset(app, %{})

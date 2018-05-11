@@ -1,7 +1,6 @@
 defmodule Mithril.Web.AppControllerTest do
   use Mithril.Web.ConnCase
 
-  alias Mithril.AppAPI
   alias Mithril.AppAPI.App
 
   @create_attrs %{scope: "some scope"}
@@ -94,38 +93,62 @@ defmodule Mithril.Web.AppControllerTest do
     assert json_response(conn, 422)["errors"] != %{}
   end
 
-  test "deletes chosen app", %{conn: conn} do
+  test "deletes chosen app and expire dependent tokens", %{conn: conn} do
     app = insert(:app)
-    conn = delete(conn, app_path(conn, :delete, app))
-    assert response(conn, 204)
+    %{value: token_value} = insert(:token)
+    %{value: token_value_deleted} = insert(:token, user_id: app.user_id, details: %{client_id: app.client_id})
+
+    conn
+    |> delete(app_path(conn, :delete, app))
+    |> response(204)
 
     assert_error_sent(404, fn ->
       get(conn, app_path(conn, :show, app))
     end)
+
+    conn
+    |> get(token_verify_path(conn, :verify, token_value_deleted))
+    |> json_response(401)
+
+    conn
+    |> get(token_verify_path(conn, :verify, token_value))
+    |> json_response(200)
   end
 
-  test "deletes apps by client_id", %{conn: conn} do
+  test "deletes apps and expire tokens by client_id", %{conn: conn} do
     # app 1
-    %{id: id_1} = insert(:app)
+    %{id: app_id_1} = insert(:app)
     # app 2
     user = insert(:user)
     client_1 = insert(:client)
-    attrs = Map.merge(@create_attrs, %{user_id: user.id, client_id: client_1.id})
-    {:ok, _} = AppAPI.create_app(attrs)
+    insert(:app, user_id: user.id, client_id: client_1.id)
+    %{value: token_value_deleted} = insert(:token, user_id: user.id, details: %{client_id: client_1.id})
     # app 3
     client_2 = insert(:client)
-    attrs = Map.merge(@create_attrs, %{user_id: user.id, client_id: client_2.id})
-    {:ok, %{id: id_2}} = AppAPI.create_app(attrs)
+    %{id: app_id_2} = insert(:app, user_id: user.id, client_id: client_2.id)
+    %{value: token_value} = insert(:token, user_id: user.id, details: %{client_id: client_2.id})
 
     conn = delete(conn, user_app_path(conn, :delete_by_user, user.id), client_id: client_1.id)
     assert response(conn, 204)
 
-    conn = get(conn, app_path(conn, :index))
-    data = json_response(conn, 200)["data"]
+    data =
+      conn
+      |> get(app_path(conn, :index))
+      |> json_response(200)
+      |> Map.get("data")
+
     assert 2 == length(data)
 
     Enum.each(data, fn %{"id" => app_id} ->
-      assert app_id in [id_1, id_2]
+      assert app_id in [app_id_1, app_id_2]
     end)
+
+    conn
+    |> get(token_verify_path(conn, :verify, token_value_deleted))
+    |> json_response(401)
+
+    conn
+    |> get(token_verify_path(conn, :verify, token_value))
+    |> json_response(200)
   end
 end
