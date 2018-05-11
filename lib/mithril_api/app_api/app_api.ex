@@ -53,24 +53,18 @@ defmodule Mithril.AppAPI do
     end
   end
 
-  defp deactivate_old_tokens(%{delete_apps: expire_params}) do
+  defp deactivate_old_tokens(%{delete_apps: %{user_id: user_id} = expire_params}) do
     now = :os.system_time(:seconds)
 
     with {_, nil} <-
            Token
            |> where([t], t.expires_at >= ^now)
-           |> where_token_user(expire_params)
+           |> where([t], t.user_id == ^user_id)
            |> where_token_client(expire_params)
            |> Repo.update_all(set: [expires_at: now]) do
       {:ok, expire_params}
     end
   end
-
-  defp where_token_user(query, %{user_id: user_id}) when is_binary(user_id) do
-    where(query, [t], t.user_id == ^user_id)
-  end
-
-  defp where_token_user(query, _), do: query
 
   defp where_token_client(query, %{client_id: client_id}) when is_binary(client_id) do
     where(query, [t], fragment("?->>'client_id' = ?", t.details, ^client_id))
