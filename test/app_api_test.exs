@@ -47,7 +47,7 @@ defmodule Mithril.AppAPITest do
 
   test "delete_app/1 deletes the app" do
     app = insert(:app)
-    assert {:ok, %App{}} = AppAPI.delete_app(app)
+    assert {:ok, _} = AppAPI.delete_app(app)
     assert_raise Ecto.NoResultsError, fn -> AppAPI.get_app!(app.id) end
   end
 

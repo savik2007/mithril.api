@@ -38,13 +38,13 @@ defmodule Mithril.Web.AppController do
   def delete(conn, %{"id" => id}) do
     app = AppAPI.get_app!(id)
 
-    with {:ok, %App{}} <- AppAPI.delete_app(app) do
+    with {:ok, _} <- AppAPI.delete_app(app) do
       send_resp(conn, :no_content, "")
     end
   end
 
   def delete_by_user(conn, %{"user_id" => _} = params) do
-    with {_, nil} <- AppAPI.delete_apps_by_params(params) do
+    with {:ok, _} <- AppAPI.delete_apps_by_params(params) do
       send_resp(conn, :no_content, "")
     end
   end
