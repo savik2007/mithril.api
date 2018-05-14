@@ -179,4 +179,18 @@ defmodule Mithril.TokenAPITest do
 
     assert {"has invalid format", _} = Keyword.get(changeset.errors, :user_id)
   end
+
+  test "delete expired tokens" do
+    ttl =
+      :mithril_api
+      |> Confex.get_env(:token_ttl_after_expiration)
+      |> Kernel.*(3600 * 24)
+
+    token = insert(:token, expires_at: :os.system_time(:seconds) - ttl + 2)
+    insert(:token, expires_at: 1_523_700_000)
+    insert(:token, expires_at: :os.system_time(:seconds) - ttl)
+
+    assert {2, nil} = TokenAPI.delete_expired_tokens()
+    assert %Page{entries: [^token]} = TokenAPI.list_tokens(%{})
+  end
 end
