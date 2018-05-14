@@ -11,6 +11,8 @@ defmodule Mithril.TokenAPI do
   alias Mithril.Authorization.GrantType
   alias Mithril.TokenAPI.{Token, TokenSearch}
 
+  @uuid_regex ~r|[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}|
+
   @refresh_token "refresh_token"
   @access_token "access_token"
   @access_token_2fa "2fa_access_token"
@@ -213,7 +215,18 @@ defmodule Mithril.TokenAPI do
     |> Repo.transaction()
   end
 
-  @uuid_regex ~r|[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}|
+  def delete_expired_tokens do
+    token_ttl_after_expiration_seconds =
+      :mithril_api
+      |> Confex.get_env(:token_ttl_after_expiration)
+      |> Kernel.*(3600 * 24)
+
+    expires_at = :os.system_time(:seconds) - token_ttl_after_expiration_seconds
+
+    Token
+    |> where([t], t.expires_at <= ^expires_at)
+    |> Repo.delete_all()
+  end
 
   defp token_changeset(%Token{} = token, attrs) do
     token
