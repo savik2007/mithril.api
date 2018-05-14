@@ -48,7 +48,8 @@ defmodule Mithril.Authorization.GrantType.Signature do
     do: {:error, error}
 
   defp process_digital_signature_data(%{"signatures" => signatures}) when is_list(signatures),
-    do: {:error, "document must be signed by 1 signer but contains #{Enum.count(signatures)} signatures"}
+    do:
+      {:error, {:bad_request, "document must be signed by 1 signer but contains #{Enum.count(signatures)} signatures"}}
 
   defp changeset(attrs) do
     types = %{signed_content: Base64, signed_content_encoding: :string, client_id: Ecto.UUID, scope: :string}
