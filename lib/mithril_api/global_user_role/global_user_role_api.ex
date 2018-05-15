@@ -13,7 +13,7 @@ defmodule Mithril.GlobalUserRoleAPI do
   def create_global_user_role(attrs \\ %{}) do
     %GlobalUserRole{}
     |> user_role_changeset(attrs)
-    |> Repo.insert()
+    |> Repo.insert(on_conflict: :nothing)
     |> preload_role()
   end
 

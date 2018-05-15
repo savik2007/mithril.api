@@ -38,18 +38,9 @@ defmodule Mithril.Web.GlobalUserRoleControllerTest do
       |> post(user_global_role_path(conn, :create, %User{id: user_id}), global_user_role: create_attrs)
       |> json_response(201)
 
-      err =
-        conn
-        |> post(user_global_role_path(conn, :create, %User{id: user_id}), global_user_role: create_attrs)
-        |> json_response(422)
-
-      assert %{
-               "error" => %{
-                 "invalid" => [
-                   %{"rules" => [%{"description" => "has already been taken"}]}
-                 ]
-               }
-             } = err
+      conn
+      |> post(user_global_role_path(conn, :create, %User{id: user_id}), global_user_role: create_attrs)
+      |> json_response(201)
     end
 
     test "does not create global_user_role and renders errors when data is invalid", %{user_id: user_id, conn: conn} do
