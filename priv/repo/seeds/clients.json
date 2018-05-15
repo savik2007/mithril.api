@@ -4,7 +4,7 @@
     "seed?": true,
     "id": "30074b6e-fbab-4dc1-9d37-88c21dab1847",
     "secret": "UXhEczJacXh3Ri9SUkc4enhHTVVpQQ09",
-    "redirect_uri": "http://example.com",
+    "redirect_uri": "https://account-dev.ehealth.world/auth/redirect",
     "settings": {
       "allowed_grant_types": [
         "password",
