@@ -37,7 +37,7 @@
   {
     "name": "CABINET",
     "id": "b6c956a2-a400-45ca-9966-f0030a968eec",
-    "seed?": true,
+    "seed?": false,
     "scope": "cabinet:read employee_request:approve employee_request:reject user:request_factor user:approve_factor user:change_password"
   }
 ]
