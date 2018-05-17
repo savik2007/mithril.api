@@ -510,6 +510,32 @@ defmodule Mithril.OAuth.TokenControllerTest do
       assert token["details"]["scope"] == "app:authorize"
     end
 
+    test "DS expired", %{conn: conn} do
+      expect(SignatureMock, :decode_and_validate, fn signed_content, "base64", _attrs ->
+        data = %{
+          "signed_content" => signed_content,
+          "signatures" => [
+            %{
+              "is_valid" => false,
+              "validation_error_message" => "DS expired."
+            }
+          ]
+        }
+
+        {:ok, %{"data" => data}}
+      end)
+
+      payload = ds_valid_signed_content() |> ds_payload(UUID.generate())
+
+      msg =
+        conn
+        |> post("/oauth/tokens", payload)
+        |> json_response(422)
+        |> get_in(~w(error message))
+
+      assert "DS expired." == msg
+    end
+
     test "DS tax_id does not contain drfo", %{conn: conn} do
       expect(SignatureMock, :decode_and_validate, fn signed_content, "base64", _attrs ->
         content = signed_content |> Base.decode64!() |> Poison.decode!()
