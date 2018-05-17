@@ -45,7 +45,7 @@ defmodule Mithril.Authorization.GrantType.Signature do
        do: {:ok, %{"content" => content, "signer" => signer}}
 
   defp process_digital_signature_data(%{"signatures" => [%{"is_valid" => false, "validation_error_message" => error}]}),
-    do: {:error, error}
+    do: Error.invalid_request(error)
 
   defp process_digital_signature_data(%{"signatures" => signatures}) when is_list(signatures),
     do:
