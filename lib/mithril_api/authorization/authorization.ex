@@ -27,6 +27,7 @@ defmodule Mithril.Authorization do
          redirect_uri <- get_change(changeset, :redirect_uri),
          :ok <- validate_redirect_uri(client, redirect_uri),
          # scope validation
+         :ok <- validate_scope_not_empty(scope),
          :ok <- validate_client_allowed_scope(client, scope),
          :ok <- validate_user_allowed_scope(user, scope),
          # entities creation
@@ -53,6 +54,12 @@ defmodule Mithril.Authorization do
       message = "The redirection URI provided does not match a pre-registered value."
       Error.access_denied(message)
     end
+  end
+
+  defp validate_scope_not_empty(scope) when is_binary(scope) and byte_size(scope) > 0, do: :ok
+
+  defp validate_scope_not_empty(_scope) do
+    Error.invalid_request("Requested scope is empty. Scope not passed or user has no roles or global roles.")
   end
 
   defp create_or_update_app(%User{} = user, %Client{} = client, scope) do

@@ -2,6 +2,7 @@ defmodule Mithril.OAuth.AppControllerTest do
   use Mithril.Web.ConnCase
 
   @direct Mithril.ClientAPI.access_type(:direct)
+  @trusted_client_id "30074b6e-fbab-4dc1-9d37-88c21dab1847"
 
   setup %{conn: conn} do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
@@ -142,6 +143,23 @@ defmodule Mithril.OAuth.AppControllerTest do
       |> get_in(~w(error invalid))
 
     assert 2 == length(errors)
+  end
+
+  test "render error for empty scope with user tihout roles", %{conn: conn} do
+    user = insert(:user)
+    client = insert(:client, id: @trusted_client_id)
+
+    request = %{
+      client_id: client.id,
+      redirect_uri: client.redirect_uri
+    }
+
+    assert "Requested scope is empty. Scope not passed or user has no roles or global roles." =
+             conn
+             |> put_req_header("x-consumer-id", user.id)
+             |> post(oauth2_app_path(conn, :authorize), app: request)
+             |> json_response(422)
+             |> get_in(~w(error message))
   end
 
   test "returns error when redirect uri is not whitelisted", %{conn: conn} do
