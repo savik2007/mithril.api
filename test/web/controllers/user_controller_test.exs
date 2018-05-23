@@ -546,7 +546,7 @@ defmodule Mithril.Web.UserControllerTest do
                    %{
                      "description" => "This password has been used recently. Try another one",
                      "params" => [],
-                     "rule" => nil
+                     "rule" => "password_used"
                    }
                  ]
                }
