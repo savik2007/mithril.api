@@ -38,6 +38,6 @@
     "name": "CABINET",
     "id": "b6c956a2-a400-45ca-9966-f0030a968eec",
     "seed?": false,
-    "scope": "cabinet:read employee_request:approve employee_request:reject user:request_factor user:approve_factor user:change_password"
+    "scope": "cabinet:read employee_request:approve employee_request:reject user:request_factor user:approve_factor user:change_password app:authorize declaration_request:write declaration_request:read declaration_request:terminate declaration:read person:read"
   }
 ]
