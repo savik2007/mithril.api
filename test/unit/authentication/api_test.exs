@@ -1,12 +1,15 @@
 defmodule Mithril.Authentication.APITest do
   use Mithril.DataCase, async: false
 
+  import Mithril.Guardian
+
   alias Ecto.Changeset
   alias Mithril.UserAPI
   alias Mithril.Authentication
   alias Mithril.Authentication.{Factor, Factors}
   alias Mithril.Authorization.LoginHistory
   alias Mithril.UserAPI.User.PrivSettings
+  alias Mithril.TokenAPI.Token
 
   @env "OTP_SMS_TEMPLATE"
   @create_attr %{"email" => "test@example.com", "password" => "p@S$w0rD1234", "tax_id" => "12342345"}
@@ -79,6 +82,20 @@ defmodule Mithril.Authentication.APITest do
       }
 
       assert {:error, %Changeset{valid?: false, errors: [user: _]}} = Factors.create_factor(data)
+    end
+  end
+
+  describe "verify otp" do
+    test "case insensitive OTP key" do
+      {:ok, jwt, _} = encode_and_sign(:email, %{email: "Email@example.com"}, token_type: "access")
+
+      params = %{
+        "type" => Authentication.type(:sms),
+        "factor" => "+380901112233"
+      }
+
+      assert {:ok, otp_code} = Authentication.send_otp(params, jwt)
+      assert {:ok, _, :verified} = Authentication.verify_otp("+380901112233", %Token{id: "email@example.com"}, otp_code)
     end
   end
 
