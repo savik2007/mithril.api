@@ -21,7 +21,7 @@ if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
       sed -i'' -e "20,40s/tag:.*/tag: \"$NEXT_VERSION\"/g" "$CHART/values.yaml"
       helm init --upgrade
       sleep 15
-      echo "helm upgrade ${CHART} with version: ${NEXT_VERSION}"
+      echo "Run helm upgrade ${CHART} with version: ${NEXT_VERSION}"
       helm upgrade  -f $CHART/values.yaml  $CHART $CHART
       cd $TRAVIS_BUILD_DIR/bin
       ./wait-for-deployment.sh api $CHART 180
