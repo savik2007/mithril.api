@@ -18,7 +18,7 @@ if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
       git clone https://$GITHUB_TOKEN@github.com/edenlabllc/ehealth.charts.git
       cd ehealth.charts
 #get version and project name
-      sed -i'' -e "20,25s/tag:.*/tag: \"$NEXT_VERSION\"/g" "$CHART/values.yaml"
+      sed -i'' -e "20,40s/tag:.*/tag: \"$NEXT_VERSION\"/g" "$CHART/values.yaml"
       helm init --upgrade
       sleep 15
       echo "helm upgrade ${CHART} with version: ${NEXT_VERSION}"
