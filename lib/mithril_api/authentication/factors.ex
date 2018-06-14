@@ -65,7 +65,6 @@ defmodule Mithril.Authentication.Factors do
   def create_factor_changeset(attrs) do
     %Factor{}
     |> changeset(attrs)
-    |> validate_factor_and_otp()
   end
 
   def changeset(%FactorSearch{} = schema, attrs) do
