@@ -44,7 +44,10 @@ defmodule Mithril.Authentication.APITest do
         "factor" => "+380881002030"
       }
 
-      assert {:error, %Changeset{valid?: false, errors: [otp: _]}} = Factors.create_factor(data)
+      assert {:ok, %Factor{} = resp} = Factors.create_factor(data)
+      assert resp.user_id == user.id
+      assert resp.type == Authentication.type(:sms)
+      assert resp.factor == "+380881002030"
     end
 
     test "invalid type", %{user: user} do

@@ -99,8 +99,11 @@ defmodule Mithril.UserAPI do
 
   defp create_or_update_user_factor(%{user: %{factor: %Factor{} = factor} = user}, %{"factor" => _} = attrs) do
     case enabled_2fa?(attrs) do
-      true -> Factors.update_factor(factor, Map.put(attrs, "email", user.email), :with_otp_validation)
-      false -> {:ok, :not_enabled}
+      true ->
+        Factors.update_factor(factor, Map.put(attrs, "email", user.email))
+
+      false ->
+        {:ok, :not_enabled}
     end
   end
 
