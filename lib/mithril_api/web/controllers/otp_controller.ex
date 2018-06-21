@@ -26,8 +26,7 @@ defmodule Mithril.Web.OTPController do
   def verifications(conn, params) do
     with jwt <- Plug.current_token(conn),
          :ok <- Authentication.verifications(params, jwt, conn.req_headers) do
-      conn
-      |> render("send_otp.json", message: "OTP sent")
+      render(conn, "send_otp.json", message: "OTP sent")
     end
   end
 
