@@ -30,6 +30,7 @@ defmodule MithrilWeb.Router do
   scope "/api", Mithril.Web do
     pipe_through([:api, :jwt, :jwt_access_registration])
     post("/send_otp", OTPController, :send_otp)
+    post("/verifications", OTPController, :verifications)
   end
 
   scope "/oauth", as: :oauth2, alias: Mithril do

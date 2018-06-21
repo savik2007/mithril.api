@@ -8,4 +8,8 @@ defmodule Mithril.API.SMS do
   def send(phone_number, body, type, headers \\ []) do
     post!("/sms/send", Poison.encode!(%{phone_number: phone_number, body: body, type: type}), headers)
   end
+
+  def verifications(phone_number, headers \\ []) do
+    post!("/verifications", Poison.encode!(%{phone_number: phone_number}), headers)
+  end
 end

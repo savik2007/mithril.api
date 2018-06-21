@@ -23,6 +23,14 @@ defmodule Mithril.Web.OTPController do
     end
   end
 
+  def verifications(conn, params) do
+    with jwt <- Plug.current_token(conn),
+         :ok <- Authentication.verifications(params, jwt, conn.req_headers) do
+      conn
+      |> render("send_otp.json", message: "OTP sent")
+    end
+  end
+
   defp assign_code(conn, code) do
     case Confex.fetch_env!(:mithril_api, :sensitive_data_in_response) do
       true -> assign(conn, :urgent, %{code: code})
