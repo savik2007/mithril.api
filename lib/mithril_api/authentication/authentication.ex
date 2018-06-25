@@ -49,6 +49,18 @@ defmodule Mithril.Authentication do
     end
   end
 
+  def verifications(params, jwt, headers) do
+    with {:ok, %{"email" => _}} <- Guardian.decode_and_verify(jwt),
+         %Ecto.Changeset{valid?: true} <- changeset(%OTPSend{}, params),
+         factor <- %Factor{factor: params["factor"], type: params["type"]},
+         :ok <- verifications_init(factor, headers) do
+      :ok
+    else
+      {:error, :sms_not_sent} -> {:error, {:service_unavailable, "SMS not sent. Try later"}}
+      err -> err
+    end
+  end
+
   defp changeset(%OTPSend{} = schema, attrs) do
     fields = OTPSend.__schema__(:fields)
 
@@ -145,6 +157,27 @@ defmodule Mithril.Authentication do
       Guardian.encode_and_sign(:nonce, %{nonce: 123}, token_type: "access", ttl: ttl)
     else
       %{is_blocked: true} -> {:error, {:access_denied, "Client is blocked"}}
+    end
+  end
+
+  defp verifications_init(factor, headers) do
+    case Confex.get_env(:mithril_api, :"2fa")[:sms_enabled?] do
+      true -> verifications_init_by_factor(factor, headers)
+      false -> :ok
+    end
+  end
+
+  defp verifications_init_by_factor(%Factor{factor: factor, type: @type_sms}, headers) do
+    case @sms_api.verifications(factor, headers) do
+      {:ok, _} ->
+        :ok
+
+      {:error, %{"error" => reason, "meta" => %{"code" => 429}}} ->
+        {:error, {:too_many_requests, reason}}
+
+      err ->
+        Logger.error("Cannot send 2FA SMS with error: #{inspect(err)}")
+        {:error, :sms_not_sent}
     end
   end
 end
