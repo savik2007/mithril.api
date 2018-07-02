@@ -8,6 +8,8 @@ defmodule Mithril.Web.UserControllerTest do
   alias Mithril.UserAPI.User
   alias Mithril.Authentication
   alias Mithril.UserAPI.PasswordHistory
+  alias Mithril.Repo
+  alias Mithril.Authentication.Factor
 
   @create_attrs %{
     email: "email@example.com",
@@ -404,6 +406,123 @@ defmodule Mithril.Web.UserControllerTest do
       assert_error_sent(404, fn ->
         get(conn, user_path(conn, :show, user))
       end)
+    end
+  end
+
+  describe "create and update user without 2fa attr when USER_2FA_ENABLED config value is true (turned on)" do
+    setup %{conn: conn} do
+      current_value = System.get_env("USER_2FA_ENABLED") || "false"
+      System.put_env("USER_2FA_ENABLED", "true")
+
+      on_exit(fn ->
+        System.put_env("USER_2FA_ENABLED", current_value)
+      end)
+
+      {:ok, %{conn: conn}}
+    end
+
+    test "successful creation", %{conn: conn} do
+      conn = post(conn, user_path(conn, :create), user: Map.delete(@create_attrs, :"2fa_enable"))
+      assert %{"id" => id} = json_response(conn, 201)["data"]
+      # both User and Factor are created
+      refute is_nil(Repo.get(User, id))
+      refute is_nil(Repo.get_by(Factor, user_id: id))
+    end
+
+    test "successful updating user without factor", %{conn: conn} do
+      %User{id: id} = insert(:user, email: "email@example.com")
+      conn = put(conn, user_path(conn, :update, id), user: @update_attrs)
+
+      # User is updated
+      assert %{
+               "id" => ^id,
+               "email" => "update@example.com",
+               "settings" => %{}
+             } = json_response(conn, 200)["data"]
+
+      # Factor is not created
+      assert is_nil(Repo.get_by(Factor, user_id: id))
+    end
+
+    test "successful updating user (only) with factor", %{conn: conn} do
+      %User{id: id} = insert(:user, email: "email@example.com")
+      insert(:authentication_factor, user_id: id)
+      conn = put(conn, user_path(conn, :update, id), user: @update_attrs)
+
+      # User is updated
+      assert %{
+               "id" => ^id,
+               "email" => "update@example.com",
+               "settings" => %{}
+             } = json_response(conn, 200)["data"]
+
+      # Factor is not updated
+      assert [factor] =
+               conn
+               |> get(user_authentication_factor_path(conn, :index, id))
+               |> json_response(200)
+               |> Map.get("data")
+
+      assert "+38090*****33" == factor["factor"]
+    end
+  end
+
+  describe "create and update user without 2fa attr when USER_2FA_ENABLED config value is false (turned off)" do
+    setup %{conn: conn} do
+      current_value = System.get_env("USER_2FA_ENABLED") || "false"
+      System.put_env("USER_2FA_ENABLED", "false")
+
+      on_exit(fn ->
+        System.put_env("USER_2FA_ENABLED", current_value)
+      end)
+
+      {:ok, %{conn: conn}}
+    end
+
+    test "successful creation", %{conn: conn} do
+      conn = post(conn, user_path(conn, :create), user: Map.delete(@create_attrs, :"2fa_enable"))
+      assert %{"id" => id} = json_response(conn, 201)["data"]
+      # User is created
+      refute is_nil(Repo.get(User, id))
+      # Factor is not created
+      assert is_nil(Repo.get_by(Factor, user_id: id))
+    end
+
+    test "successful updating user without factor", %{conn: conn} do
+      %User{id: id} = insert(:user, email: "email@example.com")
+      conn = put(conn, user_path(conn, :update, id), user: @update_attrs)
+
+      # User is updated
+      assert %{
+               "id" => ^id,
+               "email" => "update@example.com",
+               "settings" => %{}
+             } = json_response(conn, 200)["data"]
+
+      # Factor is not created
+      assert is_nil(Repo.get_by(Factor, user_id: id))
+    end
+
+    test "successful updating user (only) with factor", %{conn: conn} do
+      %User{id: id} = insert(:user, email: "email@example.com")
+      insert(:authentication_factor, user_id: id)
+      conn = put(conn, user_path(conn, :update, id), user: @update_attrs)
+
+      # User is updated
+      assert %{
+               "id" => ^id,
+               "email" => "update@example.com",
+               "settings" => %{}
+             } = json_response(conn, 200)["data"]
+
+      # Factor is not updated
+      assert [factor] =
+               conn
+               |> get(user_authentication_factor_path(conn, :index, id))
+               |> json_response(200)
+               |> Map.get("data")
+
+      assert "+38090*****33" == factor["factor"]
     end
   end
 

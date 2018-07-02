@@ -79,10 +79,6 @@ defmodule Mithril.Authorization.GrantType.Password do
   defp validate_token_scope_by_grant(@grant_type_change_password, _), do: Error.invalid_scope(["user:change_password"])
   defp validate_token_scope_by_grant(_, _requested_scope), do: :ok
 
-  defp create_token_by_grant_type(nil, _, %{client_type: %{name: @cabinet_client_type}}, _, @grant_type_password) do
-    {:error, {:forbidden, %{message: next_step(:request_ds)}}}
-  end
-
   defp create_token_by_grant_type(
          _,
          %User{tax_id: tax_id},
