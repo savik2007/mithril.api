@@ -1,15 +1,13 @@
 defmodule Mithril.Mixfile do
   use Mix.Project
 
-  @version "2.19.0"
-
   def project do
     [
       app: :mithril_api,
       description: "Add description to your package.",
       package: package(),
-      version: @version,
-      elixir: "~> 1.5",
+      version: "0.1.0",
+      elixir: "~> 1.6",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix] ++ Mix.compilers(),
       build_embedded: Mix.env() == :prod,
@@ -48,10 +46,10 @@ defmodule Mithril.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:distillery, "~> 1.5", runtime: false},
+      {:distillery, "~> 1.5.3", runtime: false},
       {:confex, "~> 3.2"},
       {:ecto, "~> 2.1"},
-      {:postgrex, "~> 0.13.2"},
+      {:postgrex, ">= 0.0.0"},
       {:cowboy, "~> 1.1"},
       {:httpoison, "~> 1.0"},
       {:poison, "~> 3.1"},
@@ -63,13 +61,13 @@ defmodule Mithril.Mixfile do
       {:bcrypt_elixir, "~> 1.0"},
       {:secure_random, ">= 0.0.0"},
       {:timex, "~> 3.1", override: true},
-      {:quantum, ">= 2.1.0"},
+      {:quantum, ">= 2.2.0"},
       {:guardian, "~> 1.0"},
       {:plug_logger_json, "~> 0.5"},
       {:mox, "~> 0.3", only: :test},
-      {:ex_machina, ">= 1.0.0", only: [:dev, :test]},
-      {:excoveralls, "~> 0.8.0", only: [:dev, :test]},
-      {:credo, ">= 0.0.0", only: [:dev, :test]}
+      {:ex_machina, "~> 2.0", only: [:dev, :test]},
+      {:excoveralls, "~> 0.8.1", only: [:dev, :test]},
+      {:credo, "~> 0.9.3", only: [:dev, :test]}
     ]
   end
 

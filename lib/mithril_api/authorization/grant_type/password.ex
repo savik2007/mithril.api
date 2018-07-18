@@ -4,11 +4,15 @@ defmodule Mithril.Authorization.GrantType.Password do
   import Ecto.Changeset
   import Mithril.Authorization.GrantType
 
-  alias Mithril.{Authentication, Error, UserAPI, ClientAPI}
-  alias Mithril.UserAPI.User
-  alias Mithril.Authentication.{Factor, Factors}
+  alias Mithril.Authentication
+  alias Mithril.Authentication.Factor
+  alias Mithril.Authentication.Factors
   alias Mithril.Authorization.LoginHistory
+  alias Mithril.ClientAPI
   alias Mithril.ClientTypeAPI.ClientType
+  alias Mithril.Error
+  alias Mithril.UserAPI
+  alias Mithril.UserAPI.User
 
   @grant_type_password "password"
   @grant_type_change_password "change_password"

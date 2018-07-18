@@ -4,8 +4,8 @@ if Code.ensure_loaded?(Plug) do
 
     import Plug.Conn
 
-    alias Plug.Conn
     alias Ecto.Changeset
+    alias Plug.Conn
 
     def init(opts), do: opts
 

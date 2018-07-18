@@ -3,8 +3,8 @@ defmodule Mithril.GlobalUserRoleAPI do
 
   import Ecto.{Query, Changeset}, warn: false
 
-  alias Mithril.Repo
   alias Mithril.GlobalUserRoleAPI.GlobalUserRole
+  alias Mithril.Repo
 
   @required ~w(user_id role_id)a
 

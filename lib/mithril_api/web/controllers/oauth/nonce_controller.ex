@@ -1,10 +1,10 @@
 defmodule Mithril.OAuth.NonceController do
   use Mithril.Web, :controller
 
-  alias Mithril.Web.TokenView
   alias Mithril.Authentication
   alias Mithril.NonceValidator
   alias Mithril.Web.FallbackController
+  alias Mithril.Web.TokenView
 
   plug(Plugination, [validator: NonceValidator, error_handler: FallbackController] when action in [:nonce])
 

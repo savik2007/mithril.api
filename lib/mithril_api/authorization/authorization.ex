@@ -5,9 +5,11 @@ defmodule Mithril.Authorization do
   import Mithril.Authorization.GrantType
 
   alias Ecto.UUID
-  alias Mithril.{AppAPI, UserAPI, Error}
-  alias Mithril.UserAPI.User
+  alias Mithril.AppAPI
   alias Mithril.ClientAPI.Client
+  alias Mithril.Error
+  alias Mithril.UserAPI
+  alias Mithril.UserAPI.User
   alias Mithril.Utils.RedirectUriChecker
 
   # NOTE: Mark password token as used.

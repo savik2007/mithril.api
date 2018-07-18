@@ -3,9 +3,9 @@ defmodule Mithril do
   This is an entry point of mithril_api application.
   """
   use Application
-  alias Mithril.Web.Endpoint
   alias Confex.Resolver
   alias Mithril.Scheduler
+  alias Mithril.Web.Endpoint
 
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
   # for more information on OTP Applications

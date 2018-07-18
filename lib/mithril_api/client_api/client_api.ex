@@ -4,8 +4,9 @@ defmodule Mithril.ClientAPI do
 
   import Ecto.{Query, Changeset}, warn: false
 
+  alias Mithril.ClientAPI.Client
+  alias Mithril.ClientAPI.ClientSearch
   alias Mithril.Repo
-  alias Mithril.ClientAPI.{Client, ClientSearch}
 
   @access_type_direct "DIRECT"
   @access_type_broker "BROKER"

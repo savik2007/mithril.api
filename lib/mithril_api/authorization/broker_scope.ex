@@ -1,7 +1,8 @@
 defmodule Mithril.Authorization.BrokerScope do
-  alias Mithril.TokenAPI.Token
-  alias Mithril.{ClientAPI, Error}
+  alias Mithril.ClientAPI
   alias Mithril.ClientAPI.Client
+  alias Mithril.Error
+  alias Mithril.TokenAPI.Token
 
   @direct ClientAPI.access_type(:direct)
   @broker ClientAPI.access_type(:broker)

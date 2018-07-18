@@ -3,14 +3,23 @@ defmodule Mithril.Authorization.Tokens do
 
   import Ecto.{Query, Changeset}, warn: false
 
-  alias Mithril.{Authentication, Error, UserAPI, ClientAPI, TokenAPI}
-  alias Mithril.UserAPI.User
-  alias Mithril.TokenAPI.Token
-  alias Mithril.ClientAPI.Client
-  alias Mithril.Authorization.GrantType
-  alias Mithril.Authentication.{Factor, Factors}
+  alias Mithril.Authentication
+  alias Mithril.Authentication.Factor
+  alias Mithril.Authentication.Factors
   alias Mithril.Authorization.BrokerScope
-  alias Mithril.Authorization.GrantType.{Password, RefreshToken, AccessToken2FA, AuthorizationCode, Signature}
+  alias Mithril.Authorization.GrantType
+  alias Mithril.Authorization.GrantType.AccessToken2FA
+  alias Mithril.Authorization.GrantType.AuthorizationCode
+  alias Mithril.Authorization.GrantType.Password
+  alias Mithril.Authorization.GrantType.RefreshToken
+  alias Mithril.Authorization.GrantType.Signature
+  alias Mithril.ClientAPI
+  alias Mithril.ClientAPI.Client
+  alias Mithril.Error
+  alias Mithril.TokenAPI
+  alias Mithril.TokenAPI.Token
+  alias Mithril.UserAPI
+  alias Mithril.UserAPI.User
 
   @access_token TokenAPI.token_type(:access)
   @access_token_2fa TokenAPI.token_type(:access_2fa)

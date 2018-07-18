@@ -3,8 +3,9 @@ defmodule Mithril.Web.AuthenticationFactorController do
 
   use Mithril.Web, :controller
 
+  alias Mithril.Authentication.Factor
+  alias Mithril.Authentication.Factors
   alias Scrivener.Page
-  alias Mithril.Authentication.{Factor, Factors}
 
   action_fallback(Mithril.Web.FallbackController)
 

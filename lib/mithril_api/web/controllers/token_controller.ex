@@ -1,9 +1,10 @@
 defmodule Mithril.Web.TokenController do
   use Mithril.Web, :controller
 
-  alias Mithril.{TokenAPI, UserAPI}
-  alias Mithril.TokenAPI.Token
   alias Mithril.Authorization.Tokens
+  alias Mithril.TokenAPI
+  alias Mithril.TokenAPI.Token
+  alias Mithril.UserAPI
   alias Scrivener.Page
 
   action_fallback(Mithril.Web.FallbackController)

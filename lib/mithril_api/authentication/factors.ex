@@ -6,8 +6,10 @@ defmodule Mithril.Authentication.Factors do
   import Ecto.{Query, Changeset}, warn: false
   import Mithril.Authentication, only: [generate_otp_key: 2]
 
-  alias Mithril.{Repo, OTP}
-  alias Mithril.Authentication.{Factor, FactorSearch}
+  alias Mithril.Authentication.Factor
+  alias Mithril.Authentication.FactorSearch
+  alias Mithril.OTP
+  alias Mithril.Repo
 
   @type_sms "SMS"
 

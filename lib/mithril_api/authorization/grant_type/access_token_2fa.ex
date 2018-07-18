@@ -4,11 +4,14 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FA do
   import Ecto.Changeset
   import Mithril.Authorization.GrantType
 
-  alias Mithril.{Error, UserAPI, TokenAPI}
-  alias Mithril.UserAPI.User
-  alias Mithril.TokenAPI.Token
   alias Mithril.Authentication
-  alias Mithril.Authentication.{Factor, Factors}
+  alias Mithril.Authentication.Factor
+  alias Mithril.Authentication.Factors
+  alias Mithril.Error
+  alias Mithril.TokenAPI
+  alias Mithril.TokenAPI.Token
+  alias Mithril.UserAPI
+  alias Mithril.UserAPI.User
 
   @scope_app_authorize scope_app_authorize()
 

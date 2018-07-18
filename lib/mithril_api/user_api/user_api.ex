@@ -8,13 +8,15 @@ defmodule Mithril.UserAPI do
   import EView.Changeset.Validators.Email
 
   alias Ecto.Multi
+  alias Mithril.Authentication
+  alias Mithril.Authentication.Factor
+  alias Mithril.Authentication.Factors
   alias Mithril.Repo
   alias Mithril.TokenAPI
-  alias Mithril.UserAPI.{User, UserSearch}
-  alias Mithril.UserAPI.User.PrivSettings
   alias Mithril.UserAPI.PasswordHistory
-  alias Mithril.Authentication
-  alias Mithril.Authentication.{Factor, Factors}
+  alias Mithril.UserAPI.User
+  alias Mithril.UserAPI.User.PrivSettings
+  alias Mithril.UserAPI.UserSearch
 
   @fields_optional ~w(tax_id person_id settings current_password is_blocked block_reason)a
   @fields_required ~w(email password)a

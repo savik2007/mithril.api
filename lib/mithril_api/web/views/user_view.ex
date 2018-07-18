@@ -2,7 +2,8 @@ defmodule Mithril.Web.UserView do
   @moduledoc false
 
   use Mithril.Web, :view
-  alias Mithril.Web.{UserView, RoleView}
+  alias Mithril.Web.RoleView
+  alias Mithril.Web.UserView
 
   @fields ~w(id email tax_id person_id settings is_blocked block_reason inserted_at updated_at)a
 

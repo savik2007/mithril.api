@@ -5,11 +5,15 @@ defmodule Mithril.TokenAPI do
   import Ecto.{Query, Changeset}, warn: false
 
   alias Ecto.Multi
-  alias Mithril.{Repo, Error}
-  alias Mithril.{UserAPI, ClientAPI, TokenAPI}
-  alias Mithril.UserAPI.User
   alias Mithril.Authorization.GrantType
-  alias Mithril.TokenAPI.{Token, TokenSearch}
+  alias Mithril.ClientAPI
+  alias Mithril.Error
+  alias Mithril.Repo
+  alias Mithril.TokenAPI
+  alias Mithril.TokenAPI.Token
+  alias Mithril.TokenAPI.TokenSearch
+  alias Mithril.UserAPI
+  alias Mithril.UserAPI.User
 
   @uuid_regex ~r|[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}|
 

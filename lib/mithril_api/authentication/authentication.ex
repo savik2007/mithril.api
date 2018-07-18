@@ -3,12 +3,17 @@ defmodule Mithril.Authentication do
 
   import Ecto.{Query, Changeset, DateTime}, warn: false
 
-  alias Mithril.{OTP, Error, Guardian, ClientAPI}
-  alias Mithril.OTP.Schema, as: OTPSchema
-  alias Mithril.UserAPI.User
-  alias Mithril.TokenAPI.Token
-  alias Mithril.Authentication.{Factor, Factors, OTPSend}
+  alias Mithril.Authentication.Factor
+  alias Mithril.Authentication.Factors
+  alias Mithril.Authentication.OTPSend
   alias Mithril.Authorization.LoginHistory
+  alias Mithril.ClientAPI
+  alias Mithril.Error
+  alias Mithril.Guardian
+  alias Mithril.OTP
+  alias Mithril.OTP.Schema, as: OTPSchema
+  alias Mithril.TokenAPI.Token
+  alias Mithril.UserAPI.User
 
   require Logger
 

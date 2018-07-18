@@ -5,9 +5,10 @@ defmodule Mithril.AppAPI do
   use Mithril.Search
   import Ecto.{Query, Changeset}, warn: false
 
-  alias Ecto.{Multi, Changeset}
-  alias Mithril.Repo
+  alias Ecto.Changeset
+  alias Ecto.Multi
   alias Mithril.AppAPI.{App, AppSearch}
+  alias Mithril.Repo
   alias Mithril.TokenAPI.Token
 
   def list_apps(params) do
