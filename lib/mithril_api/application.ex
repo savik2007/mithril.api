@@ -18,6 +18,8 @@ defmodule Mithril do
       supervisor(Mithril.Repo, []),
       # Start the endpoint when the application starts
       supervisor(Endpoint, []),
+      worker(Mithril.TokenAPI.Deactivator, [:token_deactivator], id: :token_deactivator),
+      worker(Mithril.TokenAPI.Deactivator, [:token_cleaner], id: :token_cleaner),
       worker(Scheduler, [])
       # Starts a worker by calling: Mithril.Worker.start_link(arg1, arg2, arg3)
       # worker(Mithril.Worker, [arg1, arg2, arg3]),

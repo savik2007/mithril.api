@@ -4,7 +4,6 @@ defmodule Mithril.TokenAPI do
   use Mithril.Search
   import Ecto.{Query, Changeset}, warn: false
 
-  alias Ecto.Multi
   alias Mithril.Authorization.GrantType
   alias Mithril.ClientAPI
   alias Mithril.Error
@@ -22,6 +21,9 @@ defmodule Mithril.TokenAPI do
   @access_token_2fa "2fa_access_token"
   @change_password_token "change_password_token"
   @authorization_code "authorization_code"
+
+  def access_token_2fa, do: @access_token_2fa
+  def change_password_token, do: @change_password_token
 
   def token_type(:refresh), do: @refresh_token
   def token_type(:access), do: @access_token
@@ -202,34 +204,6 @@ defmodule Mithril.TokenAPI do
 
   defp deactivate_old_tokens_where_name_clause(query, name) do
     where(query, [t], t.name == ^name)
-  end
-
-  def deactivate_old_password_tokens do
-    expiration_days = Confex.get_env(:mithril_api, :password)[:expiration]
-
-    query =
-      Token
-      |> join(:inner, [t], u in User, t.user_id == u.id)
-      |> where([t], t.name not in [@access_token_2fa, @change_password_token])
-      |> where([t], t.expires_at >= ^:os.system_time(:seconds))
-      |> where([t, u], fragment("now() >= ?", datetime_add(u.password_set_at, ^expiration_days, "day")))
-
-    Multi.new()
-    |> Multi.update_all(:tokens, query, set: [expires_at: :os.system_time(:seconds)])
-    |> Repo.transaction()
-  end
-
-  def delete_expired_tokens do
-    token_ttl_after_expiration_seconds =
-      :mithril_api
-      |> Confex.get_env(:token_ttl_after_expiration)
-      |> Kernel.*(3600 * 24)
-
-    expires_at = :os.system_time(:seconds) - token_ttl_after_expiration_seconds
-
-    Token
-    |> where([t], t.expires_at <= ^expires_at)
-    |> Repo.delete_all()
   end
 
   defp token_changeset(%Token{} = token, attrs) do

@@ -31,6 +31,8 @@ config :logger, level: :error
 
 config :bcrypt_elixir, :log_rounds, 4
 
+config :mithril_api, Mithril.TokenAPI.Deactivator, limit: 1
+
 config :mithril_api, :"2fa",
   otp_ttl: 1,
   user_2fa_enabled?: {:system, :boolean, "USER_2FA_ENABLED", true},
