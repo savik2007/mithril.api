@@ -52,6 +52,8 @@ config :mithril_api, :generators,
   binary_id: true,
   sample_binary_id: "11111111-1111-1111-1111-111111111111"
 
+config :mithril_api, Mithril.TokenAPI.Deactivator, limit: 500
+
 config :mithril_api, :password,
   expiration: {:system, :integer, "PASSWORD_EXPIRATION_DAYS", 90},
   max_failed_logins: {:system, :integer, "MAX_FAILED_LOGINS", 10},

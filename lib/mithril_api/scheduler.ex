@@ -6,7 +6,7 @@ defmodule Mithril.Scheduler do
   alias Crontab.CronExpression.Parser
   alias Quantum.Job
   import Mithril.OTP, only: [cancel_expired_otps: 0]
-  import Mithril.TokenAPI, only: [delete_expired_tokens: 0, deactivate_old_password_tokens: 0]
+  import Mithril.TokenAPI.Deactivator, only: [delete_expired_tokens: 0, deactivate_old_password_tokens: 0]
 
   def create_jobs do
     config = get_config()
