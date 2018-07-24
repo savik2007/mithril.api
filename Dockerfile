@@ -8,7 +8,7 @@ WORKDIR /app
 
 ENV MIX_ENV=prod
 
-RUN apk add --no-cache --update --virtual .build-deps musl=1.1.18-r3 make g++
+RUN apk add --no-cache --update --virtual .build-deps musl=1.1.19-r10 make g++
 
 RUN mix do \
       local.hex --force, \
@@ -17,7 +17,7 @@ RUN mix do \
       deps.compile, \
       release
 
-FROM alpine:3.7
+FROM alpine:3.8
 
 ARG APP_NAME
 
