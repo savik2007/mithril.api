@@ -116,9 +116,9 @@ List of endpoints that is safe to be public and MUST be protected by additional 
 | Users     | Request Password Recovery | `POST /password_recovery_requests`| N/A           | Used to recover forgotten password withoit authentication. |
 | Users     | Reset Password  | `PATCH /users/{id}/actions/reset_password`  | N/A           | Used to reset forgotten password withoit authentication. |
 | Users     | Change Password | `PATCH /users/{id}/actions/change_password` | `user:update` | Used by user to change their credentials. |
-| Approvals | Authorize       | `POST /apps` or `PUT /apps`                 | `apps:create` | Used by User to approve Client access to hes data. First step in oAuth flow. Scopes is set in session token created with `grant_type=password`. |
-| Approvals | Get Approvals   | `GET /apps{?client_ids}`                    | `apps:read`   | Used by user to see list of Approvals that he authorized. **Returning list is forse-filtered for owner**. |
-| Approvals | Delete          | `DELETE /apps/{id}`                         | `apps:delete` | Used by user to de-authorize Client from accessing hes data. **Can delete only owned Approvals**. |
+| Approvals | Authorize       | `POST /admin/apps` or `PUT /apps`           | `apps:create` | Used by User to approve Client access to hes data. First step in oAuth flow. Scopes is set in session token created with `grant_type=password`. |
+| Approvals | Get Approvals   | `GET /admin/apps{?client_ids}`              | `apps:read`   | Used by user to see list of Approvals that he authorized. **Returning list is forse-filtered for owner**. |
+| Approvals | Delete          | `DELETE /admin/apps/{id}`                   | `apps:delete` | Used by user to de-authorize Client from accessing hes data. **Can delete only owned Approvals**. |
 
 ## Tokens [/tokens]
 
@@ -156,12 +156,27 @@ List of endpoints that is safe to be public and MUST be protected by additional 
                 + username (string, required)
                 + password (string, required)
                 + scope (string, required)
-
+                
+            + token (object)
+                + `grant_type`: `digital_signature` (string, fixed)
+                + `client_id` (string, required)
+                + `signed_content`: `eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJFSGVhbHRoIiwibm9uY2UiOiIxMjM0NSIsImV4cCI6MTUyMjM0MTExOSwiaWF0IjoxNTIyMDgxOTE5LCJpc3MiOiJFSGVhbHRoIiwianRpIjoiNWZlNzhiNzUtODQ5Zi00M2UzLTlmMzYtZWRhZWY1MmVkNzNjIiwibmJmIjoxNTIyMDgxOTE4LCJzdWIiOiIxMjM0NSIsInR5cCI6ImFjY2VzcyJ9.N_RALR_8QMzY637pzQfSAM57pW4IFCU3eGJeqfry34_me0gJbJRVhYx8NltSoBFkmCM3ROMpdp-ARUUWYNyfkA` (string, required)
+                + `signed_content_encoding`: `base64` (string, required)
+                + `scope` (string, required)
+                
             + token (object)
                 + `grant_type`: `refresh_token` (string, fixed)
                 + client_id (string, required)
                 + client_secret (string, required)
                 + refresh_token (string, required)
+
+            + token (object)
+                + `grant_type`: `authorize_2fa_access_token` (string, fixed)
+                + otp (string, required)
+
+            + token (object)
+                + `grant_type`: `refresh_2fa_access_token` (string, fixed)
+                + refresh_token (string, required)                
 
 + Response 201 (application/json)
     + Headers
@@ -172,14 +187,34 @@ List of endpoints that is safe to be public and MUST be protected by additional 
         + meta (`Response__Meta`)
             + code: 201 (number)
         + data (`Token_Response`)
+        + urgent (object, required)
+            + `next_step`: `REQUEST_FACTOR` (enum, required) - Next step of authorization process.
+                - REQUEST_FACTOR
+                - REQUEST_OTP
+                - REQUEST_APPS
+                - RESEND_OTP
 
-### Get Tokens [GET /tokens{?user_ids,names,value}]
++ Response 401 (application/json)
+    + Attributes (`Response_Error`, fixed-type)
+        + meta (`Response__Meta`)
+            + code: 403 (number)
+        + data
+            + `user_id`: `1380df72-275a-11e7-93ae-92361f002671`
+        + error (`Response__Error`, fixed-type)
+            + type: `password_expired`
+            + message: `The password expired` (string)
+
+
+
+### Get Tokens [GET /tokens{?user_ids,names,value,page_number,page_size}]
 
 + Parameters
     + user_ids: `user-1380df72-275a-11e7-93ae-92361f002671,user-1380e1de-275a-11e7-93ae-92361f002671` (string, optional) - List of User ID's separated by comma.
     + names: `refresh_token,access_token` (string, optional) - List of token types separated by comma.
     + value: `token-1380df72-275a-11e7-93ae-92361f002671` (string, optional) - Token value.
-
+    + `page_number`: 2 (number) - Page number.    
+    + `page_size`: 50 (number) - A limit on the number of objects to be returned, between 1 and 100. Default: 50
+    
 + Request (application/json)
 
 + Response 200 (application/json)
@@ -230,7 +265,7 @@ After creating Approval user should be redirected to `redirect_url` with `code` 
     + Attributes (`Response_OK`)
         + data (`Approval_Response`)
 
-### Authorize or Update an Approval [PUT /apps/{id}]
+### Authorize or Update an Approval [PUT /admin/apps/{id}]
 
 + Parameters
     + id: `approval-1380df72-275a-11e7-93ae-92361f002671` (string, required)
@@ -256,17 +291,20 @@ After creating Approval user should be redirected to `redirect_url` with `code` 
             + code: 201 (number)
         + data (`Approval_Response`)
 
-### Get Approvals [GET /apps{?user_ids,client_ids}]
+### Get Approvals [GET /admin/apps{?user_ids,client_ids,ci,page_number,page_size}]
 
 + Parameters
     + user_ids: `user-1380df72-275a-11e7-93ae-92361f002671,user-1380e1de-275a-11e7-93ae-92361f002671` (string, optional) - List of User ID's separated by comma.
+    + `client_name`: `client_name-Clinic N1,client_name-Clinic N2`(string, optional) - List of Client name's separated by comma.
     + client_ids: `client-1380df72-275a-11e7-93ae-92361f002671,client-1380e1de-275a-11e7-93ae-92361f002671` (string, optional) - List of Client ID's separated by comma.
-
+    + `page_number`: 2 (number) - Page number.    
+    + `page_size`: 50 (number) - A limit on the number of objects to be returned, between 1 and 100. Default: 50
+    
 + Response 200 (application/json)
     + Attributes (`Response_Collection`)
         + data (array[`Approval_Response`])
 
-### Get Approval by ID [GET /apps/{id}]
+### Get Approval by ID [GET /admin/apps/{id}]
 
 + Parameters
     + id: `approval-1380df72-275a-11e7-93ae-92361f002671` (string, required)
@@ -277,7 +315,7 @@ After creating Approval user should be redirected to `redirect_url` with `code` 
     + Attributes (`Response_OK`)
         + data (`Approval_Response`)
 
-### Delete Approval [DELETE /apps/{id}]
+### Delete Approval [DELETE /admin/apps/{id}]
 
 This method can be used to de-authorize Client. By deleting Approval all associated Tokens will be deleted.
 
@@ -297,7 +335,8 @@ This method can be used to de-authorize Client. By deleting Approval all associa
         + user (User)
             + password: `notASecret1` (string, required) - User password. At least 6 characters.
             + password_confirmation (string) - Show have same value as `password` field.
-
+            + 2fa_enable: `true` (boolean, optional) - Is activate 2-factor authentication flag.
+            
 + Response 201 (application/json)
     + Headers
 
@@ -336,11 +375,14 @@ Roles are filtered by a `client_id` of a current access token.
     + Attributes (`Response_OK`)
         + data (`User_Response`)
 
-### List Users [GET /users{?email}]
+### List Users [GET /users{?id,email,page_number,page_size}]
 
 + Parameters
-    + email: `john@example.com` (string, optional) - Filter Users by email.
-
+    + `id`: 1380df72-275a-11e7-93ae-92361f002671` (string, optional) - Filter Users by user identifier
+    + `email`: `john@example.com` (string, optional) - Filter Users by email.
+    + `page_number`: 2 (number) - Page number.    
+    + `page_size`: 50 (number) - A limit on the number of objects to be returned, between 1 and 100. Default: 50
+    
 + Request (application/json)
 
 + Response 200 (application/json)
@@ -399,6 +441,23 @@ Roles are filtered by a `client_id` of a current access token.
     + Attributes (`Response_OK`)
         + data (`User_Response`)
 
+
+### Update User password [POST /oauth/users/actions/update_password]
+
+
++ Request (application/json)
+
+            + Headers
+                X-CSRF-Token: my-csrf-token
+
+    + Attributes
+        + user (object) - It is possible to change other User fiels by passing them along in this structure.
+            + password: `notASecret1` (string, required) - User password. At least 12 characters.
+            
++ Response 200 (application/json)
+    + Attributes (`Response_OK`)
+        + data (`User_Response`)
+
 ### Delete user [DELETE /users/{id}]
 
 Also deletes all associated Clients, User Roles, Approvals and Tokens.
@@ -410,6 +469,128 @@ Also deletes all associated Clients, User Roles, Approvals and Tokens.
 
 + Response 204 (application/json)
 
+### Block User [PATCH /users/{id}/actions/block]
+
++ Parameters
+    + id: `user-1380df72-275a-11e7-93ae-92361f002671` (string, required)
+
++ Request (application/json)
+    + Attributes
+        + user (object)
+            + reason: `Suspicious activity` (string, optional) - Block user reason.
+
++ Response 200 (application/json)
+    + Attributes (`Response_OK`)
+        + data (`User_Response`)
+
+### Unblock User [PATCH /users/{id}/actions/unblock]
+
++ Parameters
+    + id: `user-1380df72-275a-11e7-93ae-92361f002671` (string, required)
+
++ Response 200 (application/json)
+    + Attributes (`Response_OK`)
+        + data (`User_Response`)
+
+### Init User authentication factor [PATCH /users/actions/init_factor]
+
++ Request (application/json)
+    + Attributes
+        + `factor`: `+380671234567` (string, required) - Value of factor.
+        + type: `SMS` (string, required) - Authentication factor type.
+
++ Response 201 (application/json)
+    + Attributes (`Response_OK`)
+        + data (`User_Response`)
+
+### Approve User authentication factor [PATCH /users/actions/approve_factor]
+
++ Request (application/json)
+    + Attributes
+        + otp: 1834 (string, required) - OTP value.
+
++ Response 201 (application/json)
+    + Attributes (`Response_OK`)
+        + data (`User_Response`)
+
+## Authentication Factors  [/users/{user_id}/authentication_factors]
+
+Authentication Factors are used to management additional factors of authentication user process.
+
+### Create Authentication Factor [POST /users/{user_id}/authentication_factors]
+
++ Request (application/json)
+    + Attributes
+       + type: `SMS` (string, required) - Authentication factor type.
+
++ Response 201 (application/json)
+    + Attributes (`Response_OK`)
+        + meta (`Response__Meta`)
+            + code: 201 (number)
+        + data (`User_Authentication_Factor_Response`)
+
+### Get Authentication Factor by ID [GET /users/{user_id}/authentication_factors/{2fa_id}]
+
++ Parameters
+    + user_id: `user-1380df72-275a-11e7-93ae-92361f002671` (string, required) - User ID.
+    + 2fa_id: `2fa-1380df72-275a-11e7-93ae-92361f002671`  (string, optional) - 2fa ID.
+
++ Request (application/json)
+
++ Response 200 (application/json)
+    + Attributes (`Response_OK`)
+        + data (`User_Authentication_Factor_Response`)
+
+### Get Authentication Factor List [GET /users/{user_id}/authentication_factors/{?type,page_number,page_size}]
+
++ Parameters
+    + user_id: `user-1380df72-275a-11e7-93ae-92361f002671` (string, required) - User ID.
+    + type: `SMS` (string, optional) - Authentication factor type.
+    + `page_number`: 1 (number) - Page number.    
+    + `page_size`: 50 (number) - A limit on the number of objects to be returned, between 1 and 100. Default: 50
+
++ Request (application/json)
+
++ Response 200 (application/json)
+    + Attributes (`Response_Collection`)
+        + data (array[`User_Authentication_Factor_Response`])
+
+### Reset Authentication Factor  [GET /users/{user_id}/authentication_factors/{2fa_id}/actions/reset]
+
++ Parameters
+    + user_id: `user-1380df72-275a-11e7-93ae-92361f002671` (string, required) - User ID.
+    + 2fa_id: `2fa-1380df72-275a-11e7-93ae-92361f002671`  (string, required) - 2fa ID.
+
++ Request (application/json)
+
++ Response 200 (application/json)
+    + Attributes (`Response_OK`)
+        + data (`User_Authentication_Factor_Response`)
+
+### Disable Authentication Factor  [GET /users/{user_id}/authentication_factors/{2fa_id}/actions/disable]
+
++ Parameters
+    + user_id: `user-1380df72-275a-11e7-93ae-92361f002671` (string, required) - User ID.
+    + 2fa_id: `2fa-1380df72-275a-11e7-93ae-92361f002671`  (string, required) - 2fa ID.
+
++ Request (application/json)
+
++ Response 200 (application/json)
+    + Attributes (`Response_OK`)
+        + data (`User_Authentication_Factor_Response`)
+
+### Enable Authentication Factor  [GET /users/{user_id}/authentication_factors/{2fa_id}/actions/enable]
+
++ Parameters
+    + user_id: `user-1380df72-275a-11e7-93ae-92361f002671` (string, required) - User ID.
+    + 2fa_id: `2fa-1380df72-275a-11e7-93ae-92361f002671`  (string, required) - 2fa ID.
+
++ Request (application/json)
+
++ Response 200 (application/json)
+    + Attributes (`Response_OK`)
+        + data (`User_Authentication_Factor_Response`)
+
 ## Roles [/roles]
 
 Roles are used to simplify Users access management.
@@ -418,11 +599,13 @@ By changing Role scopes this change will immidiately propagate to all users with
 
 Roles are set separately for each Client.
 
-### List Roles [GET /roles{?name}]
+### List Roles [GET /roles{?name,page_number,page_size}]
 
 + Parameters
     + name: `My role` (string, optional) - Return only roles that contains `name` substring.
-
+    + `page_number`: 2 (number) - Page number.    
+    + `page_size`: 50 (number) - A limit on the number of objects to be returned, between 1 and 100. Default: 50
+    
 + Request (application/json)
 
 + Response 200 (application/json)
@@ -533,11 +716,13 @@ Client Types are used to simplify Clients access management.
 Client Type scopes limits list of scopes that Client can have.
 By changing Client Type scopes this change will immidiately propagate to all clients with same type.
 
-### List Client Types [GET /client_types{?name}]
+### List Client Types [GET /client_types{?name,page_number,page_size}]
 
 + Parameters
     + name: `My type` (string, optional) - Return only Client Types that contains `name` substring.
-
+    + `page_number`: 2 (number) - Page number.    
+    + `page_size`: 50 (number) - A limit on the number of objects to be returned, between 1 and 100. Default: 50
+    
 + Request (application/json)
 
 + Response 200 (application/json)
@@ -596,12 +781,15 @@ Can be invoked only when there is no Clients associated with Client Types.
 
 ## Clients [/clients]
 
-### Get Clients [GET /clients{?name,user_id}]
+### Get Clients [GET /clients{?name,user_id,is_blocked,page_number,page_size}]
 
 + Parameters
     + name: `My client` (string, optional) - Return only Clients that contains `name` substring.
     + `user_id`: `user-1380df72-275a-11e7-93ae-92361f002671` (string, optional) - Return only Clients that is owned by User `user_id`.
-
+    + is_blocked: `true` (boolean, optional) - Return clients which were suspected as fraud
+    + `page_number`: 2 (number) - Page number.    
+    + `page_size`: 50 (number) - A limit on the number of objects to be returned, between 1 and 100. Default: 50
+    
 + Request (application/json)
 
 + Response 200 (application/json)
@@ -610,6 +798,7 @@ Can be invoked only when there is no Clients associated with Client Types.
 
 ### Get Client by ID [GET /client/{id}]
 
+This service returns `client_secret` instead of Get client Details
 + Parameters
     + id: `client-1380df72-275a-11e7-93ae-92361f002671` (string, required)
 
@@ -618,6 +807,17 @@ Can be invoked only when there is no Clients associated with Client Types.
 + Response 200 (application/json)
     + Attributes (`Response_OK`)
         + data (`Client_Response`)
+
+### Get Client Details [GET /client/{id}/details]
+
++ Parameters
+    + id: `client-1380df72-275a-11e7-93ae-92361f002671` (string, required)
+
++ Request (application/json)
+
++ Response 200 (application/json)
+    + Attributes (`Response_OK`)
+        + data (`Client_Details_Response`)
 
 ### Create a Client [POST /clients]
 
@@ -665,12 +865,33 @@ Deletes all associated Approvals and Tokens.
 
 + Response 204 (application/json)
 
+## OTP [/api]
+
+### Send OTP  [POST /api/send_otp/]
+
++ Request (application/json)
+
+    + Headers
+
+            X-CSRF-Token: `my-jwt-token`
+
+    + Attributes (object)
+        + factor: `+380111111111` (string, required) - phone number which is used as second factor
+        + type: 'SMS' (string, required) - second factor type
+        
++ Response 201 (application/json)
+    + Attributes (Response_OK)
+        + meta (Response__Meta)
+            + code: 200 (number)
+        + data (object)
+
+
 # Data Structures
 ## Responses
 ### `Response_Collection`
 + meta (Response__Meta, fixed-type)
 + data (array[], fixed-type)
-+ paging (Response__Pagination, fixed-type)
++ paging (Response__Pagination__V2, fixed-type)
 
 ### `Response_OK`
 + meta (Response__Meta, fixed-type)
@@ -717,6 +938,12 @@ Deletes all associated Approvals and Tokens.
 + size: 1000 (number) - Total number of objects in collection.
 + has_more: false (boolean) - Is this collection have more data to load in the same style as last request loaded it.
 
+### `Response__Pagination__V2`
++ page_number: 2 (number) - Page number.
++ page_size: 50 (number) - A limit on the number of objects to be returned, between 1 and 100. Default: 50
++ total_entries: 1000 (number) - Total number of objects in collection.
++ total_pages: 23 (number) - Total number of pages.
+
 ## Tokens
 ### Token (object)
 + name (enum, required) - Type of a Token.
@@ -737,6 +964,7 @@ Deletes all associated Approvals and Tokens.
 ## Approvals
 ### Approval (object)
 + user_id: `user-1380df72-275a-11e7-93ae-92361f002671` (string, required) - Internal user ID, a UUID string.
++ client_name: `Clinic N1` (string, required) - Internal client name, string.
 + client_id: `client-1380df72-275a-11e7-93ae-92361f002671` (string, required) - Internal client ID, a UUID string.
 + scope: `notebooks:read notebooks:create patients:read` (string, required) - Scope, in a space-delimited format.
 
@@ -752,11 +980,19 @@ Deletes all associated Approvals and Tokens.
 + settings (object) - Client settings.
 + priv_settings (object) - Client private settings.
 + user_id: `user-1380df72-275a-11e7-93ae-92361f002671` (string, required) - Owner-user internal ID, a UUID string.
++ `client_type_id`: `261d52f9-b355-4029-863d-8fc52e9d0b81` - Client Type identifier
++ is_blocked: `false` (string, required) - whether the client is marked as fraud
++ block_reason: `MSP has fakes doctors` (string, optional) - the reason to block
 
 ### `Client_Response` (Client)
 + id: `client-1380df72-275a-11e7-93ae-92361f002671` (string) - Internal client ID, a UUID string.
 + secret: `client_secret-1380df72-275a-11e7-93ae-92361f002671` (string) - Auto-generated Client Secret.
-+ `created_at`: `2017-04-20T19:14:13Z` (string, required) - ISO 8601 date and time in UTC timezone.
++ `inserted_at`: `2017-04-20T19:14:13Z` (string, required) - ISO 8601 date and time in UTC timezone.
++ `updated_at`: `2017-04-20T19:14:13Z` (string, required) - ISO 8601 date and time in UTC timezone.
+
+### `Client_Details_Response` (Client)
++ id: `client-1380df72-275a-11e7-93ae-92361f002671` (string) - Internal client ID, a UUID string.
++ `inserted_at`: `2017-04-20T19:14:13Z` (string, required) - ISO 8601 date and time in UTC timezone.
 + `updated_at`: `2017-04-20T19:14:13Z` (string, required) - ISO 8601 date and time in UTC timezone.
 
 ## Users
@@ -765,7 +1001,6 @@ Deletes all associated Approvals and Tokens.
 
 ### `User_Data` (User)
 + settings (object) - User settings.
-+ priv_settings (object) - User private settings.
 
 ### `User_Response` (User_Data)
 + id: `user-1380df72-275a-11e7-93ae-92361f002671` (string) - Internal user ID, a UUID string.
@@ -807,3 +1042,17 @@ Deletes all associated Approvals and Tokens.
 + `created_at`: `2017-04-20T19:14:13Z` (string, required) - ISO 8601 date and time in UTC timezone.
 + `updated_at`: `2017-04-20T19:14:13Z` (string, required) - ISO 8601 date and time in UTC timezone.
 + scope: `declaration:read declaration:write`
+
+## Authentication Factors
+### `Authentication_Factor_Type`
++ type (enum, required) - Type of authentication factor.
+    + `SMS` (string)
+
+### `User_Authentication_Factor_Response` (object)
++ id: `af-1380df72-275a-11e7-93ae-92361f002671` (string, required) - Authentication factor ID, a UUID string.
++ user_id: `user-1380df72-275a-11e7-93ae-92361f002671` (string, required) - User ID, a UUID string.
++ include `Authentication_Factor_Type`  
++ `factor`: `+38067*****67` (string, required) - Value of factor.
++ `is_active`: `true` (boolean, required) - Is active authentication factor flag.
++ `inserted_at`: `2017-04-20T19:14:13Z` (string, required) - ISO 8601 date and time in UTC timezone.
++ `updated_at`: `2017-04-20T19:14:13Z` (string, required) - ISO 8601 date and time in UTC timezone.
