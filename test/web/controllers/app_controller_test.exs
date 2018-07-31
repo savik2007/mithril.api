@@ -13,11 +13,19 @@ defmodule Mithril.Web.AppControllerTest do
 
   describe "list all apps" do
     test "lists all entries on index", %{conn: conn} do
-      insert(:app)
-      insert(:app)
-      insert(:app)
-      conn = get(conn, app_path(conn, :index))
-      assert 3 == length(json_response(conn, 200)["data"])
+      client = insert(:client)
+      insert(:app, client_id: client.id)
+      insert(:app, client_id: client.id)
+      insert(:app, client_id: client.id)
+      resp = conn |> get(app_path(conn, :index)) |> json_response(200)
+      assert 3 == length(resp["data"])
+
+      schema =
+        "specs/json_schemas/apps.json"
+        |> File.read!()
+        |> Poison.decode!()
+
+      assert :ok = NExJsonSchema.Validator.validate(schema, resp)
     end
 
     test "does not list all entries on index when limit is set", %{conn: conn} do
@@ -57,14 +65,14 @@ defmodule Mithril.Web.AppControllerTest do
     conn = post(conn, app_path(conn, :create), app: attrs)
     assert %{"id" => id} = json_response(conn, 201)["data"]
 
-    conn = get(conn, app_path(conn, :show, id))
+    resp = conn |> get(app_path(conn, :show, id)) |> json_response(200)
 
-    assert json_response(conn, 200)["data"] == %{
-             "id" => id,
-             "scope" => "some scope",
-             "user_id" => user.id,
-             "client_id" => client.id
-           }
+    schema =
+      "specs/json_schemas/app.json"
+      |> File.read!()
+      |> Poison.decode!()
+
+    assert :ok = NExJsonSchema.Validator.validate(schema, resp)
   end
 
   test "does not create app and renders errors when data is invalid", %{conn: conn} do
@@ -73,18 +81,19 @@ defmodule Mithril.Web.AppControllerTest do
   end
 
   test "updates chosen app and renders app when data is valid", %{conn: conn} do
-    %App{id: id} = app = insert(:app)
+    client = insert(:client)
+    %App{id: id} = app = insert(:app, client_id: client.id)
     conn = put(conn, app_path(conn, :update, app), app: @update_attrs)
     assert %{"id" => ^id} = json_response(conn, 200)["data"]
 
-    conn = get(conn, app_path(conn, :show, id))
+    resp = conn |> get(app_path(conn, :show, id)) |> json_response(200)
 
-    assert json_response(conn, 200)["data"] == %{
-             "id" => id,
-             "scope" => "some updated scope",
-             "user_id" => app.user_id,
-             "client_id" => app.client_id
-           }
+    schema =
+      "specs/json_schemas/app.json"
+      |> File.read!()
+      |> Poison.decode!()
+
+    assert :ok = NExJsonSchema.Validator.validate(schema, resp)
   end
 
   test "does not update chosen app and renders errors when data is invalid", %{conn: conn} do

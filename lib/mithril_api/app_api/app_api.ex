@@ -14,10 +14,14 @@ defmodule Mithril.AppAPI do
   def list_apps(params) do
     %AppSearch{}
     |> app_changeset(params)
-    |> search(params, App)
+    |> search_apps(params)
   end
 
-  def get_app!(id), do: Repo.get!(App, id)
+  def get_app!(id) do
+    App
+    |> preload(:clients)
+    |> Repo.get!(id)
+  end
 
   def get_app_by(attrs), do: Repo.get_by(App, attrs)
 
