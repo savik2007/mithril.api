@@ -15,10 +15,10 @@ defmodule Mithril.Search do
       def search_apps(%Ecto.Changeset{valid?: true, changes: changes}, params) do
         apps_subquery = get_search_query(App, changes)
 
-        %Scrivener.Page{entries: apps} =
-          App
-          |> preload(:clients)
-          |> Repo.paginate(params)
+        App
+        |> preload(:clients)
+        |> join(:inner, [a], s in subquery(apps_subquery), s.id == a.id)
+        |> Repo.paginate(params)
       end
 
       def search_apps(%Ecto.Changeset{valid?: false} = changeset, _params), do: {:error, changeset}
