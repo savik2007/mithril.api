@@ -7,8 +7,21 @@ defmodule Mithril.Search do
     quote do
       import Ecto.{Query, Changeset}, warn: false
 
+      alias Mithril.AppAPI.{App, AppSearch}
+      alias Mithril.ClientAPI.Client
       alias Mithril.Paging
       alias Mithril.Repo
+
+      def search_apps(%Ecto.Changeset{valid?: true, changes: changes}, params) do
+        apps_subquery = get_search_query(App, changes)
+
+        %Scrivener.Page{entries: apps} =
+          App
+          |> preload(:clients)
+          |> Repo.paginate(params)
+      end
+
+      def search_apps(%Ecto.Changeset{valid?: false} = changeset, _params), do: {:error, changeset}
 
       def set_like_attributes(%Ecto.Changeset{valid?: false} = changeset, _like_fields), do: changeset
 

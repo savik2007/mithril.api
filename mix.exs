@@ -46,6 +46,7 @@ defmodule Mithril.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
+      {:nex_json_schema, ">= 0.7.2"},
       {:distillery, "~> 1.5.3", runtime: false},
       {:confex, "~> 3.2"},
       {:ecto, "~> 2.1"},

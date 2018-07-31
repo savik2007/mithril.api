@@ -10,13 +10,28 @@ defmodule Mithril.AppAPITest do
   @invalid_attrs %{scope: nil}
 
   test "list_apps/1 returns all apps" do
-    app = insert(:app)
-    assert %Page{entries: [^app]} = AppAPI.list_apps(%{})
+    insert(:app)
+    %Page{entries: apps} = AppAPI.list_apps(%{})
+
+    schema =
+      "specs/json_schemas/apps.json"
+      |> File.read!()
+      |> Poison.decode!()
+
+    assert length(apps) == 1
+    assert :ok = NExJsonSchema.Validator.validate(schema, %{data: apps})
   end
 
   test "get_app! returns the app with given id" do
-    app = insert(:app)
-    assert AppAPI.get_app!(app.id) == app
+    client = insert(:client)
+    app = insert(:app, client_id: client.id)
+
+    schema =
+      "specs/json_schemas/app.json"
+      |> File.read!()
+      |> Poison.decode!()
+
+    assert :ok = NExJsonSchema.Validator.validate(schema, app.id |> AppAPI.get_app!() |> Map.from_struct())
   end
 
   test "create_app/1 with valid data creates a app" do
@@ -33,16 +48,28 @@ defmodule Mithril.AppAPITest do
   end
 
   test "update_app/2 with valid data updates the app" do
-    app = insert(:app)
+    client = insert(:client)
+    app = insert(:app, client_id: client.id)
     assert {:ok, app} = AppAPI.update_app(app, @update_attrs)
     assert %App{} = app
+
+    schema =
+      "specs/json_schemas/app.json"
+      |> File.read!()
+      |> Poison.decode!()
+
+    assert :ok = NExJsonSchema.Validator.validate(schema, app.id |> AppAPI.get_app!() |> Map.from_struct())
+
     assert app.scope == "some updated scope"
   end
 
   test "update_app/2 with invalid data returns error changeset" do
-    app = insert(:app)
+    client = insert(:client)
+    app = insert(:app, client_id: client.id)
+
     assert {:error, %Ecto.Changeset{}} = AppAPI.update_app(app, @invalid_attrs)
-    assert app == AppAPI.get_app!(app.id)
+    db_app = AppAPI.get_app!(app.id)
+    assert db_app.scope == app.scope
   end
 
   test "delete_app/1 deletes the app" do

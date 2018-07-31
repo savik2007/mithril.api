@@ -6,7 +6,8 @@ defmodule Mithril.AppAPI.App do
   schema "apps" do
     field(:scope, :string)
     field(:user_id, :binary_id)
-    field(:client_id, :binary_id)
+
+    belongs_to(:clients, Mithril.ClientAPI.Client, foreign_key: :client_id)
 
     timestamps()
   end
