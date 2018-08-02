@@ -291,11 +291,11 @@ After creating Approval user should be redirected to `redirect_url` with `code` 
             + code: 201 (number)
         + data (`Approval_Response`)
 
-### Get Approvals [GET /admin/apps{?user_ids,client_ids,ci,page_number,page_size}]
+### Get Approvals [GET /admin/apps{?user_ids,client_ids,client_names,ci,page_number,page_size}]
 
 + Parameters
     + user_ids: `user-1380df72-275a-11e7-93ae-92361f002671,user-1380e1de-275a-11e7-93ae-92361f002671` (string, optional) - List of User ID's separated by comma.
-    + `client_name`: `client_name-Clinic N1,client_name-Clinic N2`(string, optional) - List of Client name's separated by comma.
+    + `client_names`: `client_name-Clinic N1,client_name-Clinic N2`(string, optional) - List of Client name's separated by comma.
     + client_ids: `client-1380df72-275a-11e7-93ae-92361f002671,client-1380e1de-275a-11e7-93ae-92361f002671` (string, optional) - List of Client ID's separated by comma.
     + `page_number`: 2 (number) - Page number.    
     + `page_size`: 50 (number) - A limit on the number of objects to be returned, between 1 and 100. Default: 50
@@ -885,6 +885,25 @@ Deletes all associated Approvals and Tokens.
             + code: 200 (number)
         + data (object)
 
+### Send otp via Verification [POST /api/sms_verifications]
+
+This endpoint redirect input data to [verification](https://uaehealthapi.docs.apiary.io/#reference/public.-medical-service-provider-integration-layer/otp-verification/initialize-otp-verification) where sms is sent
+
++ Request (application/json)
+
+    + Headers
+
+            X-CSRF-Token: `my-jwt-token`
+
+    + Attributes (object)
+        + factor: `+380111111111` (string, required) - phone number which is used as second factor
+        + type: 'SMS' (string, required) - second factor type
+        
++ Response 201 (application/json)
+    + Attributes (Response_OK)
+        + meta (Response__Meta)
+            + code: 200 (number)
+        + data (object)
 
 # Data Structures
 ## Responses
