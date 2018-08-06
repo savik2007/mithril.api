@@ -35,8 +35,9 @@ defmodule Mithril.ClientAPITest do
 
   test "create_client/1 with valid data creates a client" do
     attrs = :client |> build() |> Map.from_struct()
+    name = Map.get(attrs, :name)
     assert {:ok, %Client{} = client} = ClientAPI.create_client(attrs)
-    assert client.name == "some client"
+    assert client.name == name
     assert client.priv_settings == %{"access_type" => @direct}
     assert client.redirect_uri == "http://localhost"
     assert client.secret

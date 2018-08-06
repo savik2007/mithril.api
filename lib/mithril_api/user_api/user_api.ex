@@ -2,7 +2,7 @@ defmodule Mithril.UserAPI do
   @moduledoc """
   The boundary for the UserAPI system.
   """
-  use Mithril.Search
+  import Mithril.Search
 
   import Ecto.{Query, Changeset}, warn: false
   import EView.Changeset.Validators.Email
@@ -25,19 +25,6 @@ defmodule Mithril.UserAPI do
     %UserSearch{}
     |> user_changeset(params)
     |> search(params, User)
-  end
-
-  def get_search_query(entity, %{ids: _} = changes) do
-    changes =
-      changes
-      |> Map.put(:id, changes.ids)
-      |> Map.delete(:ids)
-
-    super(entity, changes)
-  end
-
-  def get_search_query(entity, changes) do
-    super(entity, changes)
   end
 
   def get_user(id), do: Repo.get(User, id)
@@ -220,8 +207,18 @@ defmodule Mithril.UserAPI do
   end
 
   defp user_changeset(%UserSearch{} = user_role, attrs) do
-    cast(user_role, attrs, UserSearch.__schema__(:fields))
+    user_role
+    |> cast(attrs, UserSearch.__schema__(:fields))
+    |> put_search_change()
   end
+
+  defp put_search_change(%Ecto.Changeset{valid?: true, changes: %{ids: ids}} = changeset) do
+    changeset
+    |> put_change(:id, ids)
+    |> delete_change(:ids)
+  end
+
+  defp put_search_change(changeset), do: changeset
 
   defp priv_settings_changeset(%PrivSettings{} = priv_settings, attrs) do
     priv_settings

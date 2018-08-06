@@ -1,8 +1,8 @@
 defmodule Mithril.TokenAPI do
   @moduledoc false
 
-  use Mithril.Search
-  import Ecto.{Query, Changeset}, warn: false
+  import Mithril.Search
+  import Ecto.{Query, Changeset}
 
   alias Mithril.Authorization.GrantType
   alias Mithril.ClientAPI
@@ -34,10 +34,20 @@ defmodule Mithril.TokenAPI do
   def list_tokens(params) do
     %TokenSearch{}
     |> token_changeset(params)
-    |> search(params, Token)
+    |> search_token(params)
   end
 
-  def get_search_query(entity, %{client_id: client_id} = changes) do
+  def search_token(%Ecto.Changeset{valid?: true, changes: changes}, params) do
+    Token
+    |> get_token_search_query(changes)
+    |> Repo.paginate(params)
+  end
+
+  def search_token(%Ecto.Changeset{valid?: false} = changeset, _search_params) do
+    {:error, changeset}
+  end
+
+  def get_token_search_query(entity, %{client_id: client_id} = changes) do
     params =
       changes
       |> Map.delete(:client_id)
@@ -52,7 +62,7 @@ defmodule Mithril.TokenAPI do
     )
   end
 
-  def get_search_query(entity, changes), do: super(entity, changes)
+  def get_token_search_query(entity, changes), do: get_search_query(entity, changes)
 
   def get_token!(id), do: Repo.get!(Token, id)
 
@@ -162,7 +172,7 @@ defmodule Mithril.TokenAPI do
     |> token_changeset(params)
     |> case do
       %Ecto.Changeset{valid?: true, changes: changes} ->
-        Token |> get_search_query(changes) |> Repo.delete_all()
+        Token |> get_token_search_query(changes) |> Repo.delete_all()
 
       changeset ->
         changeset

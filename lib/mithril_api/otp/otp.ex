@@ -3,7 +3,7 @@ defmodule Mithril.OTP do
   The boundary for the OTP system.
   """
 
-  use Mithril.Search
+  import Mithril.Search
 
   import Ecto.{Query, Changeset}, warn: false
 

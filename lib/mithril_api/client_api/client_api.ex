@@ -1,6 +1,6 @@
 defmodule Mithril.ClientAPI do
   @moduledoc false
-  use Mithril.Search
+  import Mithril.Search
 
   import Ecto.{Query, Changeset}, warn: false
 
