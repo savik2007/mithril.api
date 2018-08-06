@@ -1,7 +1,7 @@
 defmodule Mithril.Authentication.Factors do
   @doc false
 
-  use Mithril.Search
+  import Mithril.Search
 
   import Ecto.{Query, Changeset}, warn: false
   import Mithril.Authentication, only: [generate_otp_key: 2]

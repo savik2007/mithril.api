@@ -2,8 +2,6 @@ defmodule Mithril.UserRoleAPI do
   @moduledoc """
   The boundary for the UserRoleAPI system.
   """
-  use Mithril.Search
-
   import Ecto.{Query, Changeset}, warn: false
 
   alias Mithril.Repo

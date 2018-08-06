@@ -46,14 +46,135 @@ defmodule Mithril.Web.AppControllerTest do
       assert app.id == Map.get(hd(resp), "id")
     end
 
-    test "invalid client_id", %{conn: conn} do
-      assert [err] =
-               conn
-               |> get(app_path(conn, :index), %{client_id: "asd"})
-               |> json_response(422)
-               |> get_in(~w(error invalid))
+    test "list apps by client_names" do
+      %{name: name1, id: client_id1} = insert(:client)
+      %{name: name2, id: client_id2} = insert(:client)
+      %{id: client_id3} = insert(:client)
+      insert(:app, client_id: client_id1)
+      insert(:app, client_id: client_id2)
+      insert(:app, client_id: client_id3)
 
-      assert "$.client_id" == err["entry"]
+      prefix = "client_name-"
+      client_names = "#{prefix}#{name1},#{prefix}#{name2}"
+      conn = build_conn()
+      resp = get(conn, app_path(conn, :index), %{"client_names" => client_names})
+      data = json_response(resp, 200)["data"]
+      assert 2 == length(data)
+
+      Enum.each(data, fn %{"client_id" => client_id} ->
+        assert client_id in [client_id1, client_id2]
+      end)
+    end
+
+    test "list apps by not exact client_names" do
+      name1 = "some_clinic"
+      name2 = "some_other_clinic"
+      name3 = "whatever_clinic"
+      %{id: client_id1} = insert(:client, name: name1)
+      %{id: client_id2} = insert(:client, name: name2)
+      %{id: client_id3} = insert(:client, name: name3)
+      insert(:app, client_id: client_id1)
+      insert(:app, client_id: client_id2)
+      insert(:app, client_id: client_id3)
+
+      name1 = String.slice(name1, 0, 6)
+      name2 = String.slice(name2, 0, 6)
+      name3 = String.slice(name3, 3, 6)
+      prefix = "client_name-"
+      client_names = "#{prefix}#{name1},#{prefix}#{name2},#{prefix}#{name3}"
+      conn = build_conn()
+      resp = get(conn, app_path(conn, :index), %{"client_names" => client_names})
+      data = json_response(resp, 200)["data"]
+      assert 2 == length(data)
+
+      Enum.each(data, fn %{"client_id" => client_id} ->
+        assert client_id in [client_id1, client_id2]
+      end)
+    end
+
+    test "list apps by client_ids" do
+      %{id: client_id1} = insert(:client)
+      %{id: client_id2} = insert(:client)
+      %{id: client_id3} = insert(:client)
+      insert(:app, client_id: client_id1)
+      insert(:app, client_id: client_id2)
+      insert(:app, client_id: client_id3)
+
+      prefix = "client-"
+      client_ids = "#{prefix}#{client_id1},#{prefix}#{client_id2}"
+      conn = build_conn()
+      resp = get(conn, app_path(conn, :index), %{"client_ids" => client_ids})
+      data = json_response(resp, 200)["data"]
+      assert 2 == length(data)
+
+      Enum.each(data, fn %{"client_id" => client_id} ->
+        assert client_id in [client_id1, client_id2]
+      end)
+    end
+
+    test "list apps by user_ids" do
+      %{id: user_id1} = insert(:user)
+      %{id: user_id2} = insert(:user)
+      %{id: user_id3} = insert(:user)
+      insert(:app, user_id: user_id1)
+      insert(:app, user_id: user_id2)
+      insert(:app, user_id: user_id3)
+
+      prefix = "user-"
+      user_ids = "#{prefix}#{user_id1},#{prefix}#{user_id2}"
+      conn = build_conn()
+      resp = get(conn, app_path(conn, :index), %{"user_ids" => user_ids})
+      data = json_response(resp, 200)["data"]
+      assert 2 == length(data)
+
+      Enum.each(data, fn %{"user_id" => user_id} ->
+        assert user_id in [user_id1, user_id2]
+      end)
+    end
+
+    test "list apps by combined params" do
+      %{id: user_id1} = insert(:user)
+      %{id: user_id2} = insert(:user)
+      %{id: client_id1} = insert(:client)
+      %{id: client_id2} = insert(:client)
+      %{id: client_id3, name: name} = insert(:client)
+
+      insert(:app, user_id: user_id1)
+      insert(:app, user_id: user_id2)
+      insert(:app, client_id: client_id1)
+      insert(:app, client_id: client_id2)
+      insert(:app, client_id: client_id3)
+
+      prefix = "user-"
+      user_ids = "#{prefix}#{user_id1},#{prefix}#{user_id2}"
+
+      prefix = "client-"
+      client_ids = "#{prefix}#{client_id1},#{prefix}#{client_id2}"
+
+      prefix = "client_name-"
+      client_names = "#{prefix}#{name}"
+
+      conn = build_conn()
+
+      resp =
+        conn
+        |> get(app_path(conn, :index), %{
+          "user_ids" => user_ids,
+          "client_ids" => client_ids,
+          "client_names" => client_names,
+          "page_size" => "3",
+          "page" => "2"
+        })
+        |> json_response(200)
+
+      assert 2 == length(resp["data"])
+
+      assert %{
+               "page_number" => 2,
+               "page_size" => 3,
+               "total_entries" => 5,
+               "total_pages" => 2
+             } = resp["paging"]
     end
   end
 
