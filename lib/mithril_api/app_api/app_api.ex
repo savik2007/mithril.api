@@ -18,12 +18,12 @@ defmodule Mithril.AppAPI do
     |> search_apps(params)
   end
 
-  def search_apps(%Ecto.Changeset{valid?: true}, params) do
+  def search_apps(%Ecto.Changeset{valid?: true}, %{"user_id" => user_id} = params) do
     search_params =
       params
-      |> Map.take(~w(user_ids client_ids client_names))
+      |> Map.take(~w(client_ids client_names))
       |> Enum.map(fn {k, v} -> convert_search_param(k, v) end)
-      |> Enum.into(%{})
+      |> Enum.into(%{"user_id" => user_id})
 
     App
     |> preload(:client)
@@ -38,13 +38,17 @@ defmodule Mithril.AppAPI do
   defp apply_filters(query, params) when map_size(params) > 0 do
     ids = get_search_param(params, "client_ids")
     names = get_search_param(params, "client_names")
-    user_ids = get_search_param(params, "user_ids")
+    user_id = params["user_id"]
 
     query =
       query
-      |> join(:left, [a], c in assoc(a, :client))
-      |> join(:left, [a], u in User, u.id == a.user_id)
-      |> where([_, c, u], c.id in ^ids or u.id in ^user_ids)
+      |> join(:inner, [a], c in assoc(a, :client))
+      |> join(:inner, [a], u in User, u.id == a.user_id and u.id == ^user_id)
+
+    query =
+      Enum.reduce(ids, query, fn id, query ->
+        or_where(query, [_, c, _], c.id == ^id)
+      end)
 
     Enum.reduce(names, query, fn value, query ->
       or_where(query, [_, c, _], ilike(c.name, ^(value <> "%")))

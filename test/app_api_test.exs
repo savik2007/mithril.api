@@ -10,8 +10,8 @@ defmodule Mithril.AppAPITest do
   @invalid_attrs %{scope: nil}
 
   test "list_apps/1 returns all apps" do
-    insert(:app)
-    %Page{entries: apps} = AppAPI.list_apps(%{})
+    app = insert(:app)
+    %Page{entries: apps} = AppAPI.list_apps(%{"user_id" => app.user_id})
 
     schema =
       "specs/json_schemas/apps.json"

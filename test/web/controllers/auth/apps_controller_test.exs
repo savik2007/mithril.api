@@ -128,7 +128,9 @@ defmodule Mithril.OAuth.AppControllerTest do
 
   test "incorrectly crafted body is still treated nicely", %{conn: conn} do
     assert_error_sent(400, fn ->
-      post(conn, "/oauth/apps/authorize", Poison.encode!(%{"scope" => "legal_entity:read"}))
+      conn
+      |> put_req_header("x-consumer-id", Ecto.UUID.generate())
+      |> post("/oauth/apps/authorize", Poison.encode!(%{"scope" => "legal_entity:read"}))
     end)
   end
 
