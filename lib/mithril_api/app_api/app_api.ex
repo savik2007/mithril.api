@@ -66,6 +66,7 @@ defmodule Mithril.AppAPI do
     param
     |> String.split(",")
     |> Enum.map(&(&1 |> String.split(prefix) |> Enum.at(1)))
+    |> Enum.filter(&(!is_nil(&1)))
   end
 
   def get_app!(id) do

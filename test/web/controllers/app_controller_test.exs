@@ -92,6 +92,19 @@ defmodule Mithril.Web.AppControllerTest do
       end)
     end
 
+    test "list apps ignore unprefixed params" do
+      name1 = "some_clinic"
+      %{id: client_id1} = insert(:client, name: name1)
+      insert(:app, client_id: client_id1)
+
+      prefix = ""
+      client_names = "#{prefix}#{name1}"
+      conn = build_conn()
+      resp = get(conn, app_path(conn, :index), %{"client_names" => client_names})
+      data = json_response(resp, 200)["data"]
+      assert 0 == length(data)
+    end
+
     test "list apps by client_ids" do
       %{id: client_id1} = insert(:client)
       %{id: client_id2} = insert(:client)
