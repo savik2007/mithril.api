@@ -2,6 +2,7 @@ defmodule Mithril.Web.AppControllerTest do
   use Mithril.Web.ConnCase
 
   alias Mithril.AppAPI.App
+  alias Ecto.UUID
 
   @create_attrs %{scope: "some scope"}
   @update_attrs %{scope: "some updated scope"}
@@ -14,11 +15,17 @@ defmodule Mithril.Web.AppControllerTest do
   describe "list all apps" do
     test "lists all entries on index", %{conn: conn} do
       client = insert(:client)
+      user = insert(:user)
+      insert(:app, client_id: client.id, user_id: user.id)
       insert(:app, client_id: client.id)
-      insert(:app, client_id: client.id)
-      insert(:app, client_id: client.id)
-      resp = conn |> get(app_path(conn, :index)) |> json_response(200)
-      assert 3 == length(resp["data"])
+
+      resp =
+        conn
+        |> put_req_header("x-consumer-id", user.id)
+        |> get(app_path(conn, :index))
+        |> json_response(200)
+
+      assert 1 == length(resp["data"])
 
       schema =
         "specs/json_schemas/apps.json"
@@ -29,35 +36,52 @@ defmodule Mithril.Web.AppControllerTest do
     end
 
     test "does not list all entries on index when limit is set", %{conn: conn} do
-      insert(:app)
-      insert(:app)
-      insert(:app)
-      conn = get(conn, app_path(conn, :index), %{page_size: 2})
-      assert 2 == length(json_response(conn, 200)["data"])
+      user = insert(:user)
+      Enum.each(1..3, fn _ -> insert(:app, user_id: user.id) end)
+
+      resp =
+        conn
+        |> put_req_header("x-consumer-id", user.id)
+        |> get(app_path(conn, :index), %{page_size: 2})
+        |> json_response(200)
+
+      assert 2 == length(resp["data"])
     end
 
     test "does not list all entries on index when starting_after is set", %{conn: conn} do
-      insert(:app)
-      insert(:app)
-      app = insert(:app)
-      conn = get(conn, app_path(conn, :index), %{page_size: 2, page: 2})
-      resp = json_response(conn, 200)["data"]
+      user = insert(:user)
+      insert(:app, user_id: user.id)
+      insert(:app, user_id: user.id)
+      insert(:app, user_id: user.id)
+
+      resp =
+        conn
+        |> put_req_header("x-consumer-id", user.id)
+        |> get(app_path(conn, :index), %{page_size: 2, page: 2})
+        |> json_response(200)
+
+      resp = resp["data"]
       assert 1 == length(resp)
-      assert app.id == Map.get(hd(resp), "id")
     end
 
     test "list apps by client_names" do
+      user = insert(:user)
       %{name: name1, id: client_id1} = insert(:client)
       %{name: name2, id: client_id2} = insert(:client)
       %{id: client_id3} = insert(:client)
-      insert(:app, client_id: client_id1)
-      insert(:app, client_id: client_id2)
-      insert(:app, client_id: client_id3)
+      insert(:app, client_id: client_id1, user_id: user.id)
+      insert(:app, client_id: client_id2, user_id: user.id)
+      insert(:app, client_id: client_id3, user_id: user.id)
 
       prefix = "client_name-"
       client_names = "#{prefix}#{name1},#{prefix}#{name2}"
       conn = build_conn()
-      resp = get(conn, app_path(conn, :index), %{"client_names" => client_names})
+
+      resp =
+        conn
+        |> put_req_header("x-consumer-id", user.id)
+        |> get(app_path(conn, :index), %{"client_names" => client_names})
+
       data = json_response(resp, 200)["data"]
       assert 2 == length(data)
 
@@ -70,12 +94,13 @@ defmodule Mithril.Web.AppControllerTest do
       name1 = "some_clinic"
       name2 = "some_other_clinic"
       name3 = "whatever_clinic"
+      user = insert(:user)
       %{id: client_id1} = insert(:client, name: name1)
       %{id: client_id2} = insert(:client, name: name2)
       %{id: client_id3} = insert(:client, name: name3)
-      insert(:app, client_id: client_id1)
-      insert(:app, client_id: client_id2)
-      insert(:app, client_id: client_id3)
+      insert(:app, client_id: client_id1, user_id: user.id)
+      insert(:app, client_id: client_id2, user_id: user.id)
+      insert(:app, client_id: client_id3, user_id: user.id)
 
       name1 = String.slice(name1, 0, 6)
       name2 = String.slice(name2, 0, 6)
@@ -83,7 +108,12 @@ defmodule Mithril.Web.AppControllerTest do
       prefix = "client_name-"
       client_names = "#{prefix}#{name1},#{prefix}#{name2},#{prefix}#{name3}"
       conn = build_conn()
-      resp = get(conn, app_path(conn, :index), %{"client_names" => client_names})
+
+      resp =
+        conn
+        |> put_req_header("x-consumer-id", user.id)
+        |> get(app_path(conn, :index), %{"client_names" => client_names})
+
       data = json_response(resp, 200)["data"]
       assert 2 == length(data)
 
@@ -106,17 +136,23 @@ defmodule Mithril.Web.AppControllerTest do
     end
 
     test "list apps by client_ids" do
+      user = insert(:user)
       %{id: client_id1} = insert(:client)
       %{id: client_id2} = insert(:client)
       %{id: client_id3} = insert(:client)
-      insert(:app, client_id: client_id1)
-      insert(:app, client_id: client_id2)
-      insert(:app, client_id: client_id3)
+      insert(:app, client_id: client_id1, user_id: user.id)
+      insert(:app, client_id: client_id2, user_id: user.id)
+      insert(:app, client_id: client_id3, user_id: user.id)
 
       prefix = "client-"
       client_ids = "#{prefix}#{client_id1},#{prefix}#{client_id2}"
       conn = build_conn()
-      resp = get(conn, app_path(conn, :index), %{"client_ids" => client_ids})
+
+      resp =
+        conn
+        |> put_req_header("x-consumer-id", user.id)
+        |> get(app_path(conn, :index), %{"client_ids" => client_ids})
+
       data = json_response(resp, 200)["data"]
       assert 2 == length(data)
 
@@ -125,7 +161,7 @@ defmodule Mithril.Web.AppControllerTest do
       end)
     end
 
-    test "list apps by user_ids" do
+    test "list apps by user" do
       %{id: user_id1} = insert(:user)
       %{id: user_id2} = insert(:user)
       %{id: user_id3} = insert(:user)
@@ -136,57 +172,58 @@ defmodule Mithril.Web.AppControllerTest do
       prefix = "user-"
       user_ids = "#{prefix}#{user_id1},#{prefix}#{user_id2}"
       conn = build_conn()
-      resp = get(conn, app_path(conn, :index), %{"user_ids" => user_ids})
-      data = json_response(resp, 200)["data"]
-      assert 2 == length(data)
 
-      Enum.each(data, fn %{"user_id" => user_id} ->
-        assert user_id in [user_id1, user_id2]
-      end)
+      resp =
+        conn
+        |> put_req_header("x-consumer-id", user_id1)
+        |> get(app_path(conn, :index), %{"user_ids" => user_ids})
+        |> json_response(200)
+
+      data = resp["data"]
+      assert [%{"user_id" => ^user_id1}] = data
     end
 
     test "list apps by combined params" do
       %{id: user_id1} = insert(:user)
       %{id: user_id2} = insert(:user)
-      %{id: client_id1} = insert(:client)
-      %{id: client_id2} = insert(:client)
-      %{id: client_id3, name: name} = insert(:client)
+
+      %{id: client_id1, name: name1} = insert(:client)
+      %{id: client_id2, name: name2} = insert(:client)
+      %{id: client_id3, name: name3} = insert(:client)
 
       insert(:app, user_id: user_id1)
       insert(:app, user_id: user_id2)
-      insert(:app, client_id: client_id1)
-      insert(:app, client_id: client_id2)
-      insert(:app, client_id: client_id3)
 
-      prefix = "user-"
-      user_ids = "#{prefix}#{user_id1},#{prefix}#{user_id2}"
+      insert(:app, client_id: client_id1, user_id: user_id1)
+      insert(:app, client_id: client_id2, user_id: user_id1)
+      insert(:app, client_id: client_id3, user_id: user_id1)
 
       prefix = "client-"
       client_ids = "#{prefix}#{client_id1},#{prefix}#{client_id2}"
 
       prefix = "client_name-"
-      client_names = "#{prefix}#{name}"
+      client_names = "#{prefix}#{name1},#{prefix}#{name2},#{prefix}#{name3}"
 
       conn = build_conn()
 
       resp =
         conn
+        |> put_req_header("x-consumer-id", user_id1)
         |> get(app_path(conn, :index), %{
-          "user_ids" => user_ids,
           "client_ids" => client_ids,
           "client_names" => client_names,
-          "page_size" => "3",
+          "page_size" => "1",
           "page" => "2"
         })
         |> json_response(200)
 
-      assert 2 == length(resp["data"])
+      assert 1 == length(resp["data"])
 
       assert %{
                "page_number" => 2,
-               "page_size" => 3,
-               "total_entries" => 5,
-               "total_pages" => 2
+               "page_size" => 1,
+               "total_entries" => 3,
+               "total_pages" => 3
              } = resp["paging"]
     end
   end
@@ -196,10 +233,20 @@ defmodule Mithril.Web.AppControllerTest do
     client = insert(:client)
 
     attrs = Map.merge(@create_attrs, %{user_id: user.id, client_id: client.id})
-    conn = post(conn, app_path(conn, :create), app: attrs)
-    assert %{"id" => id} = json_response(conn, 201)["data"]
 
-    resp = conn |> get(app_path(conn, :show, id)) |> json_response(200)
+    resp =
+      conn
+      |> put_req_header("x-consumer-id", user.id)
+      |> post(app_path(conn, :create), app: attrs)
+      |> json_response(201)
+
+    assert %{"id" => id} = resp["data"]
+
+    resp =
+      conn
+      |> put_req_header("x-consumer-id", user.id)
+      |> get(app_path(conn, :show, id))
+      |> json_response(200)
 
     schema =
       "specs/json_schemas/app.json"
@@ -210,17 +257,33 @@ defmodule Mithril.Web.AppControllerTest do
   end
 
   test "does not create app and renders errors when data is invalid", %{conn: conn} do
-    conn = post(conn, app_path(conn, :create), app: @invalid_attrs)
-    assert json_response(conn, 422)["errors"] != %{}
+    resp =
+      conn
+      |> put_req_header("x-consumer-id", UUID.generate())
+      |> post(app_path(conn, :create), app: @invalid_attrs)
+      |> json_response(422)
+
+    assert resp["errors"] != %{}
   end
 
   test "updates chosen app and renders app when data is valid", %{conn: conn} do
+    user = insert(:user)
     client = insert(:client)
-    %App{id: id} = app = insert(:app, client_id: client.id)
-    conn = put(conn, app_path(conn, :update, app), app: @update_attrs)
-    assert %{"id" => ^id} = json_response(conn, 200)["data"]
+    %App{id: id} = app = insert(:app, client_id: client.id, user_id: user.id)
 
-    resp = conn |> get(app_path(conn, :show, id)) |> json_response(200)
+    resp =
+      conn
+      |> put_req_header("x-consumer-id", user.id)
+      |> put(app_path(conn, :update, app), app: @update_attrs)
+      |> json_response(200)
+
+    assert %{"id" => ^id} = resp["data"]
+
+    resp =
+      conn
+      |> put_req_header("x-consumer-id", user.id)
+      |> get(app_path(conn, :show, id))
+      |> json_response(200)
 
     schema =
       "specs/json_schemas/app.json"
@@ -232,8 +295,14 @@ defmodule Mithril.Web.AppControllerTest do
 
   test "does not update chosen app and renders errors when data is invalid", %{conn: conn} do
     app = insert(:app)
-    conn = put(conn, app_path(conn, :update, app), app: @invalid_attrs)
-    assert json_response(conn, 422)["errors"] != %{}
+
+    resp =
+      conn
+      |> put_req_header("x-consumer-id", app.user_id)
+      |> put(app_path(conn, :update, app), app: @invalid_attrs)
+      |> json_response(422)
+
+    assert resp["errors"] != %{}
   end
 
   test "deletes chosen app and expire dependent tokens", %{conn: conn} do
@@ -242,11 +311,14 @@ defmodule Mithril.Web.AppControllerTest do
     %{value: token_value_deleted} = insert(:token, user_id: app.user_id, details: %{client_id: app.client_id})
 
     conn
+    |> put_req_header("x-consumer-id", app.user_id)
     |> delete(app_path(conn, :delete, app))
     |> response(204)
 
     assert_error_sent(404, fn ->
-      get(conn, app_path(conn, :show, app))
+      conn
+      |> put_req_header("x-consumer-id", app.user_id)
+      |> get(app_path(conn, :show, app))
     end)
 
     conn
@@ -259,10 +331,11 @@ defmodule Mithril.Web.AppControllerTest do
   end
 
   test "deletes apps and expire tokens by client_id", %{conn: conn} do
-    # app 1
-    %{id: app_id_1} = insert(:app)
-    # app 2
     user = insert(:user)
+
+    # app 1
+    %{id: app_id_1} = insert(:app, user_id: user.id)
+    # app 2
     client_1 = insert(:client)
     insert(:app, user_id: user.id, client_id: client_1.id)
     %{value: token_value_deleted} = insert(:token, user_id: user.id, details: %{client_id: client_1.id})
@@ -271,11 +344,13 @@ defmodule Mithril.Web.AppControllerTest do
     %{id: app_id_2} = insert(:app, user_id: user.id, client_id: client_2.id)
     %{value: token_value} = insert(:token, user_id: user.id, details: %{client_id: client_2.id})
 
-    conn = delete(conn, user_app_path(conn, :delete_by_user, user.id), client_id: client_1.id)
-    assert response(conn, 204)
+    conn
+    |> delete(user_app_path(conn, :delete_by_user, user.id), client_id: client_1.id)
+    |> response(204)
 
     data =
       conn
+      |> put_req_header("x-consumer-id", user.id)
       |> get(app_path(conn, :index))
       |> json_response(200)
       |> Map.get("data")

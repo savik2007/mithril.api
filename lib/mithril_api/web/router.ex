@@ -18,6 +18,15 @@ defmodule MithrilWeb.Router do
     plug(:put_secure_browser_headers)
   end
 
+  pipeline :api_consumer_id do
+    plug(:header_required, "x-consumer-id")
+    plug(:put_user_id_header)
+  end
+
+  pipeline :api_key do
+    plug(:put_api_key_header)
+  end
+
   pipeline :jwt do
     plug(Guardian.Plug.Pipeline, module: Mithril.Guardian, error_handler: Mithril.Web.FallbackController)
   end
@@ -39,7 +48,11 @@ defmodule MithrilWeb.Router do
     # generate nonce for Sign in
     post("/nonce", OAuth.NonceController, :nonce)
 
-    post("/apps/authorize", OAuth.AppController, :authorize)
+    scope "/apps" do
+      pipe_through([:api_consumer_id, :api_key])
+      post("/authorize", OAuth.AppController, :authorize)
+    end
+
     post("/tokens", OAuth.TokenController, :create)
     post("/tokens/actions/change_password", OAuth.TokenController, :create_change_pwd_token)
 
@@ -110,10 +123,14 @@ defmodule MithrilWeb.Router do
 
     delete("/tokens", TokenController, :delete_by_user_ids)
 
-    resources("/apps", AppController, except: [:new, :edit])
     resources("/client_types", ClientTypeController, except: [:new, :edit])
     resources("/roles", RoleController, except: [:new, :edit])
     get("/otps", OTPController, :index)
+
+    scope "/apps" do
+      pipe_through([:api, :api_consumer_id])
+      resources("/", AppController, except: [:new, :edit])
+    end
   end
 
   defp handle_errors(%Plug.Conn{status: 500} = conn, %{kind: kind, reason: reason, stack: stacktrace}) do

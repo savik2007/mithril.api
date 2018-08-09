@@ -28,9 +28,9 @@ defmodule Mithril.Web do
   def view do
     quote do
       # Import convenience functions from controllers
+      import MithrilWeb.Router.Helpers
       import Phoenix.View
       import Phoenix.Controller, only: [view_module: 1]
-      import MithrilWeb.Router.Helpers
 
       @view_resource String.to_atom(Phoenix.Naming.resource_name(__MODULE__, "View"))
 
@@ -44,6 +44,7 @@ defmodule Mithril.Web do
       use Phoenix.Router
       import Plug.Conn
       import Phoenix.Controller
+      import Mithril.Plugs.Headers
     end
   end
 
