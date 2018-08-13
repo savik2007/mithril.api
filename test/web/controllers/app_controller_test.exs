@@ -124,14 +124,20 @@ defmodule Mithril.Web.AppControllerTest do
 
     test "list apps ignore unprefixed params" do
       name1 = "some_clinic"
-      %{id: client_id1} = insert(:client, name: name1)
-      insert(:app, client_id: client_id1)
+      client = insert(:client, name: name1)
+      insert(:app, client_id: client.id)
 
       prefix = ""
       client_names = "#{prefix}#{name1}"
       conn = build_conn()
-      resp = get(conn, app_path(conn, :index), %{"client_names" => client_names})
-      data = json_response(resp, 200)["data"]
+
+      resp =
+        conn
+        |> put_req_header("x-consumer-id", client.user_id)
+        |> get(app_path(conn, :index), %{"client_names" => client_names})
+        |> json_response(200)
+
+      data = resp["data"]
       assert 0 == length(data)
     end
 
