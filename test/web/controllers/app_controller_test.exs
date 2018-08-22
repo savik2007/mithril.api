@@ -167,6 +167,22 @@ defmodule Mithril.Web.AppControllerTest do
       end)
     end
 
+    test "list apps by client_ids with not uuid" do
+      user = insert(:user)
+
+      Enum.each(1..4, fn _ ->
+        %{id: client_id} = insert(:client)
+        insert(:app, client_id: client_id, user_id: user.id)
+      end)
+
+      conn = build_conn()
+
+      conn
+      |> put_req_header("x-consumer-id", user.id)
+      |> get(app_path(conn, :index), %{"client_ids" => "client-wrong_uuid"})
+      |> json_response(404)
+    end
+
     test "list apps by user" do
       %{id: user_id1} = insert(:user)
       %{id: user_id2} = insert(:user)

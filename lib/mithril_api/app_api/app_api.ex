@@ -19,16 +19,18 @@ defmodule Mithril.AppAPI do
   end
 
   def search_apps(%Ecto.Changeset{valid?: true}, %{"user_id" => user_id} = params) do
-    search_params =
-      params
-      |> Map.take(~w(client_ids client_names))
-      |> Enum.map(fn {k, v} -> convert_search_param(k, v) end)
-      |> Enum.into(%{"user_id" => user_id})
+    with %{} = search_params <-
+           params
+           |> Map.take(~w(client_ids client_names))
+           |> Enum.map(fn {k, v} -> convert_search_param(k, v) end)
+           |> validate_query_params() do
+      search_params = Map.put(search_params, "user_id", user_id)
 
-    App
-    |> preload(:client)
-    |> apply_filters(search_params)
-    |> Repo.paginate(params)
+      App
+      |> preload(:client)
+      |> apply_filters(search_params)
+      |> Repo.paginate(params)
+    end
   end
 
   def search_apps(%Ecto.Changeset{valid?: false} = changeset, _params) do
@@ -61,9 +63,20 @@ defmodule Mithril.AppAPI do
     Map.get(params, param_name, [])
   end
 
+  defp validate_query_params(params) do
+    Enum.reduce_while(params, %{}, fn
+      {true, name, values}, %{} = params ->
+        {:cont, Map.put(params, name, values)}
+
+      _, _ ->
+        {:halt, {:error, :not_found}}
+    end)
+  end
+
   defp convert_search_param(param_name, value) do
-    new_value = get_comma_params(value, AppSearch.prefix(param_name))
-    {param_name, new_value}
+    value
+    |> get_comma_params(AppSearch.prefix(param_name))
+    |> validate_param(param_name)
   end
 
   defp get_comma_params(param, prefix) do
@@ -72,6 +85,13 @@ defmodule Mithril.AppAPI do
     |> Enum.map(&(&1 |> String.split(prefix) |> Enum.at(1)))
     |> Enum.filter(&(!is_nil(&1)))
   end
+
+  defp validate_param(values, "client_ids") do
+    valid? = not Enum.any?(values, fn uuid -> :error == Ecto.UUID.cast(uuid) end)
+    {valid?, "client_ids", values}
+  end
+
+  defp validate_param(values, param_name), do: {true, param_name, values}
 
   def get_app!(id) do
     App
