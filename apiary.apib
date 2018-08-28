@@ -291,10 +291,9 @@ After creating Approval user should be redirected to `redirect_url` with `code` 
             + code: 201 (number)
         + data (`Approval_Response`)
 
-### Get Approvals [GET /admin/apps{?user_ids,client_ids,client_names,ci,page_number,page_size}]
+### Get Approvals [GET /admin/apps{?client_ids,client_names,ci,page_number,page_size}]
 
 + Parameters
-    + user_ids: `user-1380df72-275a-11e7-93ae-92361f002671,user-1380e1de-275a-11e7-93ae-92361f002671` (string, optional) - List of User ID's separated by comma.
     + `client_names`: `client_name-Clinic N1,client_name-Clinic N2`(string, optional) - List of Client name's separated by comma.
     + client_ids: `client-1380df72-275a-11e7-93ae-92361f002671,client-1380e1de-275a-11e7-93ae-92361f002671` (string, optional) - List of Client ID's separated by comma.
     + `page_number`: 2 (number) - Page number.    
