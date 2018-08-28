@@ -50,6 +50,11 @@
     "scope": "declaration:read employee:read legal_entity:read legal_entity:nhs_verify legal_entity:deactivate declaration:approve user:request_factor user:approve_factor"
   },
   {
+    "name": "NHS ADMIN SIGNER",
+    "seed?": true,
+    "scope": "contract_request:create contract_request:update contract_request:read contract_request:sign contract_request:terminate contract:read employee:read contract:terminate"
+  },
+  {
     "name": "OWNER",
     "seed?": false,
     "scope": "client:read declaration:read declaration_request:approve declaration_request:read declaration_request:reject declaration_request:write division:activate division:deactivate division:details division:read division:write employee:deactivate employee:details employee:read employee:write employee_request:approve employee_request:read employee_request:reject employee_request:write legal_entity:read otp:read otp:write person:read reimbursement_report:read secret:refresh"
@@ -76,4 +81,3 @@
     "scope": "cabinet:read employee_request:approve employee_request:reject user:request_factor user:approve_factor user:change_password app:authorize declaration_request:write declaration_request:read declaration_request:terminate declaration:read person:read"
   }
 ]
-
