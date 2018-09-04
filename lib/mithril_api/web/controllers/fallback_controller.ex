@@ -86,6 +86,8 @@ defmodule Mithril.Web.FallbackController do
     |> render(ValidationError, :"422", changeset)
   end
 
+  def call(conn, {:error, %Ecto.Changeset{} = changeset, _status_code}), do: call(conn, {:error, changeset})
+
   def call(conn, {:error, {:unprocessable_entity, error}}) do
     conn
     |> put_status(:unprocessable_entity)
