@@ -4,8 +4,11 @@ defmodule Mithril.ClientAPI do
 
   import Ecto.{Query, Changeset}, warn: false
 
+  alias Ecto.UUID
   alias Mithril.ClientAPI.Client
   alias Mithril.ClientAPI.ClientSearch
+  alias Mithril.ClientAPI.Connection
+  alias Mithril.ClientAPI.ConnectionSearch
   alias Mithril.Repo
 
   @access_type_direct "DIRECT"
@@ -106,12 +109,6 @@ defmodule Mithril.ClientAPI do
     client_changeset(client, %{})
   end
 
-  def refresh_secret(%Client{} = client) do
-    client
-    |> change(%{secret: SecureRandom.urlsafe_base64()})
-    |> Repo.update()
-  end
-
   defp client_changeset(%ClientSearch{} = client, attrs) do
     cast(client, attrs, ClientSearch.__schema__(:fields))
   end
@@ -147,5 +144,53 @@ defmodule Mithril.ClientAPI do
       _ ->
         changeset
     end
+  end
+
+  # connections
+
+  def list_connections(params) do
+    %ConnectionSearch{}
+    |> ConnectionSearch.changeset(params)
+    |> search(params, Connection)
+  end
+
+  def get_connection!(id), do: Repo.get!(Connection, id)
+
+  def get_connection_by(attrs), do: Repo.get_by(Connection, attrs)
+  def get_connection_by!(attrs), do: Repo.get_by!(Connection, attrs)
+
+  def upsert_connection(client_id, consumer_id, attrs) do
+    with {:ok, _} <- UUID.cast(client_id),
+         {:ok, _} <- UUID.cast(consumer_id),
+         %Client{} = client <- get_client(client_id) do
+      case get_connection_by(%{consumer_id: consumer_id, client_id: client.id}) do
+        nil -> attrs |> create_connection() |> Tuple.append(:created)
+        %Connection{} = connection -> connection |> update_connection(attrs) |> Tuple.append(:ok)
+      end
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
+  def create_connection(attrs) do
+    %Connection{}
+    |> Connection.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  def update_connection(%Connection{} = connection, attrs) do
+    connection
+    |> Connection.changeset(attrs)
+    |> Repo.update()
+  end
+
+  def refresh_connection_secret(%Connection{} = connection) do
+    connection
+    |> change(%{secret: SecureRandom.urlsafe_base64()})
+    |> Repo.update()
+  end
+
+  def delete_connection(%Connection{} = connection) do
+    Repo.delete(connection)
   end
 end

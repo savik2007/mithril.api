@@ -4,6 +4,23 @@ defmodule Mithril.Factory do
   use ExMachina.Ecto, repo: Mithril.Repo
 
   alias Ecto.UUID
+  alias Comeonin.Bcrypt
+  alias Mithril.AppAPI.App
+  alias Mithril.Authentication
+  alias Mithril.Authentication.Factor
+  alias Mithril.Authorization.LoginHistory
+  alias Mithril.ClientAPI
+  alias Mithril.ClientAPI.Client
+  alias Mithril.ClientAPI.Connection
+  alias Mithril.ClientTypeAPI.ClientType
+  alias Mithril.GlobalUserRoleAPI.GlobalUserRole
+  alias Mithril.OTP.Schema, as: OTP
+  alias Mithril.RoleAPI.Role
+  alias Mithril.TokenAPI.Token
+  alias Mithril.UserAPI.User
+  alias Mithril.UserAPI.User.LoginHstr
+  alias Mithril.UserAPI.User.PrivSettings
+  alias Mithril.UserRoleAPI.UserRole
 
   def create_code_grant_token(client, user, scope \\ "app:authorize", expires_at \\ 2_000_000_000) do
     insert(
@@ -54,7 +71,7 @@ defmodule Mithril.Factory do
     user = insert(:user)
     client = insert(:client)
 
-    %Mithril.TokenAPI.Token{
+    %Token{
       details: %{
         "scope" => "app:authorize",
         "client_id" => client.id,
@@ -72,14 +89,14 @@ defmodule Mithril.Factory do
     user = insert(:user)
     client_type = insert(:client_type)
 
-    %Mithril.ClientAPI.Client{
+    %Client{
       name: sequence("ClinicN"),
       user_id: user.id,
       client_type_id: client_type.id,
       redirect_uri: "http://localhost",
       secret: sequence("secret-"),
       priv_settings: %{
-        "access_type" => Mithril.ClientAPI.access_type(:direct)
+        "access_type" => ClientAPI.access_type(:direct)
       },
       is_blocked: false,
       block_reason: nil
@@ -87,20 +104,32 @@ defmodule Mithril.Factory do
   end
 
   def client_type_factory do
-    %Mithril.ClientTypeAPI.ClientType{
+    %ClientType{
       name: sequence("some client_type name-"),
       scope: "some scope"
     }
   end
 
+  def connection_factory do
+    client = build(:client)
+    consumer = build(:client)
+
+    %Connection{
+      client: client,
+      consumer: consumer,
+      redirect_uri: "http://localhost",
+      secret: sequence("secret-")
+    }
+  end
+
   def user_factory do
-    %Mithril.UserAPI.User{
+    %User{
       email: sequence("mail@example.com-"),
       tax_id: sequence("1234234"),
-      password: Comeonin.Bcrypt.hashpwsalt("Somepassword1"),
+      password: Bcrypt.hashpwsalt("Somepassword1"),
       password_set_at: NaiveDateTime.utc_now(),
       settings: %{},
-      priv_settings: %Mithril.UserAPI.User.PrivSettings{
+      priv_settings: %{
         login_hstr: [],
         otp_error_counter: 0
       },
@@ -112,22 +141,22 @@ defmodule Mithril.Factory do
   end
 
   def login_history_factory do
-    %Mithril.UserAPI.User.LoginHstr{
-      type: Mithril.Authorization.LoginHistory.type(:otp),
+    %LoginHstr{
+      type: LoginHistory.type(:otp),
       is_success: true,
       time: ~N[2017-11-21 23:00:07]
     }
   end
 
   def role_factory do
-    %Mithril.RoleAPI.Role{
+    %Role{
       name: sequence("some name-"),
       scope: "some scope"
     }
   end
 
   def user_role_factory do
-    %Mithril.UserRoleAPI.UserRole{
+    %UserRole{
       user_id: insert(:user).id,
       client_id: insert(:client).id,
       role_id: insert(:role).id
@@ -135,14 +164,14 @@ defmodule Mithril.Factory do
   end
 
   def global_user_role_factory do
-    %Mithril.GlobalUserRoleAPI.GlobalUserRole{
+    %GlobalUserRole{
       user_id: insert(:user).id,
       role_id: insert(:role).id
     }
   end
 
   def app_factory do
-    %Mithril.AppAPI.App{
+    %App{
       scope: "some scope",
       user_id: insert(:user).id,
       client_id: insert(:client).id
@@ -150,8 +179,8 @@ defmodule Mithril.Factory do
   end
 
   def authentication_factor_factory do
-    %Mithril.Authentication.Factor{
-      type: Mithril.Authentication.type(:sms),
+    %Factor{
+      type: Authentication.type(:sms),
       factor: "+380901112233",
       is_active: true,
       user_id: insert(:user).id
@@ -166,7 +195,7 @@ defmodule Mithril.Factory do
       |> DateTime.from_unix!()
       |> DateTime.to_string()
 
-    %Mithril.OTP.Schema{
+    %OTP{
       key: sequence("some-key-"),
       code: 1234,
       code_expired_at: expires,

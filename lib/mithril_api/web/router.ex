@@ -113,7 +113,14 @@ defmodule MithrilWeb.Router do
 
     resources "/clients", ClientController, except: [:new, :edit] do
       get("/details", ClientController, :details, as: :details)
-      patch("/refresh_secret", ClientController, :refresh_secret, as: :refresh_secret)
+
+      # connections
+      get("/connections", ConnectionController, :index)
+      get("/connections/:id", ConnectionController, :show)
+      patch("/connections/:id", ConnectionController, :update)
+      put("/connections", ConnectionController, :upsert)
+      patch("/connections/:id/actions/refresh_secret", ConnectionController, :refresh_secret)
+      delete("/connections/:id", ConnectionController, :delete)
     end
 
     resources "/tokens", TokenController, except: [:new, :edit] do
