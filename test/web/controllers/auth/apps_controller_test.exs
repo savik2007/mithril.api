@@ -1,7 +1,10 @@
 defmodule Mithril.OAuth.AppControllerTest do
   use Mithril.Web.ConnCase
+  alias Mithril.AppAPI
+  alias Mithril.Clients.Client
+  alias Mithril.UserRoleAPI
 
-  @direct Mithril.ClientAPI.access_type(:direct)
+  @direct Client.access_type(:direct)
   @trusted_client_id "30074b6e-fbab-4dc1-9d37-88c21dab1847"
 
   setup %{conn: conn} do
@@ -10,18 +13,13 @@ defmodule Mithril.OAuth.AppControllerTest do
 
   test "successfully approves new client request & issues a code grant", %{conn: conn} do
     client_type = insert(:client_type, scope: "legal_entity:read legal_entity:write")
-
-    client =
-      insert(
-        :client,
-        redirect_uri: "http://some_host.com:3000/",
-        client_type_id: client_type.id
-      )
+    client = insert(:client, client_type: client_type)
+    connection = insert(:connection, redirect_uri: "http://some_host.com:3000/", client: client)
 
     user = insert(:user)
     user_role = insert(:role, scope: "legal_entity:read legal_entity:write")
-    Mithril.UserRoleAPI.create_user_role(%{user_id: user.id, role_id: user_role.id, client_id: client.id})
-    redirect_uri = "#{client.redirect_uri}path?param=1"
+    UserRoleAPI.create_user_role(%{user_id: user.id, role_id: user_role.id, client_id: client.id})
+    redirect_uri = "#{connection.redirect_uri}path?param=1"
 
     request = %{
       app: %{
@@ -53,7 +51,7 @@ defmodule Mithril.OAuth.AppControllerTest do
 
     assert "http://some_host.com:3000/path?code=#{result["value"]}&param=1" == header
 
-    app = Mithril.AppAPI.get_app_by(user_id: user.id, client_id: client.id)
+    app = AppAPI.get_app_by(user_id: user.id, client_id: client.id)
 
     assert app.user_id == user.id
     assert app.client_id == client.id
@@ -62,19 +60,14 @@ defmodule Mithril.OAuth.AppControllerTest do
 
   test "successfully updates existing approval with more scopes", %{conn: conn} do
     client_type = insert(:client_type, scope: "legal_entity:read legal_entity:write")
-
-    client =
-      insert(
-        :client,
-        redirect_uri: "http://some_host.com:3000/",
-        client_type_id: client_type.id
-      )
-
+    client = insert(:client, client_type: client_type)
+    connection = insert(:connection, redirect_uri: "http://some_host.com:3000/", client: client)
     user = insert(:user)
     user_role = insert(:role, scope: "legal_entity:read legal_entity:write")
-    Mithril.UserRoleAPI.create_user_role(%{user_id: user.id, role_id: user_role.id, client_id: client.id})
 
-    Mithril.AppAPI.create_app(%{
+    UserRoleAPI.create_user_role(%{user_id: user.id, role_id: user_role.id, client_id: client.id})
+
+    AppAPI.create_app(%{
       user_id: user.id,
       client_id: client.id,
       scope: "legal_entity:read"
@@ -83,7 +76,7 @@ defmodule Mithril.OAuth.AppControllerTest do
     request = %{
       app: %{
         client_id: client.id,
-        redirect_uri: client.redirect_uri,
+        redirect_uri: connection.redirect_uri,
         scope: "legal_entity:write"
       }
     }
@@ -98,7 +91,7 @@ defmodule Mithril.OAuth.AppControllerTest do
     assert result["name"] == "authorization_code"
     assert result["details"]["scope_request"] == "legal_entity:write"
 
-    app = Mithril.AppAPI.get_app_by(user_id: user.id, client_id: client.id)
+    app = AppAPI.get_app_by(user_id: user.id, client_id: client.id)
 
     assert app.user_id == user.id
     assert app.client_id == client.id
@@ -108,21 +101,22 @@ defmodule Mithril.OAuth.AppControllerTest do
   test "client is blocked", %{conn: conn} do
     user = insert(:user)
     client = insert(:client, is_blocked: true)
+    connection = insert(:connection, redirect_uri: "http://some_host.com:3000/", client: client)
 
     request = %{
       app: %{
         client_id: client.id,
-        redirect_uri: client.redirect_uri,
+        redirect_uri: connection.redirect_uri,
         scope: "legal_entity:write"
       }
     }
 
-    conn =
+    resp =
       conn
       |> put_req_header("x-consumer-id", user.id)
       |> post("/oauth/apps/authorize", Poison.encode!(request))
+      |> json_response(401)
 
-    resp = json_response(conn, 401)
     assert %{"error" => %{"message" => "Client is blocked."}} = resp
   end
 
@@ -150,10 +144,11 @@ defmodule Mithril.OAuth.AppControllerTest do
   test "render error for empty scope with user tihout roles", %{conn: conn} do
     user = insert(:user)
     client = insert(:client, id: @trusted_client_id)
+    connection = insert(:connection, redirect_uri: "http://some_host.com:3000/", client: client)
 
     request = %{
       client_id: client.id,
-      redirect_uri: client.redirect_uri
+      redirect_uri: connection.redirect_uri
     }
 
     assert "Requested scope is empty. Scope not passed or user has no roles or global roles." =
@@ -165,13 +160,7 @@ defmodule Mithril.OAuth.AppControllerTest do
   end
 
   test "returns error when redirect uri is not whitelisted", %{conn: conn} do
-    client =
-      insert(
-        :client,
-        redirect_uri: "http://some_host.com:3000/",
-        priv_settings: %{"access_type" => @direct}
-      )
-
+    client = :client |> insert(priv_settings: %{"access_type" => @direct}) |> with_connection()
     user = insert(:user)
     user_role = insert(:role, scope: "legal_entity:read legal_entity:write")
     Mithril.UserRoleAPI.create_user_role(%{user_id: user.id, role_id: user_role.id, client_id: client.id})
@@ -200,7 +189,8 @@ defmodule Mithril.OAuth.AppControllerTest do
 
   test "validates list of available user scopes", %{conn: conn} do
     client_type = insert(:client_type, scope: "b c d")
-    client = insert(:client, client_type_id: client_type.id)
+    client = insert(:client, client_type: client_type)
+    connection = insert(:connection, redirect_uri: "http://some_host.com:3000/", client: client)
     user = insert(:user)
     user_role = insert(:role, scope: "a b c")
     Mithril.UserRoleAPI.create_user_role(%{user_id: user.id, role_id: user_role.id, client_id: client.id})
@@ -208,7 +198,7 @@ defmodule Mithril.OAuth.AppControllerTest do
     request = %{
       app: %{
         client_id: client.id,
-        redirect_uri: client.redirect_uri,
+        redirect_uri: connection.redirect_uri,
         scope: "b c d"
       }
     }
@@ -226,7 +216,8 @@ defmodule Mithril.OAuth.AppControllerTest do
 
   test "validates list of available client scopes", %{conn: conn} do
     client_type = insert(:client_type, scope: "a c d")
-    client = insert(:client, client_type_id: client_type.id)
+    client = insert(:client, client_type: client_type)
+    connection = insert(:connection, redirect_uri: "http://some_host.com:3000/", client: client)
     user = insert(:user)
     user_role = insert(:role, scope: "b c d")
     Mithril.UserRoleAPI.create_user_role(%{user_id: user.id, role_id: user_role.id, client_id: client.id})
@@ -234,7 +225,7 @@ defmodule Mithril.OAuth.AppControllerTest do
     request = %{
       app: %{
         client_id: client.id,
-        redirect_uri: client.redirect_uri,
+        redirect_uri: connection.redirect_uri,
         scope: "b c d"
       }
     }
