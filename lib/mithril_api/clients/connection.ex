@@ -1,7 +1,7 @@
-defmodule Mithril.ClientAPI.Connection do
+defmodule Mithril.Clients.Connection do
   use Ecto.Schema
   import Ecto.Changeset
-  alias Mithril.ClientAPI.Client
+  alias Mithril.Clients.Client
 
   @required ~w(redirect_uri client_id consumer_id)a
 

@@ -1,13 +1,16 @@
 defmodule Mithril.UserRoleAPI.UserRole do
   use Ecto.Schema
 
+  alias Mithril.UserAPI.User
+  alias Mithril.RoleAPI.Role
+  alias Mithril.Clients.Client
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "user_roles" do
-    field(:user_id, :binary_id)
-
-    belongs_to(:role, Mithril.RoleAPI.Role)
-    belongs_to(:client, Mithril.ClientAPI.Client)
+    belongs_to(:user, User)
+    belongs_to(:role, Role)
+    belongs_to(:client, Client)
 
     timestamps()
   end

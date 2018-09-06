@@ -6,8 +6,10 @@ defmodule Mithril.Authorization do
 
   alias Ecto.UUID
   alias Mithril.AppAPI
-  alias Mithril.ClientAPI.Client
+  alias Mithril.Clients
+  alias Mithril.Clients.Client
   alias Mithril.Error
+  alias Mithril.TokenAPI
   alias Mithril.UserAPI
   alias Mithril.UserAPI.User
   alias Mithril.Utils.RedirectUriChecker
@@ -20,7 +22,8 @@ defmodule Mithril.Authorization do
   def create_approval(params) do
     with %Ecto.Changeset{valid?: true} = changeset <- changeset(params),
          client_id <- get_change(changeset, :client_id),
-         {:ok, client} <- fetch_client(client_id),
+         {:ok, client} <- get_client(client_id),
+         :ok <- validate_client_is_blocked(client),
          # user validation
          user <- UserAPI.get_user_with_roles(get_change(changeset, :user_id), client_id),
          :ok <- validate_user_is_blocked(user),
@@ -49,13 +52,25 @@ defmodule Mithril.Authorization do
     |> validate_required(required)
   end
 
-  defp validate_redirect_uri(%{} = client, redirect_uri) do
-    if Regex.match?(RedirectUriChecker.generate_redirect_uri_regexp(client.redirect_uri), redirect_uri) do
-      :ok
-    else
-      message = "The redirection URI provided does not match a pre-registered value."
-      Error.access_denied(message)
+  def get_client(client_id) do
+    case Clients.get_client_with(client_id, [:connections, :client_type]) do
+      %Client{} = client -> {:ok, client}
+      _ -> Error.access_denied("Invalid client id.")
     end
+  end
+
+  defp validate_client_is_blocked(%Client{is_blocked: false}), do: :ok
+  defp validate_client_is_blocked(%Client{is_blocked: true}), do: Error.access_denied("Client is blocked.")
+
+  defp validate_redirect_uri(%{connections: connections}, redirect_uri) do
+    err = Error.access_denied("The redirection URI provided does not match a pre-registered value.")
+
+    Enum.reduce_while(connections, err, fn connection, acc ->
+      case Regex.match?(RedirectUriChecker.generate_redirect_uri_regexp(connection.redirect_uri), redirect_uri) do
+        true -> {:halt, :ok}
+        false -> {:cont, acc}
+      end
+    end)
   end
 
   defp validate_scope_not_empty(scope) when is_binary(scope) and byte_size(scope) > 0, do: :ok
@@ -83,7 +98,7 @@ defmodule Mithril.Authorization do
     # get grant_type from token
     grant_type = "password"
 
-    Mithril.TokenAPI.create_authorization_code(%{
+    TokenAPI.create_authorization_code(%{
       user_id: user.id,
       details: %{
         client_id: client.id,

@@ -6,9 +6,11 @@ defmodule Mithril.Error do
 
   def user_blocked(msg), do: {:error, {:access_denied, %{type: "user_blocked", message: msg}}}
 
-  def token_expired, do: {:error, {:access_denied, %{type: "token_expired", message: "Token expired"}}}
+  def token_expired, do: {:error, {:access_denied, %{type: "token_expired", message: "Token expired."}}}
 
   def token_invalid, do: {:error, {:access_denied, %{type: "token_invalid", message: "Invalid token."}}}
+
+  def token_not_found, do: {:error, {:access_denied, %{type: "token_not_found", message: "Token not found."}}}
 
   def tax_id_invalid(msg), do: {:error, {:forbidden, %{type: "tax_id_invalid", message: msg}}}
 

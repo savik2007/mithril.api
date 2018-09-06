@@ -7,7 +7,7 @@ defmodule Mithril.Authentication do
   alias Mithril.Authentication.Factors
   alias Mithril.Authentication.OTPSend
   alias Mithril.Authorization.LoginHistory
-  alias Mithril.ClientAPI
+  alias Mithril.Clients
   alias Mithril.Error
   alias Mithril.Guardian
   alias Mithril.OTP
@@ -158,7 +158,7 @@ defmodule Mithril.Authentication do
   def generate_nonce_for_client(client_id) when is_binary(client_id) do
     ttl = {Confex.fetch_env!(:mithril_api, :ttl_login), :minutes}
 
-    with %{is_blocked: false} <- ClientAPI.get_client!(client_id) do
+    with %{is_blocked: false} <- Clients.get_client!(client_id) do
       Guardian.encode_and_sign(:nonce, %{nonce: 123}, token_type: "access", ttl: ttl)
     else
       %{is_blocked: true} -> {:error, {:access_denied, "Client is blocked"}}
