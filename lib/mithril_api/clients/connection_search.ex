@@ -1,4 +1,4 @@
-defmodule Mithril.ClientAPI.ConnectionSearch do
+defmodule Mithril.Clients.ConnectionSearch do
   @moduledoc false
 
   use Ecto.Schema
@@ -13,8 +13,8 @@ defmodule Mithril.ClientAPI.ConnectionSearch do
     field(:redirect_uri, StringLike)
   end
 
-  def changeset(%ConnectionSearch{} = connection, attrs) do
-    connection
+  def changeset(%ConnectionSearch{} = schema, attrs) do
+    schema
     |> cast(attrs, ConnectionSearch.__schema__(:fields))
     |> validate_required(:client_id)
   end

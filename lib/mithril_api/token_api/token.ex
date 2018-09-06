@@ -1,6 +1,8 @@
 defmodule Mithril.TokenAPI.Token do
   use Ecto.Schema
 
+  alias Mithril.UserAPI.User
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "tokens" do
@@ -8,7 +10,8 @@ defmodule Mithril.TokenAPI.Token do
     field(:expires_at, :integer)
     field(:name, :string)
     field(:value, :string)
-    field(:user_id, :binary_id)
+
+    belongs_to(:user, User)
 
     timestamps()
   end

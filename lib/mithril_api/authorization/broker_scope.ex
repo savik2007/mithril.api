@@ -1,11 +1,11 @@
 defmodule Mithril.Authorization.BrokerScope do
-  alias Mithril.ClientAPI
-  alias Mithril.ClientAPI.Client
+  alias Mithril.Clients
+  alias Mithril.Clients.Client
   alias Mithril.Error
   alias Mithril.TokenAPI.Token
 
-  @direct ClientAPI.access_type(:direct)
-  @broker ClientAPI.access_type(:broker)
+  @direct Client.access_type(:direct)
+  @broker Client.access_type(:broker)
 
   def put_broker_scope_into_token_details(%Token{} = token, %Client{} = client, api_key) do
     case Map.get(client.priv_settings, "access_type") do
@@ -32,7 +32,7 @@ defmodule Mithril.Authorization.BrokerScope do
   defp fetch_client_by_secret({:error, _} = err), do: err
 
   defp fetch_client_by_secret(api_key) do
-    case ClientAPI.get_client_by(secret: api_key) do
+    case Clients.get_client_by(secret: api_key) do
       %Client{} = client -> client
       _ -> Error.invalid_request("API-KEY header is invalid.")
     end

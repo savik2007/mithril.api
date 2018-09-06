@@ -1,10 +1,15 @@
 defmodule Mithril.Authorization.GrantType do
   @moduledoc false
 
-  alias Mithril.ClientAPI
-  alias Mithril.ClientAPI.Client
+  alias Mithril.AppAPI
+  alias Mithril.AppAPI.App
+  alias Mithril.Clients
+  alias Mithril.Clients.Client
+  alias Mithril.Clients.Connection
   alias Mithril.ClientTypeAPI.ClientType
   alias Mithril.Error
+  alias Mithril.TokenAPI
+  alias Mithril.TokenAPI.Token
   alias Mithril.UserAPI.User
 
   @scope_app_authorize "app:authorize"
@@ -23,15 +28,33 @@ defmodule Mithril.Authorization.GrantType do
 
   def scope_app_authorize, do: @scope_app_authorize
 
-  def fetch_client(client_id) do
-    client_id
-    |> ClientAPI.get_client_with_type()
-    |> validate_client_is_blocked()
+  def get_connection(client_id, secret) do
+    case Clients.get_connection_with_client(client_id, secret) do
+      %Connection{} = connection -> {:ok, connection}
+      _ -> Error.invalid_client("Invalid client id or secret.")
+    end
   end
 
-  defp validate_client_is_blocked(%Client{is_blocked: false} = client), do: {:ok, client}
-  defp validate_client_is_blocked(%Client{is_blocked: true}), do: Error.access_denied("Client is blocked.")
-  defp validate_client_is_blocked(_), do: Error.access_denied("Invalid client id.")
+  def get_token(code, name) do
+    case TokenAPI.get_token_by(value: code, name: name) do
+      %Token{} = token -> {:ok, token}
+      _ -> Error.token_not_found()
+    end
+  end
+
+  def validate_token_expiration(token) do
+    case TokenAPI.expired?(token) do
+      true -> Error.token_expired()
+      false -> :ok
+    end
+  end
+
+  def validate_approval_authorization(token) do
+    case AppAPI.approval(token.user_id, token.details["client_id"]) do
+      %App{} = approval -> {:ok, approval}
+      _ -> Error.access_denied("Resource owner revoked access for the client.")
+    end
+  end
 
   def validate_user_is_blocked(%User{is_blocked: false}), do: :ok
   def validate_user_is_blocked(%User{is_blocked: true}), do: Error.user_blocked("User blocked.")

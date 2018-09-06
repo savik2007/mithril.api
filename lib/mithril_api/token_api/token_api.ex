@@ -5,7 +5,7 @@ defmodule Mithril.TokenAPI do
   import Ecto.{Query, Changeset}
 
   alias Mithril.Authorization.GrantType
-  alias Mithril.ClientAPI
+  alias Mithril.Clients
   alias Mithril.Error
   alias Mithril.Repo
   alias Mithril.TokenAPI
@@ -89,7 +89,7 @@ defmodule Mithril.TokenAPI do
   end
 
   def create_access_token(%User{} = user, %{"client_id" => client_id, "scope" => scope}) do
-    with client <- ClientAPI.get_client_with_type(client_id),
+    with client <- Clients.get_client_with(client_id, [:client_type]),
          :ok <- GrantType.validate_client_allowed_grant_types(client, "password"),
          :ok <- GrantType.validate_client_allowed_scope(client, scope),
          {:ok, token} <- create_access_token(user, client, scope),

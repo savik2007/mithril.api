@@ -7,7 +7,7 @@ defmodule Mithril.ClientTypeAPI do
   import Ecto.{Query, Changeset}, warn: false
   alias Mithril.Repo
 
-  alias Mithril.ClientAPI.ClientTypeSearch
+  alias Mithril.Clients.ClientTypeSearch
   alias Mithril.ClientTypeAPI.ClientType
 
   @doc """

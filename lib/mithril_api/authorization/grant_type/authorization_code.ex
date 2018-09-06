@@ -1,53 +1,59 @@
 defmodule Mithril.Authorization.GrantType.AuthorizationCode do
   @moduledoc false
 
-  alias Mithril.{Error, TokenAPI}
+  import Ecto.Changeset
+  import Mithril.Authorization.GrantType
+
+  alias Ecto.Changeset
+  alias Mithril.Clients.Client
+  alias Mithril.Error
+  alias Mithril.TokenAPI
   alias Mithril.Utils.RedirectUriChecker
 
   @authorization_code TokenAPI.token_type(:authorization_code)
 
-  def authorize(%{
-        "client_id" => client_id,
-        "client_secret" => client_secret,
-        "code" => code,
-        "redirect_uri" => redirect_uri
-      })
-      when not (is_nil(client_id) or is_nil(client_secret) or is_nil(code) or is_nil(redirect_uri)) do
-    client = Mithril.ClientAPI.get_client_by(id: client_id, secret: client_secret)
-    do_authorize(client, code, redirect_uri)
+  def authorize(attrs) do
+    with %Changeset{valid?: true} <- changeset(attrs),
+         {:ok, connection} <- get_connection(attrs["client_id"], attrs["client_secret"]),
+         {:ok, token} <- get_token(attrs["code"], @authorization_code),
+         :ok <- validate_client_match(token, connection.client),
+         :ok <- validate_token_expiration(token),
+         :ok <- validate_token_redirect_uri(token, attrs["redirect_uri"]),
+         {:ok, _} <- validate_approval_authorization(token),
+         :ok <- validate_token_is_not_used(token) do
+      TokenAPI.update_token(token, %{details: Map.put_new(token.details, :used, true)})
+      create_access_token(token)
+    end
   end
 
-  def authorize(_) do
-    message = "Request must include at least client_id, client_secret, code and redirect_uri parameters."
-    Error.invalid_request(message)
+  defp changeset(attrs) do
+    types = %{client_id: :string, client_secret: :string, code: :string, redirect_uri: :string}
+
+    {%{}, types}
+    |> cast(attrs, Map.keys(types))
+    |> validate_required(Map.keys(types))
   end
 
-  defp do_authorize(nil, _, _), do: Error.invalid_client("Invalid client id or secret.")
+  defp validate_client_match(%{details: %{"client_id" => client_id}}, %Client{id: id}) when id == client_id, do: :ok
+  defp validate_client_match(_, _), do: Error.invalid_grant("Token not found or expired.")
 
-  defp do_authorize(client, code, redirect_uri) do
-    [value: code, name: @authorization_code]
-    |> TokenAPI.get_token_by()
-    |> create_token(client, redirect_uri)
+  defp validate_token_redirect_uri(token, redirect_uri) do
+    case Regex.match?(RedirectUriChecker.generate_redirect_uri_regexp(token.details["redirect_uri"]), redirect_uri) do
+      true -> :ok
+      _ -> Error.invalid_client("The redirection URI provided does not match a pre-registered value.")
+    end
   end
 
-  defp create_token(nil, _, _), do: Error.invalid_grant("Token not found.")
-
-  defp create_token(token, client, redirect_uri) do
-    {:ok, token}
-    |> validate_client_match(client)
-    |> validate_token_expiration
-    |> validate_token_redirect_uri(redirect_uri)
-    |> validate_app_authorization()
-    |> validate_token_is_not_used()
-    |> mark_token_as_used()
-    |> create_access_token()
+  defp validate_token_is_not_used(token) do
+    case Map.get(token.details, "used", false) do
+      false -> :ok
+      _ -> Error.access_denied("Token has already been used.")
+    end
   end
 
-  defp create_access_token({:error, _} = err), do: err
-
-  defp create_access_token({:ok, token, _app}) do
+  defp create_access_token(token) do
     {:ok, refresh_token} =
-      Mithril.TokenAPI.create_refresh_token(%{
+      TokenAPI.create_refresh_token(%{
         user_id: token.user_id,
         details: %{
           grant_type: @authorization_code,
@@ -56,7 +62,7 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCode do
         }
       })
 
-    Mithril.TokenAPI.create_access_token(%{
+    TokenAPI.create_access_token(%{
       user_id: token.user_id,
       details: %{
         grant_type: @authorization_code,
@@ -66,62 +72,5 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCode do
         redirect_uri: token.details["redirect_uri"]
       }
     })
-  end
-
-  defp mark_token_as_used({:error, _} = err), do: err
-
-  defp mark_token_as_used({:ok, token, app}) do
-    {:ok, token} = Mithril.TokenAPI.update_token(token, %{details: Map.put_new(token.details, :used, true)})
-    {:ok, token, app}
-  end
-
-  defp validate_app_authorization({:error, _} = err), do: err
-
-  defp validate_app_authorization({:ok, token}) do
-    if app = Mithril.AppAPI.approval(token.user_id, token.details["client_id"]) do
-      {:ok, token, app}
-    else
-      Error.access_denied("Resource owner revoked access for the client.")
-    end
-  end
-
-  defp validate_token_is_not_used({:error, _} = err), do: err
-
-  defp validate_token_is_not_used({:ok, token, app}) do
-    not_used = !Map.get(token.details, "used", false)
-
-    if not_used do
-      {:ok, token, app}
-    else
-      Error.access_denied("Token has already been used.")
-    end
-  end
-
-  defp validate_token_redirect_uri({:error, _} = err, _), do: err
-
-  defp validate_token_redirect_uri({:ok, token}, redirect_uri) do
-    if Regex.match?(RedirectUriChecker.generate_redirect_uri_regexp(token.details["redirect_uri"]), redirect_uri) do
-      {:ok, token}
-    else
-      Error.invalid_client("The redirection URI provided does not match a pre-registered value.")
-    end
-  end
-
-  defp validate_token_expiration({:error, _} = err), do: err
-
-  defp validate_token_expiration({:ok, token}) do
-    if Mithril.TokenAPI.expired?(token) do
-      Error.invalid_grant("Token expired.")
-    else
-      {:ok, token}
-    end
-  end
-
-  defp validate_client_match({:ok, token}, client) do
-    if token.details["client_id"] != client.id do
-      Error.invalid_grant("Token not found or expired.")
-    else
-      {:ok, token}
-    end
   end
 end

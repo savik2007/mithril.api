@@ -9,7 +9,7 @@ defmodule Mithril.ClientTypeAPI.ClientType do
 
     field(:seed?, :boolean, default: false, virtual: true)
 
-    has_many(:clients, Mithril.ClientAPI.Client)
+    has_many(:clients, Mithril.Clients.Client)
 
     timestamps()
   end

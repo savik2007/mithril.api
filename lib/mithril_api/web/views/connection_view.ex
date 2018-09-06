@@ -1,7 +1,7 @@
 defmodule Mithril.Web.ConnectionView do
   use Mithril.Web, :view
 
-  @fields ~w(id redirect_uri client_id consumer_id)a
+  @fields ~w(id redirect_uri client_id consumer_id inserted_at updated_at)a
 
   def render("index.json", %{connections: connections}) do
     render_many(connections, __MODULE__, "connection.json")
