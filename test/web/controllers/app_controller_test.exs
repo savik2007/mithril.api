@@ -16,8 +16,8 @@ defmodule Mithril.Web.AppControllerTest do
     test "lists all entries on index", %{conn: conn} do
       client = insert(:client)
       user = insert(:user)
-      insert(:app, client_id: client.id, user_id: user.id)
-      insert(:app, client_id: client.id)
+      insert(:app, client: client, user: user)
+      insert(:app, client: client)
 
       resp =
         conn
@@ -37,7 +37,7 @@ defmodule Mithril.Web.AppControllerTest do
 
     test "does not list all entries on index when limit is set", %{conn: conn} do
       user = insert(:user)
-      Enum.each(1..3, fn _ -> insert(:app, user_id: user.id) end)
+      Enum.each(1..3, fn _ -> insert(:app, user: user) end)
 
       resp =
         conn
@@ -50,9 +50,9 @@ defmodule Mithril.Web.AppControllerTest do
 
     test "does not list all entries on index when starting_after is set", %{conn: conn} do
       user = insert(:user)
-      insert(:app, user_id: user.id)
-      insert(:app, user_id: user.id)
-      insert(:app, user_id: user.id)
+      insert(:app, user: user)
+      insert(:app, user: user)
+      insert(:app, user: user)
 
       resp =
         conn
@@ -66,12 +66,13 @@ defmodule Mithril.Web.AppControllerTest do
 
     test "list apps by client_names" do
       user = insert(:user)
-      %{name: name1, id: client_id1} = insert(:client)
-      %{name: name2, id: client_id2} = insert(:client)
-      %{id: client_id3} = insert(:client)
-      insert(:app, client_id: client_id1, user_id: user.id)
-      insert(:app, client_id: client_id2, user_id: user.id)
-      insert(:app, client_id: client_id3, user_id: user.id)
+      %{name: name1, id: client_id1} = client1 = insert(:client)
+      %{name: name2, id: client_id2} = client2 = insert(:client)
+      client3 = insert(:client)
+
+      insert(:app, client: client1, user: user)
+      insert(:app, client: client2, user: user)
+      insert(:app, client: client3, user: user)
 
       prefix = "client_name-"
       client_names = "#{prefix}#{name1},#{prefix}#{name2}"
@@ -95,12 +96,12 @@ defmodule Mithril.Web.AppControllerTest do
       name2 = "some_other_clinic"
       name3 = "whatever_clinic"
       user = insert(:user)
-      %{id: client_id1} = insert(:client, name: name1)
-      %{id: client_id2} = insert(:client, name: name2)
-      %{id: client_id3} = insert(:client, name: name3)
-      insert(:app, client_id: client_id1, user_id: user.id)
-      insert(:app, client_id: client_id2, user_id: user.id)
-      insert(:app, client_id: client_id3, user_id: user.id)
+      %{id: client_id1} = client1 = insert(:client, name: name1)
+      %{id: client_id2} = client2 = insert(:client, name: name2)
+      client3 = insert(:client, name: name3)
+      insert(:app, client: client1, user: user)
+      insert(:app, client: client2, user: user)
+      insert(:app, client: client3, user: user)
 
       name1 = String.slice(name1, 0, 6)
       name2 = String.slice(name2, 0, 6)
@@ -125,7 +126,7 @@ defmodule Mithril.Web.AppControllerTest do
     test "list apps ignore unprefixed params" do
       name1 = "some_clinic"
       client = insert(:client, name: name1)
-      insert(:app, client_id: client.id)
+      insert(:app, client: client)
 
       prefix = ""
       client_names = "#{prefix}#{name1}"
@@ -143,12 +144,12 @@ defmodule Mithril.Web.AppControllerTest do
 
     test "list apps by client_ids" do
       user = insert(:user)
-      %{id: client_id1} = insert(:client)
-      %{id: client_id2} = insert(:client)
-      %{id: client_id3} = insert(:client)
-      insert(:app, client_id: client_id1, user_id: user.id)
-      insert(:app, client_id: client_id2, user_id: user.id)
-      insert(:app, client_id: client_id3, user_id: user.id)
+      %{id: client_id1} = client1 = insert(:client)
+      %{id: client_id2} = client2 = insert(:client)
+      client3 = insert(:client)
+      insert(:app, client: client1, user: user)
+      insert(:app, client: client2, user: user)
+      insert(:app, client: client3, user: user)
 
       prefix = "client-"
       client_ids = "#{prefix}#{client_id1},#{prefix}#{client_id2}"
@@ -171,8 +172,8 @@ defmodule Mithril.Web.AppControllerTest do
       user = insert(:user)
 
       Enum.each(1..4, fn _ ->
-        %{id: client_id} = insert(:client)
-        insert(:app, client_id: client_id, user_id: user.id)
+        client = insert(:client)
+        insert(:app, client: client, user: user)
       end)
 
       conn = build_conn()
@@ -184,12 +185,13 @@ defmodule Mithril.Web.AppControllerTest do
     end
 
     test "list apps by user" do
-      %{id: user_id1} = insert(:user)
-      %{id: user_id2} = insert(:user)
-      %{id: user_id3} = insert(:user)
-      insert(:app, user_id: user_id1)
-      insert(:app, user_id: user_id2)
-      insert(:app, user_id: user_id3)
+      %{id: user_id1} = user1 = insert(:user)
+      %{id: user_id2} = user2 = insert(:user)
+      user3 = insert(:user)
+
+      insert(:app, user: user1)
+      insert(:app, user: user2)
+      insert(:app, user: user3)
 
       prefix = "user-"
       user_ids = "#{prefix}#{user_id1},#{prefix}#{user_id2}"
@@ -206,19 +208,19 @@ defmodule Mithril.Web.AppControllerTest do
     end
 
     test "list apps by combined params" do
-      %{id: user_id1} = insert(:user)
-      %{id: user_id2} = insert(:user)
+      user1 = insert(:user)
+      user2 = insert(:user)
 
-      %{id: client_id1, name: name1} = insert(:client)
-      %{id: client_id2, name: name2} = insert(:client)
-      %{id: client_id3, name: name3} = insert(:client)
+      %{id: client_id1, name: name1} = client1 = insert(:client)
+      %{id: client_id2, name: name2} = client2 = insert(:client)
+      %{name: name3} = client3 = insert(:client)
 
-      insert(:app, user_id: user_id1)
-      insert(:app, user_id: user_id2)
+      insert(:app, user: user1)
+      insert(:app, user: user2)
 
-      insert(:app, client_id: client_id1, user_id: user_id1)
-      insert(:app, client_id: client_id2, user_id: user_id1)
-      insert(:app, client_id: client_id3, user_id: user_id1)
+      insert(:app, client: client1, user: user1)
+      insert(:app, client: client2, user: user1)
+      insert(:app, client: client3, user: user1)
 
       prefix = "client-"
       client_ids = "#{prefix}#{client_id1},#{prefix}#{client_id2}"
@@ -230,7 +232,7 @@ defmodule Mithril.Web.AppControllerTest do
 
       resp =
         conn
-        |> put_req_header("x-consumer-id", user_id1)
+        |> put_req_header("x-consumer-id", user1.id)
         |> get(app_path(conn, :index), %{
           "client_ids" => client_ids,
           "client_names" => client_names,
@@ -291,7 +293,7 @@ defmodule Mithril.Web.AppControllerTest do
   test "updates chosen app and renders app when data is valid", %{conn: conn} do
     user = insert(:user)
     client = insert(:client)
-    %App{id: id} = app = insert(:app, client_id: client.id, user_id: user.id)
+    %App{id: id} = app = insert(:app, client: client, user: user)
 
     resp =
       conn
@@ -330,7 +332,7 @@ defmodule Mithril.Web.AppControllerTest do
   test "deletes chosen app and expire dependent tokens", %{conn: conn} do
     app = insert(:app)
     %{value: token_value} = insert(:token)
-    %{value: token_value_deleted} = insert(:token, user_id: app.user_id, details: %{client_id: app.client_id})
+    %{value: token_value_deleted} = insert(:token, user: app.user, details: %{client_id: app.client_id})
 
     conn
     |> put_req_header("x-consumer-id", app.user_id)
@@ -356,15 +358,15 @@ defmodule Mithril.Web.AppControllerTest do
     user = insert(:user)
 
     # app 1
-    %{id: app_id_1} = insert(:app, user_id: user.id)
+    %{id: app_id_1} = insert(:app, user: user)
     # app 2
     client_1 = insert(:client)
-    insert(:app, user_id: user.id, client_id: client_1.id)
-    %{value: token_value_deleted} = insert(:token, user_id: user.id, details: %{client_id: client_1.id})
+    insert(:app, user: user, client: client_1)
+    %{value: token_value_deleted} = insert(:token, user: user, details: %{client_id: client_1.id})
     # app 3
     client_2 = insert(:client)
-    %{id: app_id_2} = insert(:app, user_id: user.id, client_id: client_2.id)
-    %{value: token_value} = insert(:token, user_id: user.id, details: %{client_id: client_2.id})
+    %{id: app_id_2} = insert(:app, user: user, client: client_2)
+    %{value: token_value} = insert(:token, user: user, details: %{client_id: client_2.id})
 
     conn
     |> delete(user_app_path(conn, :delete_by_user, user.id), client_id: client_1.id)
