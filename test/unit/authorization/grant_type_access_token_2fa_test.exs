@@ -8,35 +8,20 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
   alias Mithril.Authentication
   alias Mithril.Authorization.GrantType.AccessToken2FA
 
-  @direct Mithril.ClientAPI.access_type(:direct)
-
   setup do
-    user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("super$ecre7"))
     client_type = insert(:client_type, scope: "app:authorize legal_entity:read legal_entity:write")
-
-    client =
-      insert(
-        :client,
-        user_id: user.id,
-        redirect_uri: "http://localhost",
-        client_type_id: client_type.id,
-        settings: %{
-          "allowed_grant_types" => ["password"]
-        },
-        priv_settings: %{
-          "access_type" => @direct
-        }
-      )
+    client = insert(:client, client_type: client_type)
 
     factor_value = "+380331002030"
-    factor = insert(:authentication_factor, user_id: user.id, factor: factor_value)
+    factor = insert(:authentication_factor, user: client.user, factor: factor_value)
     role = insert(:role, scope: "legal_entity:read legal_entity:write")
-    insert(:user_role, user_id: user.id, role_id: role.id, client_id: client.id)
-    token = insert(:token, user_id: user.id, name: "2fa_access_token")
+    insert(:user_role, user: client.user, role: role, client: client)
+    token = insert(:token, user: client.user, name: "2fa_access_token")
+
     otp_key = Authentication.generate_otp_key(token, factor_value)
     otp = insert(:otp, key: otp_key, code: 1234)
 
-    {:ok, %{token: token, user: user, otp: otp, factor: factor}}
+    {:ok, %{token: token, user: client.user, otp: otp, factor: factor}}
   end
 
   describe "authorize" do
@@ -52,7 +37,7 @@ defmodule Mithril.Authorization.GrantType.AccessToken2FATest do
 
     test "other access token deactivated when 2fa access token authorized", %{token: token_2fa, user: user, otp: otp} do
       details = %{"client_id" => token_2fa.details["client_id"]}
-      access_token = insert(:token, user_id: user.id, name: "access_token", details: details)
+      access_token = insert(:token, user: user, name: "access_token", details: details)
 
       # token is not expired before authorize
       refute :os.system_time(:seconds) >= access_token.expires_at
