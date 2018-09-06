@@ -118,7 +118,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
     test "expire old password tokens", %{conn: conn} do
       allowed_scope = "app:authorize"
       client_type = insert(:client_type, scope: allowed_scope)
-      client =insert(:client,client_type: client_type)
+      client = insert(:client, client_type: client_type)
 
       request_payload = %{
         token: %{
