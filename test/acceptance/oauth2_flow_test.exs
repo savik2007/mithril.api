@@ -4,38 +4,27 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
   import Mox
   import Mithril.Guardian
 
+  alias Comeonin.Bcrypt
   alias Mithril.OTP
   alias Mithril.Authorization.Tokens
   alias Mithril.ClientTypeAPI.ClientType
   alias Mithril.Authorization.GrantType
 
-  @direct Mithril.ClientAPI.access_type(:direct)
-
-  # For Mox lib. Make sure mocks are verified when the test exits
   setup :verify_on_exit!
 
   test "client successfully obtain an access_token API calls", %{conn: conn} do
     client_type = insert(:client_type, scope: "app:authorize legal_entity:read legal_entity:write")
-
-    client =
-      insert(
-        :client,
-        redirect_uri: "http://localhost",
-        client_type_id: client_type.id,
-        settings: %{"allowed_grant_types" => ["password"]},
-        priv_settings: %{"access_type" => @direct}
-      )
-
-    user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("Super$ecre71"))
-    user_role = insert(:role, scope: "legal_entity:read legal_entity:write")
-    Mithril.UserRoleAPI.create_user_role(%{user_id: user.id, role_id: user_role.id, client_id: client.id})
+    client = insert(:client, client_type: client_type)
+    connection = insert(:connection, client: client, redirect_uri: "http://localhost")
+    role = insert(:role, scope: "legal_entity:read legal_entity:write")
+    insert(:user_role, user: client.user, role: role, client: client)
 
     # 1. User is presented a user-agent and logs in
     login_request_body = %{
       "token" => %{
         grant_type: "password",
-        email: user.email,
-        password: "Super$ecre71",
+        email: client.user.email,
+        password: user_raw_password(),
         client_id: client.id,
         scope: "app:authorize"
       }
@@ -55,14 +44,14 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
     approval_request_body = %{
       "app" => %{
         client_id: client.id,
-        redirect_uri: client.redirect_uri,
+        redirect_uri: connection.redirect_uri,
         scope: scope
       }
     }
 
     approval_response =
       conn
-      |> put_req_header("x-consumer-id", user.id)
+      |> put_req_header("x-consumer-id", client.user.id)
       |> post("/oauth/apps/authorize", Poison.encode!(approval_request_body))
 
     decoded_approval_response =
@@ -85,10 +74,10 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       "token" => %{
         grant_type: "authorization_code",
         client_id: client.id,
-        client_secret: client.secret,
+        client_secret: connection.secret,
         code: code_grant,
         scope: scope,
-        redirect_uri: client.redirect_uri
+        redirect_uri: connection.redirect_uri
       }
     }
 
@@ -107,40 +96,27 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
 
   describe "2fa flow" do
     setup %{conn: conn} do
-      user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("super$ecre7"))
       client_type = insert(:client_type, scope: "app:authorize legal_entity:read legal_entity:write")
-
-      client =
-        insert(
-          :client,
-          user_id: user.id,
-          redirect_uri: "http://localhost",
-          client_type_id: client_type.id,
-          settings: %{"allowed_grant_types" => ["password"]},
-          priv_settings: %{"access_type" => @direct}
-        )
-
-      insert(:authentication_factor, user_id: user.id)
+      client = insert(:client, client_type: client_type)
+      connection = insert(:connection, client: client, redirect_uri: "http://localhost")
+      insert(:authentication_factor, user: client.user)
       role = insert(:role, scope: "legal_entity:read legal_entity:write")
-      insert(:user_role, user_id: user.id, role_id: role.id, client_id: client.id)
+      insert(:user_role, user: client.user, role: role, client: client)
 
       System.put_env("SMS_ENABLED", "true")
+      on_exit(fn -> System.put_env("SMS_ENABLED", "false") end)
 
-      on_exit(fn ->
-        System.put_env("SMS_ENABLED", "false")
-      end)
-
-      %{conn: conn, user: user, client: client}
+      %{conn: conn, client: client, connection: connection}
     end
 
-    test "happy path", %{conn: conn, user: user, client: client} do
+    test "happy path", %{conn: conn, client: client, connection: connection} do
       expect(SMSMock, :send, fn _phone_number, _body, _type -> {:ok, %{"meta" => %{"code" => 200}}} end)
 
       login_request_body = %{
         "token" => %{
           grant_type: "password",
-          email: user.email,
-          password: "super$ecre7",
+          email: client.user.email,
+          password: user_raw_password(),
           client_id: client.id,
           scope: "app:authorize legal_entity:read"
         }
@@ -192,14 +168,14 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       approval_request_body = %{
         "app" => %{
           client_id: client.id,
-          redirect_uri: client.redirect_uri,
+          redirect_uri: connection.redirect_uri,
           scope: "legal_entity:read legal_entity:write"
         }
       }
 
       approval_response =
         conn
-        |> put_req_header("x-consumer-id", user.id)
+        |> put_req_header("x-consumer-id", client.user.id)
         |> post("/oauth/apps/authorize", Poison.encode!(approval_request_body))
 
       code_grant =
@@ -219,10 +195,10 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
         "token" => %{
           grant_type: "authorization_code",
           client_id: client.id,
-          client_secret: client.secret,
+          client_secret: connection.secret,
           code: code_grant,
           scope: "legal_entity:read legal_entity:write",
-          redirect_uri: client.redirect_uri
+          redirect_uri: connection.redirect_uri
         }
       }
 
@@ -251,14 +227,14 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       |> json_response(401)
     end
 
-    test "invalid OTP", %{conn: conn, user: user, client: client} do
+    test "invalid OTP", %{conn: conn, client: client} do
       expect(SMSMock, :send, fn _phone_number, _body, _type -> {:ok, %{"meta" => %{"code" => 200}}} end)
 
       login_request_body = %{
         "token" => %{
           grant_type: "password",
-          email: user.email,
-          password: "super$ecre7",
+          email: client.user.email,
+          password: user_raw_password(),
           client_id: client.id,
           scope: "app:authorize"
         }
@@ -292,8 +268,8 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
 
   describe "Success login into Cabinet via EHealth Client, that do not need approval" do
     setup %{conn: conn} do
-      user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("super$ecre7"), tax_id: "12345678")
-      insert(:authentication_factor, user_id: user.id)
+      user = insert(:user, password: Bcrypt.hashpwsalt("super$ecre7"), tax_id: "12345678")
+      insert(:authentication_factor, user: user)
 
       client_type =
         insert(
@@ -306,32 +282,25 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
         insert(
           :client,
           id: "30074b6e-fbab-4dc1-9d37-88c21dab1847",
-          user_id: user.id,
-          client_type_id: client_type.id,
+          user: user,
+          client_type: client_type,
           settings: %{"allowed_grant_types" => ["password", "digital_signature"]}
         )
 
-      Mithril.AppAPI.create_app(%{
-        user_id: user.id,
-        client_id: client.id,
-        scope: "cabinet:read cabinet:write"
-      })
-
+      connection = insert(:connection, client: client)
+      insert(:app, user: user, client: client, scope: "cabinet:read cabinet:write")
       role_1 = insert(:role, scope: "cabinet:read")
       role_2 = insert(:role, scope: "cabinet:write")
-      insert(:user_role, user_id: user.id, role_id: role_1.id, client_id: client.id)
-      insert(:global_user_role, user_id: user.id, role_id: role_2.id)
+      insert(:user_role, user: user, role: role_1, client: client)
+      insert(:global_user_role, user: user, role: role_2)
 
       System.put_env("SMS_ENABLED", "true")
+      on_exit(fn -> System.put_env("SMS_ENABLED", "false") end)
 
-      on_exit(fn ->
-        System.put_env("SMS_ENABLED", "false")
-      end)
-
-      %{conn: conn, user: user, client: client}
+      %{conn: conn, user: user, client: client, connection: connection}
     end
 
-    test "user with 2FA", %{conn: conn, user: user, client: client} do
+    test "user with 2FA", %{conn: conn, user: user, client: client, connection: connection} do
       expect(SMSMock, :send, fn _phone_number, _body, _type -> {:ok, %{"meta" => %{"code" => 200}}} end)
       # 1. Create 2FA access token, that requires OTP confirmation
       token_payload = %{
@@ -384,7 +353,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       # The request goes through Gateway, which
       # converts login_response["data"]["value"] into user_id
       # and puts it in as "x-consumer-id" header
-      code_grant = post_approval(conn, user.id, client.id, client.redirect_uri, nil)
+      code_grant = post_approval(conn, user.id, client.id, connection.redirect_uri, nil)
 
       # 4. After authorization server responds and
       # user-agent is redirected to client server,
@@ -392,9 +361,9 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       tokens_request_body = %{
         grant_type: "authorization_code",
         client_id: client.id,
-        client_secret: client.secret,
+        client_secret: connection.secret,
         code: code_grant,
-        redirect_uri: client.redirect_uri
+        redirect_uri: connection.redirect_uri
       }
 
       tokens_response =
@@ -412,7 +381,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       assert tokens_response["details"]["refresh_token"]
     end
 
-    test "by Digital Signature", %{conn: conn, user: user, client: client} do
+    test "by Digital Signature", %{conn: conn, user: user, client: client, connection: connection} do
       # 1. Login vis DS that do not need OTP confirmation and approval for EHealth client
       tax_id = "12345678"
 
@@ -454,7 +423,6 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       assert "access_token" == resp["data"]["name"]
       assert "app:authorize" == resp["data"]["details"]["scope"]
       assert "digital_signature" == resp["data"]["details"]["grant_type"]
-      assert client.redirect_uri == resp["data"]["details"]["redirect_uri"]
       assert resp["data"]["value"]
       refute resp["data"]["details"]["refresh_token"]
 
@@ -462,7 +430,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       # The request goes through Gateway, which
       # converts login_response["data"]["value"] into user_id
       # and puts it in as "x-consumer-id" header
-      code_grant = post_approval(conn, user.id, client.id, client.redirect_uri, nil)
+      code_grant = post_approval(conn, user.id, client.id, connection.redirect_uri, nil)
 
       # 4. After authorization server responds and
       # user-agent is redirected to client server,
@@ -470,10 +438,10 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       tokens_request_body = %{
         grant_type: "authorization_code",
         client_id: client.id,
-        client_secret: client.secret,
+        client_secret: connection.secret,
         code: code_grant,
         scope: "cabinet:read cabinet:write",
-        redirect_uri: client.redirect_uri
+        redirect_uri: connection.redirect_uri
       }
 
       tokens_response =
