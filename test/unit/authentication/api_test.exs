@@ -188,8 +188,8 @@ defmodule Mithril.Authentication.APITest do
           }
         )
 
-      factor = insert(:authentication_factor, user_id: user.id)
-      token = insert(:token, user_id: user.id)
+      factor = insert(:authentication_factor, user: user)
+      token = insert(:token, user: user)
 
       assert {:error, :otp_timeout} = Authentication.send_otp(user, factor, token)
     end
@@ -208,8 +208,8 @@ defmodule Mithril.Authentication.APITest do
           }
         )
 
-      factor = insert(:authentication_factor, user_id: user.id)
-      token = insert(:token, user_id: user.id)
+      factor = insert(:authentication_factor, user: user)
+      token = insert(:token, user: user)
 
       assert :ok = Authentication.send_otp(user, factor, token)
 
@@ -230,8 +230,8 @@ defmodule Mithril.Authentication.APITest do
           }
         )
 
-      factor = insert(:authentication_factor, user_id: user.id)
-      token = insert(:token, user_id: user.id)
+      factor = insert(:authentication_factor, user: user)
+      token = insert(:token, user: user)
 
       assert :ok = Authentication.send_otp(user, factor, token)
 
@@ -255,8 +255,8 @@ defmodule Mithril.Authentication.APITest do
           }
         )
 
-      factor = insert(:authentication_factor, user_id: user.id)
-      token = insert(:token, user_id: user.id)
+      factor = insert(:authentication_factor, user: user)
+      token = insert(:token, user: user)
 
       assert :ok = Authentication.send_otp(user, factor, token)
 
@@ -278,8 +278,8 @@ defmodule Mithril.Authentication.APITest do
           }
         )
 
-      factor = insert(:authentication_factor, user_id: user.id)
-      token = insert(:token, user_id: user.id)
+      factor = insert(:authentication_factor, user: user)
+      token = insert(:token, user: user)
 
       for _ <- 1..3 do
         db_user = UserAPI.get_user!(user.id)
