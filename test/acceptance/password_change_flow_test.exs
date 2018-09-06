@@ -5,30 +5,25 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
 
   alias Mithril.OTP
 
-  @direct Mithril.ClientAPI.access_type(:direct)
-
   # For Mox lib. Make sure mocks are verified when the test exits
   setup :verify_on_exit!
 
   describe "change password flow without 2fa" do
     setup %{conn: conn} do
-      user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("Super$ecre7Pass"))
       client_type = insert(:client_type, scope: "user:change_password")
 
       client =
         insert(
           :client,
-          user_id: user.id,
-          redirect_uri: "http://localhost",
-          client_type_id: client_type.id,
-          settings: %{"allowed_grant_types" => ["password", "change_password"]},
-          priv_settings: %{"access_type" => @direct}
+          client_type: client_type,
+          settings: %{"allowed_grant_types" => ["password", "change_password"]}
         )
 
+      insert(:connection, client: client)
       role = insert(:role, scope: "user:change_password")
-      insert(:user_role, user_id: user.id, role_id: role.id, client_id: client.id)
+      insert(:user_role, user: client.user, role: role, client: client)
 
-      %{conn: conn, user: user, client: client}
+      %{conn: conn, user: client.user, client: client}
     end
 
     test "happy path", %{conn: conn, user: user, client: client} do
@@ -36,7 +31,7 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
         "token" => %{
           grant_type: "change_password",
           email: user.email,
-          password: "Super$ecre7Pass",
+          password: user_raw_password(),
           client_id: client.id,
           scope: "user:change_password"
         }
@@ -62,7 +57,7 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
                conn
                |> put_req_header("x-consumer-id", user.id)
                |> put_req_header("authorization", "Bearer #{change_pwd_token["value"]}")
-               |> post(oauth2_token_path(conn, :update_password), user: %{password: "Super$ecre7Pass"})
+               |> post(oauth2_token_path(conn, :update_password), user: %{password: user_raw_password()})
                |> json_response(422)
                |> get_in(~w(error invalid))
 
@@ -92,7 +87,7 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
         "token" => %{
           grant_type: "change_password",
           email: user.email,
-          password: "Super$ecre7Pass",
+          password: user_raw_password(),
           client_id: client.id,
           scope: "app:authorize"
         }
@@ -108,7 +103,7 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
         "token" => %{
           grant_type: "change_passwords",
           email: user.email,
-          password: "Super$ecre7Pass",
+          password: user_raw_password(),
           client_id: client.id,
           scope: "user:change_password"
         }
@@ -122,21 +117,17 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
 
   describe "change password flow with 2fa" do
     setup %{conn: conn} do
-      user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("Super$ecre7Pass"))
       client_type = insert(:client_type, scope: "user:change_password")
 
       client =
         insert(
           :client,
-          user_id: user.id,
-          redirect_uri: "http://localhost",
-          client_type_id: client_type.id,
-          settings: %{"allowed_grant_types" => ["password", "change_password"]},
-          priv_settings: %{"access_type" => @direct}
+          client_type: client_type,
+          settings: %{"allowed_grant_types" => ["password", "change_password"]}
         )
 
       role = insert(:role, scope: "legal_entity:read legal_entity:write")
-      insert(:user_role, user_id: user.id, role_id: role.id, client_id: client.id)
+      insert(:user_role, user: client.user, role: role, client: client)
 
       System.put_env("SMS_ENABLED", "true")
 
@@ -144,12 +135,12 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
         System.put_env("SMS_ENABLED", "false")
       end)
 
-      %{conn: conn, user: user, client: client}
+      %{conn: conn, user: client.user, client: client}
     end
 
     test "happy path", %{conn: conn, user: user, client: client} do
       expect(SMSMock, :send, 2, fn _phone_number, _body, _type -> {:ok, %{"meta" => %{"code" => 200}}} end)
-      insert(:authentication_factor, user_id: user.id)
+      insert(:authentication_factor, user: user)
 
       change_password_body = %{
         "user" => %{
@@ -161,7 +152,7 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
         "token" => %{
           grant_type: "change_password",
           email: user.email,
-          password: "Super$ecre7Pass",
+          password: user_raw_password(),
           client_id: client.id,
           scope: "user:change_password"
         }
@@ -237,7 +228,7 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
 
     test "happy path with request factor", %{conn: conn, user: user, client: client} do
       expect(SMSMock, :send, 2, fn _phone_number, _body, _type -> {:ok, %{"meta" => %{"code" => 200}}} end)
-      insert(:authentication_factor, user_id: user.id, factor: nil)
+      insert(:authentication_factor, user: user, factor: nil)
 
       change_password_body = %{
         "user" => %{
@@ -251,7 +242,7 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
         "token" => %{
           grant_type: "change_password",
           email: user.email,
-          password: "Super$ecre7Pass",
+          password: user_raw_password(),
           client_id: client.id,
           scope: "user:change_password"
         }
