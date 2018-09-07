@@ -11,28 +11,42 @@ defmodule Mithril.UserRoleAPITest do
       |> Repo.preload(:client)
       |> Repo.preload(:role)
 
-    assert {:ok, [^user_role]} = UserRoleAPI.list_user_roles(%{"user_id" => user_role.user_id})
+    assert {:ok, list} = UserRoleAPI.list_user_roles(%{"user_id" => user_role.user_id})
+    assert 1 == length(list)
+    assert user_role.id == hd(list).id
   end
 
   test "get_user_role! returns the user_role with given id" do
     user_role = insert(:user_role)
-    assert UserRoleAPI.get_user_role!(user_role.id) == user_role
+    assert user_role = UserRoleAPI.get_user_role!(user_role.id)
   end
 
-  test "create_user_role/1 with valid data creates a user_role" do
-    attrs = :user_role |> build() |> Map.from_struct()
+  describe "create_user_role" do
+    setup do
+      role = insert(:role)
+      client = insert(:client)
 
-    assert {:ok, %UserRole{} = user_role} = UserRoleAPI.create_user_role(attrs)
-    assert user_role.client_id == attrs.client_id
-    assert user_role.role_id == attrs.role_id
-    assert user_role.user_id == attrs.user_id
+      attrs = %{
+        user_id: client.user.id,
+        role_id: role.id,
+        client_id: client.id
+      }
+      {:ok, attrs: attrs}
+    end
+    test "create_user_role/1 with valid data creates a user_role", %{attrs: attrs} do
+      assert {:ok, %UserRole{} = user_role} = UserRoleAPI.create_user_role(attrs)
+      assert user_role.client_id == attrs.client_id
+      assert user_role.role_id == attrs.role_id
+      assert user_role.user_id == attrs.user_id
+    end
+
+    test "create_user_role/1 with duplicate data returns error changeset", %{attrs: attrs} do
+      assert {:ok, %UserRole{}} = UserRoleAPI.create_user_role(attrs)
+      assert {:error, %Ecto.Changeset{}} = UserRoleAPI.create_user_role(attrs)
+    end
   end
 
-  test "create_user_role/1 with duplicate data returns error changeset" do
-    attrs = :user_role |> build() |> Map.from_struct()
-    assert {:ok, %UserRole{}} = UserRoleAPI.create_user_role(attrs)
-    assert {:error, %Ecto.Changeset{}} = UserRoleAPI.create_user_role(attrs)
-  end
+
 
   test "create_user_role/1 with invalid data returns error changeset" do
     assert {:error, %Ecto.Changeset{}} = UserRoleAPI.create_user_role(%{client_id: nil, role_id: nil, user_id: nil})
