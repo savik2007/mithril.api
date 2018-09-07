@@ -12,9 +12,9 @@ defmodule Mithril.Authorization.GrantType.Password do
   alias Mithril.Clients
   alias Mithril.ClientTypeAPI.ClientType
   alias Mithril.Error
+  alias Mithril.TokenAPI
   alias Mithril.UserAPI
   alias Mithril.UserAPI.User
-  alias Mithril.TokenAPI
 
   @grant_type_password "password"
   @grant_type_change_password "change_password"
@@ -97,9 +97,6 @@ defmodule Mithril.Authorization.GrantType.Password do
   end
 
   defp create_token_by_grant_type(%Factor{}, %User{} = user, client, scope, grant_type) do
-    # ToDo: find smarter way to fetch redirect_uri
-    #    connection = hd(client.connections)
-
     data = %{
       user_id: user.id,
       details: %{

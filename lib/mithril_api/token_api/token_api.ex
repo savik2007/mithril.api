@@ -114,7 +114,7 @@ defmodule Mithril.TokenAPI do
     create_access_token(data)
   end
 
-  def create_access_token(attrs \\ %{}) do
+  def create_access_token(attrs) do
     %Token{}
     |> access_token_changeset(attrs)
     |> Repo.insert()

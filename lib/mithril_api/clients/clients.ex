@@ -96,18 +96,28 @@ defmodule Mithril.Clients do
   def get_connection_by(attrs), do: Repo.get_by(Connection, attrs)
   def get_connection_by!(attrs), do: Repo.get_by!(Connection, attrs)
 
-  def get_connection_with_client(client_id, secret) do
-    from(
-      c in Connection,
-      left_join: cl in assoc(c, :client),
-      on: cl.id == c.client_id,
-      where: c.client_id == ^client_id,
-      where: c.secret == ^secret,
-      preload: [
-        client: cl
-      ]
-    )
+  def get_connection_with_client_by(attrs) do
+    Connection
+    |> where([c], ^attrs)
+    |> join(:inner, [c], cl in assoc(c, :client))
+    |> preload([_, cl], client: cl)
     |> Repo.one()
+  end
+
+  def get_connection_with_client(client_id, secret) do
+    query =
+      from(
+        c in Connection,
+        left_join: cl in assoc(c, :client),
+        on: cl.id == c.client_id,
+        where: c.client_id == ^client_id,
+        where: c.secret == ^secret,
+        preload: [
+          client: cl
+        ]
+      )
+
+    Repo.one(query)
   end
 
   def upsert_connection(client_id, consumer_id, attrs) do

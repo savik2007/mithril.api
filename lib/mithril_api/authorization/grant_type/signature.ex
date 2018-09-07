@@ -113,6 +113,6 @@ defmodule Mithril.Authorization.GrantType.Signature do
       }
     }
 
-    Mithril.TokenAPI.create_access_token(data)
+    TokenAPI.create_access_token(data)
   end
 end
