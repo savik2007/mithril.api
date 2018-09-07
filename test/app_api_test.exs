@@ -23,8 +23,7 @@ defmodule Mithril.AppAPITest do
   end
 
   test "get_app! returns the app with given id" do
-    client = insert(:client)
-    app = insert(:app, client_id: client.id)
+    app = insert(:app)
 
     schema =
       "specs/json_schemas/app.json"
@@ -48,8 +47,7 @@ defmodule Mithril.AppAPITest do
   end
 
   test "update_app/2 with valid data updates the app" do
-    client = insert(:client)
-    app = insert(:app, client_id: client.id)
+    app = insert(:app)
     assert {:ok, app} = AppAPI.update_app(app, @update_attrs)
     assert %App{} = app
 
@@ -64,8 +62,7 @@ defmodule Mithril.AppAPITest do
   end
 
   test "update_app/2 with invalid data returns error changeset" do
-    client = insert(:client)
-    app = insert(:app, client_id: client.id)
+    app = insert(:app)
 
     assert {:error, %Ecto.Changeset{}} = AppAPI.update_app(app, @invalid_attrs)
     db_app = AppAPI.get_app!(app.id)
