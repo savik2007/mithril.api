@@ -224,12 +224,11 @@ defmodule Mithril.Web.ClientControllerTest do
   describe "list connections" do
     setup %{conn: conn} do
       client = insert(:client)
-      consumer = insert(:client)
-      {:ok, conn: conn, client: client, consumer: consumer}
+      {:ok, conn: conn, client: client}
     end
 
-    test "all entries on index", %{conn: conn, client: client, consumer: consumer} do
-      insert_pair(:connection, client: client, consumer: consumer)
+    test "all entries on index", %{conn: conn, client: client} do
+      insert_pair(:connection, client: client)
 
       data =
         conn

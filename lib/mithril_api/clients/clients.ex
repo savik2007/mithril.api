@@ -104,22 +104,6 @@ defmodule Mithril.Clients do
     |> Repo.one()
   end
 
-  def get_connection_with_client(client_id, secret) do
-    query =
-      from(
-        c in Connection,
-        left_join: cl in assoc(c, :client),
-        on: cl.id == c.client_id,
-        where: c.client_id == ^client_id,
-        where: c.secret == ^secret,
-        preload: [
-          client: cl
-        ]
-      )
-
-    Repo.one(query)
-  end
-
   def upsert_connection(client_id, consumer_id, attrs) do
     with {:ok, _} <- UUID.cast(client_id),
          {:ok, _} <- UUID.cast(consumer_id),
