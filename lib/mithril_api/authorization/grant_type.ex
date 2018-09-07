@@ -29,7 +29,7 @@ defmodule Mithril.Authorization.GrantType do
   def scope_app_authorize, do: @scope_app_authorize
 
   def get_connection(client_id, secret) do
-    case Clients.get_connection_with_client(client_id, secret) do
+    case Clients.get_connection_with_client_by(client_id: client_id, secret: secret) do
       %Connection{} = connection -> {:ok, connection}
       _ -> Error.invalid_client("Invalid client id or secret.")
     end
