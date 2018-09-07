@@ -1,6 +1,5 @@
 defmodule Mithril.Acceptance.CabinetTest do
   use Mithril.Web.ConnCase
-  alias Mithril.Clients.Client
 
   describe "create approval for MIS client that doesn't have User.user_roles with MIS client_id" do
     setup %{conn: conn} do
