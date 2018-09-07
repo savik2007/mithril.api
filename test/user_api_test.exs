@@ -1,10 +1,14 @@
 defmodule Mithril.UserAPITest do
   use Mithril.DataCase
 
+  alias Comeonin.Bcrypt
+  alias Ecto.Changeset
+  alias Ecto.NoResultsError
   alias Mithril.UserAPI
   alias Mithril.UserAPI.User
   alias Mithril.UserAPI.User.LoginHstr
   alias Mithril.Authorization.LoginHistory
+  alias Mithril.UserAPI.User.PrivSettings
   alias Scrivener.Page
 
   @create_attrs %{"email" => "email@example.com", "password" => "Some password1", "tax_id" => "12342345"}
@@ -78,28 +82,25 @@ defmodule Mithril.UserAPITest do
     assert String.length(user.password) == 60
     assert user.settings == %{}
 
-    assert user.priv_settings == %Mithril.UserAPI.User.PrivSettings{
-             login_hstr: [],
-             otp_error_counter: 0
-           }
+    assert user.priv_settings == %PrivSettings{login_hstr: [], otp_error_counter: 0}
   end
 
   test "email is case insensive" do
     assert {:ok, %User{}} = UserAPI.create_user(@create_attrs)
     attrs = %{@create_attrs | "email" => "EMAIL@example.com"}
 
-    assert {:error, %Ecto.Changeset{valid?: false, errors: [email: {"has already been taken", []}]}} =
+    assert {:error, %Changeset{valid?: false, errors: [email: {"has already been taken", []}]}} =
              UserAPI.create_user(attrs)
   end
 
   test "create_user/1 secures user password" do
     {:ok, user} = UserAPI.create_user(@create_attrs)
 
-    assert Comeonin.Bcrypt.checkpw("Some password1", user.password)
+    assert Bcrypt.checkpw("Some password1", user.password)
   end
 
   test "create_user/1 with invalid data returns error changeset" do
-    assert {:error, %Ecto.Changeset{}} = UserAPI.create_user(@invalid_attrs)
+    assert {:error, %Changeset{}} = UserAPI.create_user(@invalid_attrs)
   end
 
   test "update_user/2 with valid data updates the user" do
@@ -110,10 +111,7 @@ defmodule Mithril.UserAPITest do
     assert String.length(user.password) == 60
     assert user.settings == %{}
 
-    assert user.priv_settings == %Mithril.UserAPI.User.PrivSettings{
-             login_hstr: [],
-             otp_error_counter: 0
-           }
+    assert user.priv_settings == %PrivSettings{login_hstr: [], otp_error_counter: 0}
   end
 
   test "update_user_priv_settings/2 with valid data updates the user.priv_settings" do
@@ -125,9 +123,9 @@ defmodule Mithril.UserAPITest do
   end
 
   test "update_user/2 with invalid data returns error changeset" do
-    user = insert(:user, factor: insert(:authentication_factor))
-    assert {:error, %Ecto.Changeset{}} = UserAPI.update_user(user, @invalid_attrs)
-    assert user == UserAPI.get_user!(user.id) |> Mithril.Repo.preload(:factor)
+    user = insert(:user)
+    assert {:error, %Changeset{}} = UserAPI.update_user(user, %{email: nil})
+    assert user.email == UserAPI.get_user!(user.id).email
   end
 
   test "unblock/1 and refresh error counters" do
@@ -159,6 +157,6 @@ defmodule Mithril.UserAPITest do
   test "delete_user/1 deletes the user" do
     user = insert(:user)
     assert {:ok, %User{}} = UserAPI.delete_user(user)
-    assert_raise Ecto.NoResultsError, fn -> UserAPI.get_user!(user.id) end
+    assert_raise NoResultsError, fn -> UserAPI.get_user!(user.id) end
   end
 end

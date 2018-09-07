@@ -36,7 +36,7 @@ defmodule Mithril.Factory do
     )
   end
 
-  def create_refresh_token(client, user, expires_at \\ 2_000_000_000) do
+  def create_refresh_token(%Client{} = client, user, expires_at \\ 2_000_000_000) do
     insert(
       :token,
       details: %{
@@ -51,7 +51,7 @@ defmodule Mithril.Factory do
     )
   end
 
-  def create_access_token(client, user, expires_at \\ 2_000_000_000) do
+  def create_access_token(%Client{} = client, user, expires_at \\ 2_000_000_000) do
     insert(
       :token,
       details: %{
@@ -59,7 +59,7 @@ defmodule Mithril.Factory do
         client_id: client.id,
         grant_type: "refresh_token"
       },
-      user_id: user.id,
+      user: user,
       expires_at: expires_at,
       value: "some_access_token"
     )

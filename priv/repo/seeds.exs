@@ -13,7 +13,7 @@
 defmodule Seeder do
   alias Mithril.Repo
   alias Mithril.RoleAPI.Role
-  alias Mithril.ClientAPI.Client
+  alias Mithril.Clients.Client
   alias Mithril.ClientTypeAPI.ClientType
 
   def seed do
