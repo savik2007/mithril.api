@@ -2,10 +2,11 @@ defmodule Mithril.Web.TokenControllerTest do
   use Mithril.Web.ConnCase
 
   alias Ecto.UUID
+  alias Mithril.Clients.Client
   alias Mithril.TokenAPI.Token
 
-  @broker Mithril.ClientAPI.access_type(:broker)
-  @direct Mithril.ClientAPI.access_type(:direct)
+  @broker Client.access_type(:broker)
+  @direct Client.access_type(:direct)
 
   @create_attrs %{details: %{}, expires_at: 42, name: "some name", value: "some value"}
   @update_attrs %{details: %{}, expires_at: 43, name: "some updated name", value: "some updated value"}
@@ -103,17 +104,13 @@ defmodule Mithril.Web.TokenControllerTest do
   end
 
   describe "create access token" do
+    @tag :pending
     test "creates token and renders token when data is valid", %{conn: conn} do
       user = insert(:user)
       allowed_scope = "cabinet:read"
       client_type = insert(:client_type, scope: allowed_scope)
 
-      %{id: client_id} =
-        insert(
-          :client,
-          settings: %{"allowed_grant_types" => ["password"]},
-          client_type_id: client_type.id
-        )
+      %{id: client_id} = insert(:client, client_type: client_type)
 
       payload = %{
         client_id: client_id,
@@ -142,12 +139,7 @@ defmodule Mithril.Web.TokenControllerTest do
       allowed_scope = "cabinet:read"
       client_type = insert(:client_type, scope: allowed_scope)
 
-      %{id: client_id} =
-        insert(
-          :client,
-          settings: %{"allowed_grant_types" => ["password"]},
-          client_type_id: client_type.id
-        )
+      %{id: client_id} = insert(:client, client_type: client_type)
 
       payload = %{
         client_id: client_id,
@@ -165,7 +157,7 @@ defmodule Mithril.Web.TokenControllerTest do
 
     test "user not found", %{conn: conn} do
       assert_error_sent(404, fn ->
-        post(conn, user_token_path(conn, :create_access_token, Ecto.UUID.generate()), token: %{})
+        post(conn, user_token_path(conn, :create_access_token, UUID.generate()), token: %{})
       end)
     end
   end
@@ -208,11 +200,10 @@ defmodule Mithril.Web.TokenControllerTest do
       %{id: id_1} = insert(:token)
       user = insert(:user)
       client_id = UUID.generate()
-      insert(:token, name: "first", value: "a", details: %{"client_id" => client_id}, user_id: user.id)
-      insert(:token, name: "second", value: "b", details: %{"client_id" => client_id}, user_id: user.id)
+      insert(:token, name: "first", value: "a", details: %{"client_id" => client_id}, user: user)
+      insert(:token, name: "second", value: "b", details: %{"client_id" => client_id}, user: user)
 
-      %{id: id_2} =
-        insert(:token, name: "third", value: "c", details: %{"client_id" => UUID.generate()}, user_id: user.id)
+      %{id: id_2} = insert(:token, name: "third", value: "c", details: %{"client_id" => UUID.generate()}, user: user)
 
       conn = delete(conn, user_token_path(conn, :delete_by_user, user.id), client_id: client_id)
       assert response(conn, 204)
@@ -246,23 +237,13 @@ defmodule Mithril.Web.TokenControllerTest do
   end
 
   test "render additional info about user", %{conn: conn} do
-    client = insert(:client)
     user = insert(:user)
+    client = insert(:client)
 
     {:ok, role} = Mithril.RoleAPI.create_role(%{name: "Some role", scope: "legal_entity:read"})
 
-    {:ok, _} =
-      Mithril.UserRoleAPI.create_user_role(%{
-        client_id: client.id,
-        user_id: user.id,
-        role_id: role.id
-      })
-
-    Mithril.AppAPI.create_app(%{
-      user_id: user.id,
-      client_id: client.id,
-      scope: "legal_entity:read,legal_entity:write"
-    })
+    insert(:user_role, client: client, user: user, role: role)
+    insert(:app, client: client, user: user, scope: "legal_entity:read,legal_entity:write")
 
     token = create_access_token(client, user)
 
@@ -279,16 +260,13 @@ defmodule Mithril.Web.TokenControllerTest do
   end
 
   test "verify token using token value", %{conn: conn} do
-    client = insert(:client)
     user = insert(:user)
+    client = insert(:client)
+    connection = insert(:connection, client: client)
 
-    Mithril.AppAPI.create_app(%{
-      user_id: user.id,
-      client_id: client.id,
-      scope: "legal_entity:read,legal_entity:write"
-    })
+    insert(:app, client: client, user: user, scope: "legal_entity:read,legal_entity:write")
 
-    token = create_code_grant_token(client, user)
+    token = create_code_grant_token(connection, user)
 
     conn = get(conn, token_verify_path(conn, :verify, token.value))
 
@@ -300,7 +278,7 @@ defmodule Mithril.Web.TokenControllerTest do
     assert token["user_id"] == user.id
     assert token["details"]["client_id"] == client.id
     assert token["details"]["grant_type"] == "password"
-    assert token["details"]["redirect_uri"] == client.redirect_uri
+    assert token["details"]["redirect_uri"] == connection.redirect_uri
     assert token["details"]["scope_request"] == "app:authorize"
   end
 
@@ -326,7 +304,7 @@ defmodule Mithril.Web.TokenControllerTest do
 
   test "verify blocked user", %{conn: conn} do
     user = insert(:user, is_blocked: true)
-    token = insert(:token, user_id: user.id)
+    token = insert(:token, user: user)
 
     conn = get(conn, token_verify_path(conn, :verify, token.value))
 
@@ -351,39 +329,48 @@ defmodule Mithril.Web.TokenControllerTest do
       client =
         insert(
           :client,
-          client_type_id: client_type.id,
+          client_type: client_type,
           priv_settings: %{
             "access_type" => @broker
           }
         )
 
+      client_connection = insert(:connection, client: client)
       broker_client_type = insert(:client_type, scope: "a b c")
 
-      broker =
+      broker_client =
         insert(
           :client,
-          client_type_id: broker_client_type.id,
+          client_type: broker_client_type,
           priv_settings: %{
             "access_type" => @direct,
             "broker_scope" => "b c"
           }
         )
 
+      broker_connection = insert(:connection, client: broker_client)
+
       user = insert(:user)
       role = insert(:role, scope: "a b c")
-      insert(:user_role, user_id: user.id, role_id: role.id, client_id: client.id)
+      insert(:user_role, user: user, role: role, client: client)
 
       token =
         insert(
           :token,
-          user_id: user.id,
+          user: user,
           details: %{
             scope: "b",
             client_id: client.id
           }
         )
 
-      %{conn: conn, client: client, broker: broker, token: token.value, user: user}
+      %{
+        conn: conn,
+        client_connection: client_connection,
+        broker_connection: broker_connection,
+        token: token.value,
+        user: user
+      }
     end
 
     test "API-KEY Header required", %{conn: conn, token: token} do
@@ -397,30 +384,37 @@ defmodule Mithril.Web.TokenControllerTest do
       assert "API-KEY header is invalid." == json_response(conn, 422)["error"]["message"]
     end
 
-    test "not broker API-KEY Header", %{conn: conn, client: client, token: token} do
-      conn = put_req_header(conn, "api-key", client.secret)
+    test "not broker API-KEY Header", %{conn: conn, client_connection: client_connection, token: token} do
+      conn = put_req_header(conn, "api-key", client_connection.secret)
       conn = get(conn, token_verify_path(conn, :verify, token))
       assert "Incorrect broker settings." == json_response(conn, 422)["error"]["message"]
     end
 
-    test "valid request with broker scope", %{conn: conn, client: client, broker: broker, user: user} do
+    test "valid request with broker scope", %{
+      conn: conn,
+      broker_connection: broker_connection,
+      client_connection: client_connection,
+      user: user
+    } do
       token =
         insert(
           :token,
-          user_id: user.id,
+          user: user,
           value: "code",
           details: %{
             scope: "c",
-            client_id: client.id
+            client_id: client_connection.client_id
           }
         )
 
-      conn = put_req_header(conn, "api-key", broker.secret)
-      conn = get(conn, token_verify_path(conn, :verify, token.value))
+      broker_scope =
+        conn
+        |> put_req_header("api-key", broker_connection.secret)
+        |> get(token_verify_path(conn, :verify, token.value))
+        |> json_response(200)
+        |> get_in(~w(data details broker_scope))
 
-      result = json_response(conn, 200)["data"]
-
-      assert result["details"]["broker_scope"] == "b c"
+      assert "b c" == broker_scope
     end
   end
 end
