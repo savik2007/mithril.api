@@ -1,6 +1,7 @@
 defmodule Mithril.Authorization.BrokerScope do
   alias Mithril.Clients
   alias Mithril.Clients.Client
+  alias Mithril.Clients.Connection
   alias Mithril.Error
   alias Mithril.TokenAPI.Token
 
@@ -18,33 +19,28 @@ defmodule Mithril.Authorization.BrokerScope do
 
       # Clients such as MSP, PHARMACY
       @broker ->
-        api_key
-        |> validate_api_key()
-        |> fetch_client_by_secret()
-        |> fetch_broker_scope()
-        |> put_broker_scope_into_token(token)
+        with :ok <- validate_api_key(api_key),
+             {:ok, client} <- fetch_client_by_secret(api_key),
+             {:ok, broker_scope} <- fetch_broker_scope(client) do
+          put_broker_scope(token, broker_scope)
+        end
     end
   end
 
-  defp validate_api_key(api_key) when is_binary(api_key), do: api_key
+  defp validate_api_key(api_key) when is_binary(api_key), do: :ok
   defp validate_api_key(_), do: Error.invalid_request("API-KEY header required.")
 
-  defp fetch_client_by_secret({:error, _} = err), do: err
-
   defp fetch_client_by_secret(api_key) do
-    case Clients.get_client_by(secret: api_key) do
-      %Client{} = client -> client
+    case Clients.get_connection_with_client_by(secret: api_key) do
+      %Connection{client: client} -> {:ok, client}
       _ -> Error.invalid_request("API-KEY header is invalid.")
     end
   end
 
-  defp fetch_broker_scope({:error, _} = err), do: err
-  defp fetch_broker_scope(%Client{priv_settings: %{"broker_scope" => broker_scope}}), do: broker_scope
+  defp fetch_broker_scope(%Client{priv_settings: %{"broker_scope" => broker_scope}}), do: {:ok, broker_scope}
   defp fetch_broker_scope(_), do: Error.invalid_request("Incorrect broker settings.")
 
-  defp put_broker_scope_into_token({:error, _} = err, _token), do: err
-
-  defp put_broker_scope_into_token(broker_scope, token) do
+  defp put_broker_scope(token, broker_scope) do
     details = Map.put(token.details, "broker_scope", broker_scope)
     {:ok, Map.put(token, :details, details)}
   end

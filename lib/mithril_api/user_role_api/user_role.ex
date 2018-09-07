@@ -1,9 +1,9 @@
 defmodule Mithril.UserRoleAPI.UserRole do
   use Ecto.Schema
 
-  alias Mithril.UserAPI.User
-  alias Mithril.RoleAPI.Role
   alias Mithril.Clients.Client
+  alias Mithril.RoleAPI.Role
+  alias Mithril.UserAPI.User
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id

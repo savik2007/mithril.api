@@ -31,8 +31,10 @@ defmodule Mithril.UserRoleAPITest do
         role_id: role.id,
         client_id: client.id
       }
+
       {:ok, attrs: attrs}
     end
+
     test "create_user_role/1 with valid data creates a user_role", %{attrs: attrs} do
       assert {:ok, %UserRole{} = user_role} = UserRoleAPI.create_user_role(attrs)
       assert user_role.client_id == attrs.client_id
@@ -45,8 +47,6 @@ defmodule Mithril.UserRoleAPITest do
       assert {:error, %Ecto.Changeset{}} = UserRoleAPI.create_user_role(attrs)
     end
   end
-
-
 
   test "create_user_role/1 with invalid data returns error changeset" do
     assert {:error, %Ecto.Changeset{}} = UserRoleAPI.create_user_role(%{client_id: nil, role_id: nil, user_id: nil})
