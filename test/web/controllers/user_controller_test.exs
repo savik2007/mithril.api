@@ -348,7 +348,7 @@ defmodule Mithril.Web.UserControllerTest do
     end
 
     test "update user with factor when factor exist and otp valid", %{conn: conn, user: user} do
-      insert(:authentication_factor, user_id: user.id)
+      insert(:authentication_factor, user: user)
       key = Authentication.generate_otp_key("email@example.com", "+380551112233")
       insert(:otp, key: key, code: 1234)
 
@@ -378,7 +378,7 @@ defmodule Mithril.Web.UserControllerTest do
     end
 
     test "update user with factor when factor exist and otp invalid", %{conn: conn, user: user} do
-      insert(:authentication_factor, user_id: user.id)
+      insert(:authentication_factor, user: user)
 
       update = %{
         "2fa_enable": true,
@@ -445,21 +445,23 @@ defmodule Mithril.Web.UserControllerTest do
     end
 
     test "successful updating user (only) with factor", %{conn: conn} do
-      %User{id: id} = insert(:user, email: "email@example.com")
-      insert(:authentication_factor, user_id: id)
-      conn = put(conn, user_path(conn, :update, id), user: @update_attrs)
+      user = insert(:user, email: "email@example.com")
+      insert(:authentication_factor, user: user)
 
-      # User is updated
-      assert %{
-               "id" => ^id,
-               "email" => "update@example.com",
-               "settings" => %{}
-             } = json_response(conn, 200)["data"]
+      data =
+        conn
+        |> put(user_path(conn, :update, user), user: @update_attrs)
+        |> json_response(200)
+        |> Map.get("data")
+
+      assert user.id == data["id"]
+      assert %{} == data["settings"]
+      assert "update@example.com" == data["email"]
 
       # Factor is not updated
       assert [factor] =
                conn
-               |> get(user_authentication_factor_path(conn, :index, id))
+               |> get(user_authentication_factor_path(conn, :index, user))
                |> json_response(200)
                |> Map.get("data")
 
@@ -504,21 +506,23 @@ defmodule Mithril.Web.UserControllerTest do
     end
 
     test "successful updating user (only) with factor", %{conn: conn} do
-      %User{id: id} = insert(:user, email: "email@example.com")
-      insert(:authentication_factor, user_id: id)
-      conn = put(conn, user_path(conn, :update, id), user: @update_attrs)
+      user = insert(:user, email: "email@example.com")
+      insert(:authentication_factor, user: user)
 
-      # User is updated
-      assert %{
-               "id" => ^id,
-               "email" => "update@example.com",
-               "settings" => %{}
-             } = json_response(conn, 200)["data"]
+      data =
+        conn
+        |> put(user_path(conn, :update, user), user: @update_attrs)
+        |> json_response(200)
+        |> Map.get("data")
+
+      assert user.id == data["id"]
+      assert %{} == data["settings"]
+      assert "update@example.com" == data["email"]
 
       # Factor is not updated
       assert [factor] =
                conn
-               |> get(user_authentication_factor_path(conn, :index, id))
+               |> get(user_authentication_factor_path(conn, :index, user))
                |> json_response(200)
                |> Map.get("data")
 
@@ -529,8 +533,8 @@ defmodule Mithril.Web.UserControllerTest do
   describe "block/unblock user" do
     test "block user. All user tokens deactivated", %{conn: conn} do
       user = insert(:user)
-      token1 = insert(:token, user_id: user.id, details: %{"client_id" => UUID.generate()})
-      token2 = insert(:token, user_id: user.id, details: %{"client_id" => UUID.generate()})
+      token1 = insert(:token, user: user, details: %{"client_id" => UUID.generate()})
+      token2 = insert(:token, user: user, details: %{"client_id" => UUID.generate()})
 
       refute TokenAPI.expired?(token1)
       refute TokenAPI.expired?(token2)
