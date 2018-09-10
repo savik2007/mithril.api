@@ -3,7 +3,6 @@ defmodule Mithril.Clients.Client do
 
   import Ecto.Changeset
 
-  alias __MODULE__
   alias Mithril.Clients.Connection
   alias Mithril.ClientTypeAPI.ClientType
   alias Mithril.UserAPI.User
@@ -32,7 +31,6 @@ defmodule Mithril.Clients.Client do
     field(:settings, :map, default: %{})
     field(:is_blocked, :boolean, default: false)
     field(:block_reason, :string)
-
     field(:seed?, :boolean, default: false, virtual: true)
 
     belongs_to(:client_type, ClientType)
@@ -43,7 +41,7 @@ defmodule Mithril.Clients.Client do
     timestamps()
   end
 
-  def changeset(%Client{} = client, attrs) do
+  def changeset(%__MODULE__{} = client, attrs) do
     client
     |> cast(attrs, @fields_required ++ @fields_optional)
     |> validate_required(@fields_required)

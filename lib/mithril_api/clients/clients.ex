@@ -1,7 +1,7 @@
 defmodule Mithril.Clients do
   @moduledoc false
-  import Mithril.Search
 
+  import Mithril.Search
   import Ecto.{Query, Changeset}, warn: false
 
   alias Ecto.UUID

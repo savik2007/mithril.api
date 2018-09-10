@@ -3,16 +3,18 @@ defmodule Mithril.Clients.ClientSearch do
 
   use Ecto.Schema
   import Ecto.Changeset
-  alias __MODULE__
+  alias Ecto.UUID
   alias Mithril.Ecto.StringLike
 
+  @primary_key false
   embedded_schema do
+    field(:id, UUID)
+    field(:user_id, UUID)
     field(:name, StringLike)
-    field(:user_id, Ecto.UUID)
     field(:is_blocked, :boolean)
   end
 
-  def changeset(%ClientSearch{} = schema, attrs) do
-    cast(schema, attrs, ClientSearch.__schema__(:fields))
+  def changeset(%__MODULE__{} = schema, attrs) do
+    cast(schema, attrs, __MODULE__.__schema__(:fields))
   end
 end
