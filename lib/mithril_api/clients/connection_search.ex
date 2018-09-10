@@ -3,7 +3,6 @@ defmodule Mithril.Clients.ConnectionSearch do
 
   use Ecto.Schema
   import Ecto.Changeset
-  alias __MODULE__
   alias Ecto.UUID
   alias Mithril.Ecto.StringLike
 
@@ -13,9 +12,9 @@ defmodule Mithril.Clients.ConnectionSearch do
     field(:redirect_uri, StringLike)
   end
 
-  def changeset(%ConnectionSearch{} = schema, attrs) do
+  def changeset(%__MODULE__{} = schema, attrs) do
     schema
-    |> cast(attrs, ConnectionSearch.__schema__(:fields))
+    |> cast(attrs, __MODULE__.__schema__(:fields))
     |> validate_required(:client_id)
   end
 end

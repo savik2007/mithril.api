@@ -117,8 +117,8 @@ defmodule MithrilWeb.Router do
       # connections
       get("/connections", ConnectionController, :index)
       get("/connections/:id", ConnectionController, :show)
-      patch("/connections/:id", ConnectionController, :update)
       put("/connections", ConnectionController, :upsert)
+      patch("/connections/:id", ConnectionController, :update)
       patch("/connections/:id/actions/refresh_secret", ConnectionController, :refresh_secret)
       delete("/connections/:id", ConnectionController, :delete)
     end

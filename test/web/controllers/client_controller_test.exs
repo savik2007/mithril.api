@@ -34,6 +34,21 @@ defmodule Mithril.Web.ClientControllerTest do
       assert 2 == length(json_response(conn, 200)["data"])
     end
 
+    test "search by id", %{conn: conn} do
+      client = insert(:client)
+      insert(:client)
+      insert(:client)
+
+      data =
+        conn
+        |> get(client_path(conn, :index), %{id: client.id})
+        |> json_response(200)
+        |> Map.get("data")
+
+      assert 1 == length(data)
+      assert client.id == hd(data)["id"]
+    end
+
     test "search by name by like is skipped when other params are invalid", %{conn: conn} do
       insert(:client, name: "john")
       insert(:client, name: "simon")
