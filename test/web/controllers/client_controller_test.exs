@@ -352,6 +352,18 @@ defmodule Mithril.Web.ClientControllerTest do
       |> json_response(404)
     end
 
+    test "consumer_id not exists", %{conn: conn, client: client} do
+      attrs = %{redirect_uri: "http://localhost", consumer_id: UUID.generate()}
+
+      errors =
+        conn
+        |> put(client_connection_path(conn, :upsert, client), attrs)
+        |> json_response(422)
+        |> get_in(~w(error invalid))
+
+      assert "$.consumer_id" == hd(errors)["entry"]
+    end
+
     test "invalid consumer_id", %{conn: conn, client: client} do
       attrs = %{redirect_uri: "http://localhost", consumer_id: "invalid"}
 
