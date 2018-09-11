@@ -3,15 +3,15 @@ defmodule Mithril.RoleAPI.ClientTest do
 
   use Mithril.Web.ConnCase
 
-  alias Mithril.ClientAPI
-  alias Mithril.ClientAPI.Client
+  alias Mithril.Clients
+  alias Mithril.Clients.Client
 
   test "Create client with access_type" do
     %{id: user_id} = insert(:user)
     %{id: client_type_id} = insert(:client_type)
 
     assert {:ok, client} =
-             ClientAPI.create_client(%{
+             Clients.create_client(%{
                name: "MSP",
                user_id: user_id,
                redirect_uri: "http://example.com",

@@ -30,18 +30,21 @@ defmodule Mithril.TokenAPITest do
   test "list_tokens/1 returns all tokens" do
     token = insert(:token)
 
-    assert TokenAPI.list_tokens(%{}) == %Page{
-             entries: [token],
+    assert %Page{
+             entries: list,
              page_number: 1,
              page_size: 50,
              total_entries: 1,
              total_pages: 1
-           }
+           } = TokenAPI.list_tokens(%{})
+
+    assert 1 == length(list)
+    assert token.id == hd(list).id
   end
 
   test "get_token! returns the token with given id" do
     token = insert(:token)
-    assert TokenAPI.get_token!(token.id) == token
+    assert token = TokenAPI.get_token!(token.id)
   end
 
   test "create_token/1 with valid data creates a token" do
@@ -81,7 +84,7 @@ defmodule Mithril.TokenAPITest do
   test "update_token/2 with invalid data returns error changeset" do
     token = insert(:token)
     assert {:error, %Ecto.Changeset{}} = TokenAPI.update_token(token, @invalid_attrs)
-    assert token == TokenAPI.get_token!(token.id)
+    assert token = TokenAPI.get_token!(token.id)
   end
 
   test "delete_token/1 deletes the token" do
@@ -97,8 +100,8 @@ defmodule Mithril.TokenAPITest do
 
   describe "deactivate tokens" do
     setup do
-      %{id: user_id1} = user1 = insert(:user)
-      %{id: user_id2} = insert(:user)
+      user1 = insert(:user)
+      user2 = insert(:user)
       cid1 = UUID.generate()
       cid2 = UUID.generate()
       cid3 = UUID.generate()
@@ -109,10 +112,10 @@ defmodule Mithril.TokenAPITest do
         "redirect_uri" => "http://localhost"
       }
 
-      token1 = insert(:token, user_id: user_id1, name: "access_token", details: Map.put(details, "client_id", cid1))
-      token2 = insert(:token, user_id: user_id1, name: "2fa_access_token", details: Map.put(details, "client_id", cid1))
-      token3 = insert(:token, user_id: user_id1, name: "access_token", details: Map.put(details, "client_id", cid2))
-      token4 = insert(:token, user_id: user_id2, name: "access_token", details: Map.put(details, "client_id", cid3))
+      token1 = insert(:token, user: user1, name: "access_token", details: Map.put(details, "client_id", cid1))
+      token2 = insert(:token, user: user1, name: "2fa_access_token", details: Map.put(details, "client_id", cid1))
+      token3 = insert(:token, user: user1, name: "access_token", details: Map.put(details, "client_id", cid2))
+      token4 = insert(:token, user: user2, name: "access_token", details: Map.put(details, "client_id", cid3))
 
       %{user: user1, token1: token1, token2: token2, token3: token3, token4: token4}
     end
@@ -165,10 +168,9 @@ defmodule Mithril.TokenAPITest do
     test "deactivate_old_password_tokens" do
       token_ids =
         Enum.reduce(1..3, [], fn _, acc ->
-          %{id: user_id} =
-            insert(:user, password_set_at: NaiveDateTime.add(NaiveDateTime.utc_now(), -100 * 24 * 60 * 60, :second))
-
-          token = insert(:token, user_id: user_id)
+          password_set_at = NaiveDateTime.add(NaiveDateTime.utc_now(), -100 * 24 * 60 * 60, :second)
+          user = insert(:user, password_set_at: password_set_at)
+          token = insert(:token, user: user)
           assert token.expires_at == 2_000_000_000
           [token.id | acc]
         end)
@@ -205,6 +207,8 @@ defmodule Mithril.TokenAPITest do
     Deactivator.delete_expired_tokens()
     assert_receive :cleaned
 
-    assert %Page{entries: [^token]} = TokenAPI.list_tokens(%{})
+    assert %Page{entries: list} = TokenAPI.list_tokens(%{})
+    assert 1 == length(list)
+    assert token.id == hd(list).id
   end
 end

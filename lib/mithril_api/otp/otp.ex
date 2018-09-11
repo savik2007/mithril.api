@@ -7,9 +7,9 @@ defmodule Mithril.OTP do
 
   import Ecto.{Query, Changeset}, warn: false
 
-  alias Mithril.Repo
   alias Mithril.OTP.Schema, as: OTPSchema
   alias Mithril.OTP.Search
+  alias Mithril.Repo
 
   @status_new "NEW"
   @status_verified "VERIFIED"

@@ -46,8 +46,8 @@ defmodule Mithril.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:nex_json_schema, ">= 0.7.2"},
-      {:distillery, "~> 1.5.3", runtime: false},
+      {:nex_json_schema, "~> 0.8"},
+      {:distillery, "~> 2.0", runtime: false},
       {:confex, "~> 3.2"},
       {:ecto, "~> 2.1"},
       {:postgrex, ">= 0.0.0"},
@@ -55,7 +55,7 @@ defmodule Mithril.Mixfile do
       {:httpoison, "~> 1.0"},
       {:poison, "~> 3.1"},
       {:phoenix, "~> 1.3.0"},
-      {:eview, "~> 0.12.2"},
+      {:eview, "~> 0.12"},
       {:phoenix_ecto, "~> 3.2"},
       {:scrivener_ecto, "~> 1.2"},
       {:comeonin, ">= 0.0.0"},
@@ -67,8 +67,8 @@ defmodule Mithril.Mixfile do
       {:plug_logger_json, "~> 0.5"},
       {:mox, "~> 0.3", only: :test},
       {:ex_machina, "~> 2.0", only: [:dev, :test]},
-      {:excoveralls, "~> 0.8.1", only: [:dev, :test]},
-      {:credo, "~> 0.9.3", only: [:dev, :test]}
+      {:excoveralls, "~> 0.10", only: [:dev, :test]},
+      {:credo, "~> 0.9", only: [:dev, :test]}
     ]
   end
 

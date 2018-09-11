@@ -1,4 +1,4 @@
-defmodule Mithril.ClientAPI.ClientTypeSearch do
+defmodule Mithril.Clients.ClientTypeSearch do
   @moduledoc false
 
   use Ecto.Schema

@@ -7,9 +7,9 @@ defmodule Mithril.Web.AuthenticationFactorControllerTest do
   describe "list user auth factor" do
     setup %{conn: conn} do
       user = insert(:user)
-      insert(:authentication_factor, user_id: user.id)
-      insert(:authentication_factor, user_id: user.id, type: "EMAIL")
-      insert(:authentication_factor, user_id: user.id, type: "PHONE")
+      insert(:authentication_factor, user: user)
+      insert(:authentication_factor, user: user, type: "EMAIL")
+      insert(:authentication_factor, user: user, type: "PHONE")
       {:ok, conn: conn, user: user}
     end
 
@@ -29,7 +29,7 @@ defmodule Mithril.Web.AuthenticationFactorControllerTest do
   describe "get factor by id" do
     setup %{conn: conn} do
       user = insert(:user)
-      factor = insert(:authentication_factor, user_id: user.id, factor: "+380881002030")
+      factor = insert(:authentication_factor, user: user, factor: "+380881002030")
       {:ok, conn: conn, user: user, factor: factor}
     end
 
@@ -67,7 +67,7 @@ defmodule Mithril.Web.AuthenticationFactorControllerTest do
   describe "update user auth factor" do
     setup %{conn: conn} do
       user = insert(:user)
-      factor = insert(:authentication_factor, user_id: user.id)
+      factor = insert(:authentication_factor, user: user)
       {:ok, conn: conn, user: user, factor: factor}
     end
 

@@ -4,8 +4,6 @@ defmodule Mithril.Web.ClientView do
   @fields ~w(
     id
     name
-    secret
-    redirect_uri
     settings
     priv_settings
     is_blocked

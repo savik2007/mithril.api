@@ -4,25 +4,20 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
   alias Mithril.UserAPI
   alias Mithril.Authorization.GrantType.Password, as: PasswordGrantType
 
+  @password user_raw_password()
+
   test "creates password-granted access token" do
     System.put_env("USER_2FA_ENABLED", "false")
 
     allowed_scope = "app:authorize legal_entity:read legal_entity:write"
     client_type = insert(:client_type, scope: allowed_scope)
-
-    client =
-      insert(
-        :client,
-        settings: %{"allowed_grant_types" => ["password"]},
-        client_type_id: client_type.id
-      )
-
-    user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("Somepa$$word1"))
+    user = insert(:user)
+    client = insert(:client, client_type: client_type)
 
     {:ok, %{token: token}} =
       PasswordGrantType.authorize(%{
         "email" => user.email,
-        "password" => "Somepa$$word1",
+        "password" => @password,
         "client_id" => client.id,
         "scope" => "legal_entity:read"
       })
@@ -33,32 +28,22 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
     assert token.user_id == user.id
     assert token.details["client_id"] == client.id
     assert token.details["grant_type"] == "password"
-    assert token.details["redirect_uri"] == client.redirect_uri
     assert token.details["scope"] == "legal_entity:read"
 
-    System.put_env("USER_2FA_ENABLED", "true")
+    on_exit(fn -> System.put_env("USER_2FA_ENABLED", "true") end)
   end
 
   test "creates password-granted 2FA access token" do
     allowed_scope = "app:authorize legal_entity:read legal_entity:write"
-    password = "Somepa$$word1"
-    user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt(password))
+    user = insert(:user)
     client_type = insert(:client_type, scope: allowed_scope)
-
-    client =
-      insert(
-        :client,
-        user_id: user.id,
-        client_type_id: client_type.id,
-        settings: %{"allowed_grant_types" => ["password"]}
-      )
-
-    insert(:authentication_factor, user_id: user.id)
+    client = insert(:client, user: user, client_type: client_type)
+    insert(:authentication_factor, user: user)
 
     {:ok, %{token: token}} =
       PasswordGrantType.authorize(%{
         "email" => user.email,
-        "password" => password,
+        "password" => @password,
         "client_id" => client.id,
         "scope" => "legal_entity:read"
       })
@@ -68,7 +53,7 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
 
   test "it returns Incorrect password error" do
     client = insert(:client, settings: %{"allowed_grant_types" => ["password"]})
-    user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("Somepa$$word1"))
+    user = insert(:user)
 
     assert {:error, {:access_denied, "Identity, password combination is wrong."}} =
              PasswordGrantType.authorize(%{
@@ -92,12 +77,12 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
   end
 
   test "it returns Client Not Found error" do
-    user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("Somepa$$word1"))
+    user = insert(:user)
 
     assert {:error, {:access_denied, %{message: "Invalid client id.", type: "invalid_client"}}} =
              PasswordGrantType.authorize(%{
                "email" => user.email,
-               "password" => "Somepa$$word1",
+               "password" => @password,
                "client_id" => "391374D3-A05D-403B-9290-E0BAAC5CCA21",
                "scope" => "legal_entity:read"
              })
@@ -106,21 +91,15 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
   test "it returns Incorrect Scopes error" do
     allowed_scope = "app:authorize legal_entity:read legal_entity:write"
     client_type = insert(:client_type, scope: allowed_scope)
+    user = insert(:user)
+    client = insert(:client, client_type: client_type)
 
-    client =
-      insert(
-        :client,
-        settings: %{"allowed_grant_types" => ["password"]},
-        client_type_id: client_type.id
-      )
-
-    user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("Somepa$$word1"))
     message = "Scope is not allowed by client type."
 
     assert {:error, {:unprocessable_entity, ^message}} =
              PasswordGrantType.authorize(%{
                "email" => user.email,
-               "password" => "Somepa$$word1",
+               "password" => @password,
                "client_id" => client.id,
                "scope" => "some_hidden_api:read"
              })
@@ -142,18 +121,10 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
 
   describe "authorize login errors" do
     setup do
-      user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("somepa$$word"))
       client_type = insert(:client_type, scope: "app:authorize, legal_entity:read")
+      client = insert(:client, client_type: client_type)
 
-      client =
-        insert(
-          :client,
-          user_id: user.id,
-          client_type_id: client_type.id,
-          settings: %{"allowed_grant_types" => ["password"]}
-        )
-
-      %{user: user, client: client}
+      %{user: client.user, client: client}
     end
 
     test "user blocked when reached max failed logins", %{user: user, client: client} do
@@ -175,7 +146,7 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
 
       assert {:error, {:access_denied, "You reached login attempts limit. Try again later"}} =
                data
-               |> Map.put("password", "somepa$$word")
+               |> Map.put("password", @password)
                |> PasswordGrantType.authorize()
     end
 
@@ -193,7 +164,7 @@ defmodule Mithril.Authorization.GrantType.PasswordTest do
 
       assert {:ok, _} =
                data
-               |> Map.put("password", "somepa$$word")
+               |> Map.put("password", @password)
                |> PasswordGrantType.authorize()
 
       db_user = UserAPI.get_user!(user.id)

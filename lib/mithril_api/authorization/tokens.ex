@@ -13,8 +13,8 @@ defmodule Mithril.Authorization.Tokens do
   alias Mithril.Authorization.GrantType.Password
   alias Mithril.Authorization.GrantType.RefreshToken
   alias Mithril.Authorization.GrantType.Signature
-  alias Mithril.ClientAPI
-  alias Mithril.ClientAPI.Client
+  alias Mithril.Clients
+  alias Mithril.Clients.Client
   alias Mithril.Error
   alias Mithril.TokenAPI
   alias Mithril.TokenAPI.Token
@@ -200,7 +200,7 @@ defmodule Mithril.Authorization.Tokens do
     token = TokenAPI.get_token_by_value!(token_value)
 
     with false <- expired?(token),
-         client <- ClientAPI.get_client!(token.details["client_id"]),
+         client <- Clients.get_client!(token.details["client_id"]),
          :ok <- check_client_is_blocked(client),
          user <- UserAPI.get_user!(token.user_id),
          :ok <- check_user_is_blocked(user),

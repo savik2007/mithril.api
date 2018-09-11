@@ -302,8 +302,7 @@ defmodule Mithril.UserAPI do
   defp to_map(%_{} = data) do
     data
     |> Map.from_struct()
-    |> Enum.map(&to_map/1)
-    |> Enum.into(%{})
+    |> Enum.into(%{}, &to_map/1)
   end
 
   defp to_map({key, list}) when is_list(list) do

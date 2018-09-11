@@ -4,13 +4,15 @@ defmodule Mithril.Authorization.GrantType.Password do
   import Ecto.Changeset
   import Mithril.Authorization.GrantType
 
+  alias Comeonin.Bcrypt
   alias Mithril.Authentication
   alias Mithril.Authentication.Factor
   alias Mithril.Authentication.Factors
   alias Mithril.Authorization.LoginHistory
-  alias Mithril.ClientAPI
+  alias Mithril.Clients
   alias Mithril.ClientTypeAPI.ClientType
   alias Mithril.Error
+  alias Mithril.TokenAPI
   alias Mithril.UserAPI
   alias Mithril.UserAPI.User
 
@@ -24,7 +26,7 @@ defmodule Mithril.Authorization.GrantType.Password do
 
     # check client_id and define process (with required DS or not)
     with %Ecto.Changeset{valid?: true} <- changeset(attrs),
-         client <- ClientAPI.get_client_with_type(attrs["client_id"]),
+         client <- Clients.get_client_with(attrs["client_id"], [:client_type]),
          :ok <- validate_client_allowed_grant_types(client, "password"),
          user <- UserAPI.get_user_by(email: attrs["email"]),
          :ok <- validate_user_by_client(user, client),
@@ -36,7 +38,7 @@ defmodule Mithril.Authorization.GrantType.Password do
          :ok <- validate_token_scope_by_grant(grant_type, attrs["scope"]),
          factor <- Factors.get_factor_by(user_id: user.id, is_active: true),
          {:ok, token} <- create_token_by_grant_type(factor, user, client, attrs["scope"], grant_type),
-         {_, nil} <- Mithril.TokenAPI.deactivate_old_tokens(token),
+         {_, nil} <- TokenAPI.deactivate_old_tokens(token),
          sms_send_response <- maybe_send_otp(user, factor, token),
          {:ok, next_step} <- map_next_step(sms_send_response) do
       {:ok, %{token: token, urgent: %{next_step: next_step}}}
@@ -70,7 +72,7 @@ defmodule Mithril.Authorization.GrantType.Password do
   defp validate_user_by_client(_, _), do: :ok
 
   defp match_with_user_password(user, password) do
-    if Comeonin.Bcrypt.checkpw(password, Map.get(user, :password, "")) do
+    if Bcrypt.checkpw(password, Map.get(user, :password, "")) do
       LoginHistory.clear_logins(user, LoginHistory.type(:password))
       {:ok, user}
     else
@@ -102,12 +104,11 @@ defmodule Mithril.Authorization.GrantType.Password do
         "client_id" => client.id,
         # 2FA access token requires no scopes
         "scope" => "",
-        "scope_request" => scope,
-        "redirect_uri" => client.redirect_uri
+        "scope_request" => scope
       }
     }
 
-    Mithril.TokenAPI.create_2fa_access_token(data)
+    TokenAPI.create_2fa_access_token(data)
   end
 
   defp create_token_by_grant_type(_factor, %User{} = user, client, scope, @grant_type_password) do
@@ -116,12 +117,11 @@ defmodule Mithril.Authorization.GrantType.Password do
       details: %{
         "grant_type" => "password",
         "client_id" => client.id,
-        "scope" => scope,
-        "redirect_uri" => client.redirect_uri
+        "scope" => scope
       }
     }
 
-    Mithril.TokenAPI.create_access_token(data)
+    TokenAPI.create_access_token(data)
   end
 
   defp create_token_by_grant_type(_factor, %User{} = user, client, scope, @grant_type_change_password) do
@@ -130,12 +130,11 @@ defmodule Mithril.Authorization.GrantType.Password do
       details: %{
         "grant_type" => "change_password",
         "client_id" => client.id,
-        "scope" => scope,
-        "redirect_uri" => client.redirect_uri
+        "scope" => scope
       }
     }
 
-    Mithril.TokenAPI.create_change_password_token(data)
+    TokenAPI.create_change_password_token(data)
   end
 
   defp maybe_send_otp(user, %Factor{} = factor, token), do: Authentication.send_otp(user, factor, token)

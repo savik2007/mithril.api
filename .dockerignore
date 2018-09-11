@@ -37,3 +37,6 @@ bin/ci
 bin/build.sh
 bin/install-git-hooks.sh
 bin/start.sh
+
+# ignore tests
+test/
