@@ -26,6 +26,8 @@ defmodule Mithril.Clients.Connection do
     |> validate_required(@required)
     |> validate_format(:redirect_uri, ~r{^https?://.+})
     |> unique_constraint(:secret)
+    |> foreign_key_constraint(:client_id)
+    |> foreign_key_constraint(:consumer_id)
   end
 
   defp put_secret(changeset) do
