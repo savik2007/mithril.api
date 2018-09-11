@@ -105,7 +105,6 @@ defmodule Mithril.Authorization.GrantType.Password do
         # 2FA access token requires no scopes
         "scope" => "",
         "scope_request" => scope
-        #        "redirect_uri" => connection.redirect_uri
       }
     }
 
