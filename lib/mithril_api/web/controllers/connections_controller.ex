@@ -22,7 +22,7 @@ defmodule Mithril.Web.ConnectionController do
       conn
       |> put_status(code)
       |> put_resp_header("location", client_connection_path(conn, :show, client_id, connection))
-      |> render(get_view_by_status(code), connection: connection)
+      |> render("connection_with_secret.json", connection: connection)
     end
   end
 
@@ -54,7 +54,4 @@ defmodule Mithril.Web.ConnectionController do
       send_resp(conn, :no_content, "")
     end
   end
-
-  defp get_view_by_status(:ok), do: "show.json"
-  defp get_view_by_status(:created), do: "connection_with_secret.json"
 end
