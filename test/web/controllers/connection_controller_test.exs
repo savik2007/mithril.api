@@ -158,17 +158,19 @@ defmodule Mithril.Web.ConnectionControllerTest do
 
     test "success update", %{conn: conn, client: client, consumer: consumer} do
       connection = insert(:connection, client: client, consumer: consumer)
-      redirect_uri = "http://example.com"
+      redirect_uri = "http://example.com/updated"
       attrs = %{secret: "new secret", redirect_uri: redirect_uri}
 
-      conn
-      |> patch(client_connection_path(conn, :update, client, connection), attrs)
-      |> json_response(200)
-      |> assert_connection_fields()
+      resp =
+        conn
+        |> patch(client_connection_path(conn, :update, client, connection), attrs)
+        |> json_response(200)
+        |> assert_connection_fields()
 
       connection_from_db = Clients.get_connection!(connection.id)
       assert connection.secret == connection_from_db.secret
       assert redirect_uri == connection_from_db.redirect_uri
+      assert redirect_uri == resp["redirect_uri"]
     end
 
     test "invalid params", %{conn: conn, client: client, consumer: consumer} do
