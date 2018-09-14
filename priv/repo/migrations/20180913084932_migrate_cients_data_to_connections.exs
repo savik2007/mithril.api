@@ -18,9 +18,7 @@ defmodule Mithril.Repo.Migrations.MigrateCientsDataToConnections do
       "https://account.health24.life/api/services/app/authMoz/Authorize" => "28fd03c5-1789-467a-a9d0-f1626f2dfa32",
       "https://ehealth.vikisoft.kiev.ua/employee-request" => "face8b90-56c1-49a0-98a7-2780a20b2d86",
       "https://portalauth.e-life.com.ua" => "d410cd00-9cd4-44f7-b92d-5dbe8570431c",
-      "https://portal-doctor.eleks.com/web/ehealth" => "119be6a5-4506-4112-a1e8-750e4642a9ee",
-      "https://portal-doctor.eleks.com/api/processanonymous/1b7dbccc-e95b-4e64-a0c4-00a4cf9abc06" =>
-        "119be6a5-4506-4112-a1e8-750e4642a9ee",
+      "https://portal-doctor.eleks.com" => "119be6a5-4506-4112-a1e8-750e4642a9ee",
       "https://brovary.eh-srv.mcmed.ua" => "23672642-90c3-4d91-b0ec-b33455ff2e1c"
     }
 
