@@ -18,7 +18,8 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCode do
          {:ok, token} <- get_token(attrs["code"], @authorization_code),
          :ok <- validate_client_match(token, connection.client),
          :ok <- validate_token_expiration(token),
-         :ok <- validate_token_redirect_uri(token, attrs["redirect_uri"]),
+         :ok <- validate_redirect_uri(token.details["redirect_uri"], attrs["redirect_uri"]),
+         :ok <- validate_redirect_uri(connection.redirect_uri, attrs["redirect_uri"]),
          {:ok, _} <- validate_approval_authorization(token),
          :ok <- validate_token_is_not_used(token) do
       TokenAPI.update_token(token, %{details: Map.put_new(token.details, :used, true)})
@@ -37,8 +38,8 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCode do
   defp validate_client_match(%{details: %{"client_id" => client_id}}, %Client{id: id}) when id == client_id, do: :ok
   defp validate_client_match(_, _), do: Error.invalid_grant("Token not found or expired.")
 
-  defp validate_token_redirect_uri(token, redirect_uri) do
-    case Regex.match?(RedirectUriChecker.generate_redirect_uri_regexp(token.details["redirect_uri"]), redirect_uri) do
+  defp validate_redirect_uri(redirect_uri, requested_redirect_uri) do
+    case Regex.match?(RedirectUriChecker.generate_redirect_uri_regexp(redirect_uri), requested_redirect_uri) do
       true -> :ok
       _ -> Error.invalid_client("The redirection URI provided does not match a pre-registered value.")
     end
