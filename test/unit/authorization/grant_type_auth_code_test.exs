@@ -107,28 +107,56 @@ defmodule Mithril.Authorization.GrantType.AuthorizationCodeTest do
              })
   end
 
-  test "it returns redirection URI client error" do
-    client = insert(:client)
-    connection = insert(:connection, client: client)
+  describe "invalid redirect_uri" do
+    test "it returns redirection URI client error when redirect_uri not matched with token redirect_uri" do
+      client = insert(:client)
+      connection = insert(:connection, client: client)
 
-    insert(:app,
-      user: client.user,
-      client: client,
-      scope: "legal_entity:read legal_entity:write"
-    )
+      insert(:app,
+        user: client.user,
+        client: client,
+        scope: "legal_entity:read legal_entity:write"
+      )
 
-    code_grant = create_code_grant_token(connection, client.user)
+      token_data = %{client: %{id: connection.client_id}, redirect_uri: "https://example.com/invalid"}
+      code_grant = create_code_grant_token(token_data, client.user)
 
-    message = "The redirection URI provided does not match a pre-registered value."
+      message = "The redirection URI provided does not match a pre-registered value."
 
-    assert {:error, {:access_denied, %{message: ^message}}} =
-             AuthorizationCodeGrantType.authorize(%{
-               "client_id" => client.id,
-               "client_secret" => connection.secret,
-               "code" => code_grant.value,
-               "redirect_uri" => "some_suspicious_uri",
-               "scope" => "legal_entity:read"
-             })
+      assert {:error, {:access_denied, %{message: ^message}}} =
+               AuthorizationCodeGrantType.authorize(%{
+                 "client_id" => client.id,
+                 "client_secret" => connection.secret,
+                 "code" => code_grant.value,
+                 "redirect_uri" => connection.redirect_uri,
+                 "scope" => "legal_entity:read"
+               })
+    end
+
+    test "it returns redirection URI client error when redirect_uri not matched with connection redirect_uri" do
+      client = insert(:client)
+      connection = insert(:connection, client: client, redirect_uri: "https://example1.com")
+      connection2 = insert(:connection, client: client, redirect_uri: "https://example2.com")
+
+      insert(:app,
+        user: client.user,
+        client: client,
+        scope: "legal_entity:read legal_entity:write"
+      )
+
+      code_grant = create_code_grant_token(connection, client.user)
+
+      message = "The redirection URI provided does not match a pre-registered value."
+
+      assert {:error, {:access_denied, %{message: ^message}}} =
+               AuthorizationCodeGrantType.authorize(%{
+                 "client_id" => client.id,
+                 "client_secret" => connection2.secret,
+                 "code" => code_grant.value,
+                 "redirect_uri" => connection.redirect_uri,
+                 "scope" => "legal_entity:read"
+               })
+    end
   end
 
   test "it returns token expired error" do

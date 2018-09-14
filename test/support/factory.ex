@@ -20,7 +20,7 @@ defmodule Mithril.Factory do
   alias Mithril.UserAPI.User.LoginHstr
   alias Mithril.UserRoleAPI.UserRole
 
-  def create_code_grant_token(%Connection{} = connection, user, scope \\ "app:authorize", expires_at \\ 2_000_000_000) do
+  def create_code_grant_token(connection, user, scope \\ "app:authorize", expires_at \\ 2_000_000_000) do
     insert(
       :token,
       details: %{
