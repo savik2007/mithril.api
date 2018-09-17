@@ -66,7 +66,7 @@ defmodule Mithril.Web.ConnectionControllerTest do
     end
 
     test "success create", %{conn: conn, client: client, consumer: consumer} do
-      attrs = %{redirect_uri: "http://localhost", client_id: client.id, consumer_id: consumer.id}
+      attrs = %{redirect_uri: "https://localhost", client_id: client.id, consumer_id: consumer.id}
 
       connection =
         conn
@@ -108,8 +108,8 @@ defmodule Mithril.Web.ConnectionControllerTest do
       refute connection.secret == new_secret
     end
 
-    test "invalid redirect uri", %{conn: conn, client: client, consumer: consumer} do
-      attrs = %{redirect_uri: "invalid url", consumer_id: consumer.id}
+    test "invalid redirect uri schema", %{conn: conn, client: client, consumer: consumer} do
+      attrs = %{redirect_uri: "http://localhost", consumer_id: consumer.id}
 
       errors =
         conn
@@ -121,7 +121,7 @@ defmodule Mithril.Web.ConnectionControllerTest do
     end
 
     test "invalid client_id", %{conn: conn, consumer: consumer} do
-      attrs = %{redirect_uri: "http://localhost", consumer_id: consumer.id}
+      attrs = %{redirect_uri: "https://localhost", consumer_id: consumer.id}
 
       conn
       |> put(client_connection_path(conn, :upsert, "invalid"), attrs)
@@ -129,7 +129,7 @@ defmodule Mithril.Web.ConnectionControllerTest do
     end
 
     test "consumer_id not exists", %{conn: conn, client: client} do
-      attrs = %{redirect_uri: "http://localhost", consumer_id: UUID.generate()}
+      attrs = %{redirect_uri: "https://localhost", consumer_id: UUID.generate()}
 
       errors =
         conn
@@ -141,7 +141,7 @@ defmodule Mithril.Web.ConnectionControllerTest do
     end
 
     test "invalid consumer_id", %{conn: conn, client: client} do
-      attrs = %{redirect_uri: "http://localhost", consumer_id: "invalid"}
+      attrs = %{redirect_uri: "https://localhost", consumer_id: "invalid"}
 
       conn
       |> put(client_connection_path(conn, :upsert, client), attrs)
@@ -158,7 +158,7 @@ defmodule Mithril.Web.ConnectionControllerTest do
 
     test "success update", %{conn: conn, client: client, consumer: consumer} do
       connection = insert(:connection, client: client, consumer: consumer)
-      redirect_uri = "http://example.com/updated"
+      redirect_uri = "https://example.com/updated"
       attrs = %{secret: "new secret", redirect_uri: redirect_uri}
 
       resp =
