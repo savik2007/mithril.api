@@ -22,6 +22,7 @@ defmodule Mithril.Web do
       import Plug.Conn
       import Mithril.Proxy
       import MithrilWeb.Router.Helpers
+      import Mithril.Plugs.Headers
     end
   end
 

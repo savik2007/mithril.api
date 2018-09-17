@@ -93,21 +93,6 @@ defmodule Mithril.Web.ConnectionControllerTest do
       assert connection.secret == db_secret
     end
 
-    test "refresh secret", %{conn: conn, client: client, consumer: consumer} do
-      connection = insert(:connection, client: client, consumer: consumer)
-
-      data =
-        conn
-        |> patch(client_connection_path(conn, :refresh_secret, client, connection))
-        |> json_response(200)
-        |> Map.get("data")
-
-      assert Map.has_key?(data, "secret")
-      %{secret: new_secret} = Clients.get_connection!(connection.id)
-      assert new_secret == data["secret"]
-      refute connection.secret == new_secret
-    end
-
     test "invalid redirect uri schema", %{conn: conn, client: client, consumer: consumer} do
       attrs = %{redirect_uri: "http://localhost", consumer_id: consumer.id}
 
@@ -146,6 +131,78 @@ defmodule Mithril.Web.ConnectionControllerTest do
       conn
       |> put(client_connection_path(conn, :upsert, client), attrs)
       |> json_response(404)
+    end
+  end
+
+  describe "refresh secret" do
+    setup %{conn: conn} do
+      client = insert(:client)
+      consumer = insert(:client)
+      {:ok, conn: conn, client: client, consumer: consumer}
+    end
+
+    test "when consumer_id the same as client_id in connection", %{conn: conn, client: client} do
+      connection = insert(:connection, client: client, consumer: client)
+
+      data =
+        conn
+        |> patch(client_connection_path(conn, :refresh_secret, client, connection))
+        |> json_response(200)
+        |> Map.get("data")
+
+      assert Map.has_key?(data, "secret")
+      %{secret: new_secret} = Clients.get_connection!(connection.id)
+      assert new_secret == data["secret"]
+      refute connection.secret == new_secret
+    end
+
+    test "when consumer_id and client_id are different. Request with api-key header", %{
+      conn: conn,
+      client: client,
+      consumer: consumer
+    } do
+      connection = insert(:connection, client: client, consumer: consumer)
+      connection_consumer = insert(:connection, client: consumer, consumer: consumer)
+
+      data =
+        conn
+        |> put_req_header("api-key", connection_consumer.secret)
+        |> patch(client_connection_path(conn, :refresh_secret, client, connection))
+        |> json_response(200)
+        |> Map.get("data")
+
+      assert Map.has_key?(data, "secret")
+      %{secret: new_secret} = Clients.get_connection!(connection.id)
+      assert new_secret == data["secret"]
+      refute connection.secret == new_secret
+    end
+
+    test "access denied when connection not matched with api-key", %{conn: conn, client: client, consumer: consumer} do
+      connection = insert(:connection, client: client, consumer: consumer)
+      consumer2 = insert(:client)
+      connection2 = insert(:connection, client: client, consumer: consumer2)
+
+      conn
+      |> put_req_header("api-key", connection2.secret)
+      |> patch(client_connection_path(conn, :refresh_secret, client, connection))
+      |> json_response(403)
+    end
+
+    test "access denied when api-key header not set", %{conn: conn, client: client, consumer: consumer} do
+      connection = insert(:connection, client: client, consumer: consumer)
+
+      conn
+      |> patch(client_connection_path(conn, :refresh_secret, client, connection))
+      |> json_response(401)
+    end
+
+    test "access denied when connection by api-key not found", %{conn: conn, client: client, consumer: consumer} do
+      connection = insert(:connection, client: client, consumer: consumer)
+
+      conn
+      |> put_req_header("api-key", "not-exists")
+      |> patch(client_connection_path(conn, :refresh_secret, client, connection))
+      |> json_response(401)
     end
   end
 

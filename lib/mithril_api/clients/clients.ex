@@ -138,4 +138,21 @@ defmodule Mithril.Clients do
   def delete_connection(%Connection{} = connection) do
     Repo.delete(connection)
   end
+
+  def validate_connection_context(%Connection{consumer_id: consumer_id}, client_id, _api_key)
+      when consumer_id == client_id,
+      do: :ok
+
+  def validate_connection_context(%Connection{consumer_id: consumer_id}, _client_id, api_key) when is_binary(api_key) do
+    with %Connection{client_id: client_id} <- get_connection_by(secret: api_key) do
+      case consumer_id == client_id do
+        true -> :ok
+        false -> {:error, :forbidden}
+      end
+    else
+      _ -> {:error, :access_denied}
+    end
+  end
+
+  def validate_connection_context(_, _, _), do: {:error, :access_denied}
 end
