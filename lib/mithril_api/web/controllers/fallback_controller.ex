@@ -36,6 +36,12 @@ defmodule Mithril.Web.FallbackController do
     |> render(Error, :"401", reason)
   end
 
+  def call(conn, {:error, :forbidden}) do
+    conn
+    |> put_status(:forbidden)
+    |> render(Error, :"403")
+  end
+
   def call(conn, {:error, {:forbidden, reason}}) when is_map(reason) do
     conn
     |> put_status(:forbidden)

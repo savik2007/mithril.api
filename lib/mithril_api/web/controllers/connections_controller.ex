@@ -34,10 +34,11 @@ defmodule Mithril.Web.ConnectionController do
     end
   end
 
-  def refresh_secret(conn, %{"client_id" => client_id, "id" => id}) do
+  def refresh_secret(%{req_headers: headers} = conn, %{"client_id" => client_id, "id" => id}) do
     connection = Clients.get_connection_by!(%{client_id: client_id, id: id})
 
-    with {:ok, %Connection{} = updated_connection} <- Clients.refresh_connection_secret(connection) do
+    with :ok <- Clients.validate_connection_context(connection, client_id, get_api_key(headers)),
+         {:ok, %Connection{} = updated_connection} <- Clients.refresh_connection_secret(connection) do
       render(conn, "connection_with_secret.json", connection: updated_connection)
     end
   end
