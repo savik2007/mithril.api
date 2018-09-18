@@ -150,9 +150,9 @@ defmodule Mithril.Clients do
         false -> {:error, :forbidden}
       end
     else
-      _ -> {:error, :access_denied}
+      _ -> {:error, {:access_denied, "invalid api-key header"}}
     end
   end
 
-  def validate_connection_context(_, _, _), do: {:error, :access_denied}
+  def validate_connection_context(_, _, _), do: {:error, {:access_denied, "api-key header not set"}}
 end
