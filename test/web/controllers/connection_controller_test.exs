@@ -191,18 +191,22 @@ defmodule Mithril.Web.ConnectionControllerTest do
     test "access denied when api-key header not set", %{conn: conn, client: client, consumer: consumer} do
       connection = insert(:connection, client: client, consumer: consumer)
 
-      conn
-      |> patch(client_connection_path(conn, :refresh_secret, client, connection))
-      |> json_response(401)
+      assert "api-key header not set" ==
+               conn
+               |> patch(client_connection_path(conn, :refresh_secret, client, connection))
+               |> json_response(401)
+               |> get_in(~w(error message))
     end
 
     test "access denied when connection by api-key not found", %{conn: conn, client: client, consumer: consumer} do
       connection = insert(:connection, client: client, consumer: consumer)
 
-      conn
-      |> put_req_header("api-key", "not-exists")
-      |> patch(client_connection_path(conn, :refresh_secret, client, connection))
-      |> json_response(401)
+      assert "invalid api-key header" ==
+               conn
+               |> put_req_header("api-key", "not-exists")
+               |> patch(client_connection_path(conn, :refresh_secret, client, connection))
+               |> json_response(401)
+               |> get_in(~w(error message))
     end
   end
 
