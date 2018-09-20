@@ -4,7 +4,7 @@ defmodule Mithril.Repo.Migrations.MigrateClientsDataToConnections do
   alias Ecto.UUID
   alias Mithril.Repo
 
-  @disable_ddl_transaction true
+  # @disable_ddl_transaction true
 
   def up do
     msp_clients = %{
