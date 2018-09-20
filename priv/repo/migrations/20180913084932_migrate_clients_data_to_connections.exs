@@ -4,8 +4,6 @@ defmodule Mithril.Repo.Migrations.MigrateClientsDataToConnections do
   alias Ecto.UUID
   alias Mithril.Repo
 
-  # @disable_ddl_transaction true
-
   def up do
     msp_clients = %{
       "https://reform.helsi.me" => "7fb21983-0e7d-41dd-9769-568793dcabf1",
