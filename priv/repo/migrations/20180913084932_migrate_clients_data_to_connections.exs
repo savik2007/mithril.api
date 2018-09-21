@@ -38,7 +38,8 @@ defmodule Mithril.Repo.Migrations.MigrateClientsDataToConnections do
       SELECT c1.id, c1.secret, c1.redirect_uri
       FROM clients AS c1
       LEFT JOIN connections AS c2 ON c1.id = c2.client_id
-      WHERE c2.client_id IS NULL;
+      WHERE c2.client_id IS NULL
+        AND c1.redirect_uri IS NOT NULL ;
     """
 
     case SQL.query(Repo, sql, []) do
