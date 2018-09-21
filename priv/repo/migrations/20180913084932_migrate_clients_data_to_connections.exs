@@ -23,7 +23,10 @@ defmodule Mithril.Repo.Migrations.MigrateClientsDataToConnections do
     }
 
     Enum.each(msp_clients, fn {uri, consumer_id} ->
-      sql = "SELECT id, secret, redirect_uri FROM clients WHERE redirect_uri ILIKE '%#{uri}%';"
+      sql = """
+      SELECT id, secret, redirect_uri FROM clients WHERE redirect_uri ILIKE '%#{uri}%'
+      AND NOT exists(SELECT 1 FROM connections WHERE connections.client_id = clients.id AND connections.secret = clients.secret);
+      """
 
       case SQL.query(Repo, sql, []) do
         {:ok, %{num_rows: num_rows, rows: rows}} when num_rows > 0 ->
