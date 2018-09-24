@@ -18,7 +18,10 @@ defmodule Mithril.UserRoleAPITest do
 
   test "get_user_role! returns the user_role with given id" do
     user_role = insert(:user_role)
-    assert user_role = UserRoleAPI.get_user_role!(user_role.id)
+    db_user_role = UserRoleAPI.get_user_role!(user_role.id)
+    assert db_user_role.id == user_role.id
+    assert db_user_role.client_id == user_role.client_id
+    assert db_user_role.role_id == user_role.role_id
   end
 
   describe "create_user_role" do

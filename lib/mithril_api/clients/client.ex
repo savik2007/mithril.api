@@ -32,6 +32,7 @@ defmodule Mithril.Clients.Client do
     field(:is_blocked, :boolean, default: false)
     field(:block_reason, :string)
     field(:seed?, :boolean, default: false, virtual: true)
+    field(:redirect_uri, :string)
 
     belongs_to(:client_type, ClientType)
     belongs_to(:user, User)

@@ -44,7 +44,8 @@ defmodule Mithril.TokenAPITest do
 
   test "get_token! returns the token with given id" do
     token = insert(:token)
-    assert token = TokenAPI.get_token!(token.id)
+    db_token = TokenAPI.get_token!(token.id)
+    assert db_token.id == token.id
   end
 
   test "create_token/1 with valid data creates a token" do
@@ -84,7 +85,8 @@ defmodule Mithril.TokenAPITest do
   test "update_token/2 with invalid data returns error changeset" do
     token = insert(:token)
     assert {:error, %Ecto.Changeset{}} = TokenAPI.update_token(token, @invalid_attrs)
-    assert token = TokenAPI.get_token!(token.id)
+    db_token = TokenAPI.get_token!(token.id)
+    assert db_token.id == token.id
   end
 
   test "delete_token/1 deletes the token" do
