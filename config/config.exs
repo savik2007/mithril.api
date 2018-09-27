@@ -25,11 +25,17 @@ use Mix.Config
 #     :var_name, "${ENV_VAR_NAME}"
 
 config :mithril_api,
+  namespace: Mithril,
   ecto_repos: [Mithril.Repo],
   system_user: {:system, "EHEALTH_SYSTEM_USER", "4261eacf-8008-4e62-899f-de1e2f7065f0"},
   sensitive_data_in_response: {:system, :boolean, "SENSITIVE_DATA_IN_RESPONSE_ENABLED", false},
   trusted_clients: {:system, :list, "TRUSTED_CLIENT_IDS", []},
-  namespace: Mithril
+  api_resolvers: [
+    sms: Mithril.API.SMS,
+    mpi: Mithril.API.MPI,
+    digital_signature: Mithril.API.Signature
+  ],
+  token_ttl_after_expiration: {:system, :integer, "TOKEN_TTL_AFTER_EXPIRATION_DAYS", 30}
 
 # Configure your database
 config :mithril_api, Mithril.Repo,
@@ -45,6 +51,8 @@ config :mithril_api, :generators,
   migration: false,
   binary_id: true,
   sample_binary_id: "11111111-1111-1111-1111-111111111111"
+
+config :mithril_api, Mithril.TokenAPI.Deactivator, limit: 500
 
 config :mithril_api, :password,
   expiration: {:system, :integer, "PASSWORD_EXPIRATION_DAYS", 90},
@@ -65,16 +73,10 @@ config :mithril_api, :"2fa",
   otp_max_attempts: {:system, :integer, "OTP_MAX_ATTEMPTS", 3},
   otp_sms_template: {:system, :string, "OTP_SMS_TEMPLATE", "Код підтвердження: <otp.code>"}
 
-config :mithril_api,
-  api_resolvers: [
-    sms: Mithril.API.SMS,
-    mpi: Mithril.API.MPI,
-    digital_signature: Mithril.API.Signature
-  ]
-
 # Configures Guardian
-config :mithril_api, jwt_secret: {:system, "JWT_SECRET"}
-config :mithril_api, ttl_login: {:system, :integer, "JWT_LOGIN_TTL"}
+config :mithril_api,
+  jwt_secret: {:system, "JWT_SECRET"},
+  ttl_login: {:system, :integer, "JWT_LOGIN_TTL"}
 
 config :mithril_api, Mithril.Guardian,
   issuer: "EHealth",
@@ -128,6 +130,7 @@ config :mithril_api, Mithril.API.Signature,
 
 config :mithril_api, Mithril.Scheduler,
   token_expiration: {:system, :string, "TOKEN_EXPIRATION_SCHEDULE", "* 0-4 * * *"},
+  token_deleting: {:system, :string, "TOKEN_DELETING_SCHEDULE", "* 1-4 * * *"},
   otp_expiration: {:system, :string, "OTP_EXPIRATION_SCHEDULE", "*/5 * * * *"}
 
 import_config "#{Mix.env()}.exs"

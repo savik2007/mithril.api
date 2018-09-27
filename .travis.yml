@@ -9,9 +9,9 @@ services:
 addons:
   postgresql: "9.6"
 elixir:
-  - 1.6.3
+  - 1.6.6
 otp_release:
-  - 20.2
+  - 20.3.8
 addons:
   apt:
     packages:
@@ -23,47 +23,28 @@ notifications:
     on_success: always
 env:
   global:
-    - CHART=mithril
     - MIX_ENV=test
-    - REQUIRE_VERSION_TAGS="true"
-    - DOCKER_HUB_ACCOUNT=edenlabllc
-    - TRUNK_BRANCH="develop"
-    - MAINTENANCE_BRANCH="master"
+    - DOCKER_NAMESPACE=edenlabllc
+    - APPS='{"mithril_api":"mithril"}'
+    - POSTGRES_VERSION=9.6
     # Docker and GitHub credentials
-    - secure: "XnqLhIZf2P2iw5QwbS+0RDmDPTUoRNe6TucJmjiRD6fKw6wkT5QWD1/3hVS6sDidnFGeg9DsXypYMUqXjnfP2KG2aiqgK558e00h/5DpcL9XYnxyU3YBZBB6WCu+aGgIxkdtnwOF/WGQgv1NkCgC51H7Cq235HuUX6PkvuYGEe7Cy/6kzOMr7+Qrmd6ywPKPRidW88zMneKJjIV8sMsNXhdxdkq4logneiaaseJQ0pysUMKmKMTxoefngKT5XL59KWznsMOXoEcb08XIPp6BqtPIay0CrGGnX9ZsQqBVWRfwBEDV7QS/U1Ga0cYtO80xVLT0mtWk4NyGs9WRB4KaR7LyWI0ZTD785pQdujisJ6lRwDOkrLB8hcrBWGhSINKYgdYTIPk4I5eYAjpgFYAqVAAs7wYdszkLP5HjjXdJtAKpNZT1MwT/t4HZr03Ia7H9yKmgzGciPWqE1ODVW3US7Q5oVfrONXzvcTS3goNpHx6qup0Q9ROoeRkhAss2nuqwwCRljYZzWergSdiS874sgKgym/IclbiL6hKu4iZ33gZQcRACGEnJWx1vW/p8waiF1c3xa7u6QAqDVawO73XRZffAlI+HOK66M9++QiXly0Mp2ioXVTGK08cl0LE9/3P5+mkTmYQyabHtOH1smxfvsaBjtnnOxhDj+OyYySllHh0="
+    - secure: "F8a3M90470KBwgq8Q3A7dAKeDui42z/lsiaPB9cnFspB1Uwp6NHRCUGjd2jgfGsIOtlA4kvlIvc2WE5aO3z1+djLdWhLUtU2WqgY/9Eo2zWd7qTTS+sibp9HDuhR5OjkNKkZWE1fmhEW9EDUz8Iw27pF82ZyuJf9SCqmvHfKLpgHu03Yoi+jISTLUEJ7NQiIc+pyO0VAsGRXQfSLrTwsNGZxjtmvlQqM1Z1eyhZvF7mSPTME9n28qLwEtpPTGABO714DwSiphBJxno3KFroVzjf36xHAF5y9zq0Rqtp156XaGVF/++9thgHEWnsmbulptKf0ZWhxbNYm9GiT6HLwZbXDAuGhNypxcIpqTxMrDnNL8dgl/W3f3zExPy4kDqJoShDE6NJV4CRDRRyljGWA89J3dDhBVODqgC/1SDVBCdthwcjIy7u6T9/otiGbBtD5RdAfVlm0iR4qMTYrHOJFsxhtAn5cfKmsRbsgNjiOyBVokB5z38qLtdJZkwhaqNdja4HGDONrJvJ03NLLVMSfWbCUopnV7v8RQ/h/UkM56XQL4CbTdpATRZf5oDZvgxz307+RYESRngMskaTMl7w9kBOQKTJa7qiXdD9WsgJnPF0zM7ANSlK6JhZeY0785o0IFYTYY9dd0T/fB9j5g1j2YC3bdrh5owVUw1uoMQuogFI="
     - secure: "GYerLjERdMwmKNYa2HVRUs5690dbfaCekLfLJHn+AsqFdFAZ7NLEi+Y2f3Vl+IT1ukS8Gp5GWWsmqCQ0YBQAgEp0+lbZuWMDJ6zJ7NZosYgxVf348+DWFjuZ6MaDZOOSDxzM3TQCcBty4jgYlElmRXZD6A7geytiPcg3nmPQ67+ng6oEvAbm5aFyIZM9XTl+N1CO0kKRvgUa9iFyW6TNzU+CLYclPEDW+iBBwrjtugDAiGRySCOdISI410hgOoO2t2e/QNP0r0PciSM1E8txiKPEhCp/a9pj/ZsoeaQUd7rVBW0bU8vRb4FuGmA14cE2dUo9Y23OoEB9gTIVuLFIA9la12HigCQBZTXC0ChZkHcy5wo+e/5psBY8se+P29l8WSFIpNBjlfDeM72zkvzyzk6pu/3wD0vtJx7sVJvSUFfeLTIFvOjBpvjy5Pamf4Q/NUGxOe3w9F/2ed2A3onMn3nkkpA27PepYs3frQImt8Nf7lqHYeySaQLbqXnEWttIJW8tb945wHqBPYcg5FfXWyCwb34b4N7nh8PswdW8KvZ7+KIJZ+WjT/89zJS1nWnqTW+WpsqycgJWGIV0qLnrj/sm8Fg0ncgmak3WIrObr949Nna8CR5vdsCQI727quh7yVc5wfqFwHjfi6zl7FuM4ea4UzfOen0I7UHkSk+81x0="
 branches:
   # Releases are generated automatically, stop infinite build loop
   except:
     - /[0-9]*\.[0-9]*\.[0-9]*/
 before_install:
-  - openssl aes-256-cbc -K $encrypted_792e32fefb8e_key -iv $encrypted_792e32fefb8e_iv -in eHealth-8110bd102a69.json.enc -out eHealth-8110bd102a69.json -d
-  # Expose MQ and DB to Docker container
-  - sudo ./bin/ci/init-db.sh
-before_script:
-  # Extract project name and version from mix.exs
-  - source ./bin/ci/release/fetch-project-environment.sh
-  # Load information about new version
-  - source ./bin/ci/release/fetch-source-version.sh
-  # Load information about changelog
-  - source ./bin/ci/release/fetch-changelog.sh
-script:
-  # Check for versioning error
-  - ./bin/ci/release/check-version-error.sh || travis_terminate 1
-  # Increment version in mix.exs
-  - ./bin/ci/release/put-source-version.sh || travis_terminate 1
-  # Create release notes log for minor version
-  - ./bin/ci/release/put-release-notes.sh
-  # Run all tests except pending ones
-  - ./bin/mix_tests.sh || travis_terminate 1
-  # Build Docker container
-  - ./bin/ci/release/build-container.sh || travis_terminate 1
-  # Initialize DB for Docker container
-  - MIX_ENV=dev mix ecto.setup
-  # Run Docker container
-  - sudo ./bin/ci/release/start-container.sh
-  - sudo ./bin/ci/release/check-container.sh || travis_terminate 1
-  # Submit Docker container to Docker Hub and create GitHub Release by pushing tag with changelog
-  - ./bin/ci/release/push-changes.sh || travis_terminate 1
-  # CD to Dev
-  - sudo ./bin/deploy.sh || travis_terminate 1
+  - sudo apt-get install jq
+  - curl -s https://raw.githubusercontent.com/edenlabllc/ci-utils/umbrella/init-db.sh -o init-db.sh; sudo sh ./init-db.sh
+jobs:
+  include:
+    - stage: "test and build"
+      # run tests
+      script: (curl -s https://raw.githubusercontent.com/edenlabllc/ci-utils/umbrella/tests.sh -o tests.sh; bash ./tests.sh) || travis_terminate 1
+      # Build Docker container
+    - stage: "test and build"
+      # "Decrypting deploy key..."
+      script:
+      - openssl aes-256-cbc -K $encrypted_792e32fefb8e_key -iv $encrypted_792e32fefb8e_iv -in eHealth-8110bd102a69.json.enc -out eHealth-8110bd102a69.json -d
+      - (curl -s https://raw.githubusercontent.com/edenlabllc/ci-utils/umbrella/docker.sh -o docker.sh; bash ./docker.sh) || travis_terminate 1

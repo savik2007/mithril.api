@@ -1,10 +1,11 @@
 defmodule Mithril.Authorization.GrantType do
   @moduledoc false
 
-  alias Mithril.{ClientAPI, Error}
-  alias Mithril.UserAPI.User
+  alias Mithril.ClientAPI
   alias Mithril.ClientAPI.Client
   alias Mithril.ClientTypeAPI.ClientType
+  alias Mithril.Error
+  alias Mithril.UserAPI.User
 
   @scope_app_authorize "app:authorize"
 

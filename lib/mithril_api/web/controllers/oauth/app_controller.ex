@@ -1,22 +1,11 @@
 defmodule Mithril.OAuth.AppController do
   use Mithril.Web, :controller
-
-  alias Mithril.Web.TokenView
   alias Mithril.Authorization
+  alias Mithril.Web.TokenView
 
   action_fallback(Mithril.Web.FallbackController)
 
-  def authorize(conn, %{"app" => app_params}) do
-    user_id =
-      conn
-      |> Plug.Conn.get_req_header("x-consumer-id")
-      |> List.first()
-
-    api_key =
-      conn
-      |> Plug.Conn.get_req_header("api-key")
-      |> List.first()
-
+  def authorize(conn, %{"app" => app_params, "user_id" => user_id, "api_key" => api_key}) do
     params = Map.merge(app_params, %{"user_id" => user_id, "api_key" => api_key})
 
     with {:ok, token} <- Authorization.create_approval(params) do

@@ -2,7 +2,7 @@ defmodule Mithril.RoleAPI do
   @moduledoc """
   The boundary for the RoleAPI system.
   """
-  use Mithril.Search
+  import Mithril.Search
   import Ecto.{Query, Changeset}, warn: false
   alias Mithril.Repo
 
@@ -23,12 +23,6 @@ defmodule Mithril.RoleAPI do
     |> role_changeset(params)
     |> search(params, Role)
   end
-
-  def get_search_query(entity, %{scope: scopes} = changes) do
-    super(entity, Map.put(changes, :scope, {String.split(scopes, ","), :intersect}))
-  end
-
-  def get_search_query(entity, changes), do: super(entity, changes)
 
   @doc """
   Gets a single role.
@@ -119,6 +113,14 @@ defmodule Mithril.RoleAPI do
   end
 
   defp role_changeset(%RoleSearch{} = role, attrs) do
-    cast(role, attrs, [:name, :scope])
+    role
+    |> cast(attrs, [:name, :scope])
+    |> put_search_change()
   end
+
+  defp put_search_change(%Ecto.Changeset{valid?: true, changes: %{scope: scopes}} = changeset) do
+    put_change(changeset, :scope, {String.split(scopes, ","), :intersect})
+  end
+
+  defp put_search_change(changeset), do: changeset
 end

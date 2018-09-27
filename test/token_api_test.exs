@@ -2,7 +2,7 @@ defmodule Mithril.TokenAPITest do
   use Mithril.DataCase
 
   alias Mithril.TokenAPI
-  alias Mithril.TokenAPI.Token
+  alias Mithril.TokenAPI.{Token, Deactivator}
   alias Scrivener.Page
   alias Ecto.UUID
 
@@ -163,14 +163,23 @@ defmodule Mithril.TokenAPITest do
     end
 
     test "deactivate_old_password_tokens" do
-      %{id: user_id} =
-        insert(:user, password_set_at: NaiveDateTime.add(NaiveDateTime.utc_now(), -100 * 24 * 60 * 60, :second))
+      token_ids =
+        Enum.reduce(1..3, [], fn _, acc ->
+          %{id: user_id} =
+            insert(:user, password_set_at: NaiveDateTime.add(NaiveDateTime.utc_now(), -100 * 24 * 60 * 60, :second))
 
-      token = insert(:token, user_id: user_id)
-      assert token.expires_at == 2_000_000_000
-      TokenAPI.deactivate_old_password_tokens()
-      token = Repo.get(Token, token.id)
-      assert token.expires_at <= :os.system_time(:seconds)
+          token = insert(:token, user_id: user_id)
+          assert token.expires_at == 2_000_000_000
+          [token.id | acc]
+        end)
+
+      Deactivator.deactivate_old_password_tokens()
+      assert_receive :deactivated
+
+      Enum.each(token_ids, fn id ->
+        token = Repo.get(Token, id)
+        assert token.expires_at <= :os.system_time(:seconds)
+      end)
     end
   end
 
@@ -178,5 +187,24 @@ defmodule Mithril.TokenAPITest do
     assert {:error, changeset} = TokenAPI.create_token(%{user_id: "something"})
 
     assert {"has invalid format", _} = Keyword.get(changeset.errors, :user_id)
+  end
+
+  test "delete expired tokens" do
+    ttl =
+      :mithril_api
+      |> Confex.get_env(:token_ttl_after_expiration)
+      |> Kernel.*(3600 * 24)
+
+    token = insert(:token, expires_at: :os.system_time(:seconds) - ttl + 2)
+
+    Enum.each(1..3, fn _ ->
+      insert(:token, expires_at: 1_523_700_000)
+      insert(:token, expires_at: :os.system_time(:seconds) - ttl)
+    end)
+
+    Deactivator.delete_expired_tokens()
+    assert_receive :cleaned
+
+    assert %Page{entries: [^token]} = TokenAPI.list_tokens(%{})
   end
 end

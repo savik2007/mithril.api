@@ -3,7 +3,8 @@ defmodule Mithril.Web.FallbackController do
   This controller should be used as `action_fallback` in rest of controllers to remove duplicated error handling.
   """
   use Mithril.Web, :controller
-  alias EView.Views.{ValidationError, Error}
+  alias EView.Views.Error
+  alias EView.Views.ValidationError
 
   def call(conn, {:error, {:bad_request, reason}}) when is_binary(reason) do
     conn

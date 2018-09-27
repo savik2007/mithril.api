@@ -2,7 +2,7 @@ defmodule Mithril.ClientTypeAPI do
   @moduledoc """
   The boundary for the ClientTypeAPI system.
   """
-  use Mithril.Search
+  import Mithril.Search
 
   import Ecto.{Query, Changeset}, warn: false
   alias Mithril.Repo
@@ -24,12 +24,6 @@ defmodule Mithril.ClientTypeAPI do
     |> client_type_changeset(params)
     |> search(params, ClientType)
   end
-
-  def get_search_query(entity, %{scope: scopes} = changes) do
-    super(entity, Map.put(changes, :scope, {String.split(scopes, ","), :intersect}))
-  end
-
-  def get_search_query(entity, changes), do: super(entity, changes)
 
   @doc """
   Gets a single client_type.
@@ -127,6 +121,14 @@ defmodule Mithril.ClientTypeAPI do
       scope
     )
 
-    cast(client_type, attrs, fields)
+    client_type
+    |> cast(attrs, fields)
+    |> put_search_change()
   end
+
+  defp put_search_change(%Ecto.Changeset{valid?: true, changes: %{scope: scopes}} = changeset) do
+    put_change(changeset, :scope, {String.split(scopes, ","), :intersect})
+  end
+
+  defp put_search_change(changeset), do: changeset
 end

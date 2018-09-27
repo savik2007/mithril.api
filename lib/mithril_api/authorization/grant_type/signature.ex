@@ -4,8 +4,12 @@ defmodule Mithril.Authorization.GrantType.Signature do
   import Mithril.Authorization.GrantType
   import Ecto.{Query, Changeset}, warn: false
 
-  alias Mithril.{UserAPI, ClientAPI, TokenAPI, Error, Guardian}
+  alias Mithril.ClientAPI
   alias Mithril.Ecto.Base64
+  alias Mithril.Error
+  alias Mithril.Guardian
+  alias Mithril.TokenAPI
+  alias Mithril.UserAPI
   alias Mithril.UserAPI.User
 
   require Logger
@@ -45,7 +49,7 @@ defmodule Mithril.Authorization.GrantType.Signature do
        do: {:ok, %{"content" => content, "signer" => signer}}
 
   defp process_digital_signature_data(%{"signatures" => [%{"is_valid" => false, "validation_error_message" => error}]}),
-    do: {:error, error}
+    do: Error.invalid_request(error)
 
   defp process_digital_signature_data(%{"signatures" => signatures}) when is_list(signatures),
     do:

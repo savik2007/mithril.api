@@ -73,7 +73,7 @@ defmodule Mithril.Factory do
     client_type = insert(:client_type)
 
     %Mithril.ClientAPI.Client{
-      name: "some client",
+      name: sequence("ClinicN"),
       user_id: user.id,
       client_type_id: client_type.id,
       redirect_uri: "http://localhost",

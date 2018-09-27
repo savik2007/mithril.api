@@ -1,21 +1,29 @@
 defmodule Mithril.TokenAPI do
   @moduledoc false
 
-  use Mithril.Search
-  import Ecto.{Query, Changeset}, warn: false
+  import Mithril.Search
+  import Ecto.{Query, Changeset}
 
-  alias Ecto.Multi
-  alias Mithril.{Repo, Error}
-  alias Mithril.{UserAPI, ClientAPI, TokenAPI}
-  alias Mithril.UserAPI.User
   alias Mithril.Authorization.GrantType
-  alias Mithril.TokenAPI.{Token, TokenSearch}
+  alias Mithril.ClientAPI
+  alias Mithril.Error
+  alias Mithril.Repo
+  alias Mithril.TokenAPI
+  alias Mithril.TokenAPI.Token
+  alias Mithril.TokenAPI.TokenSearch
+  alias Mithril.UserAPI
+  alias Mithril.UserAPI.User
+
+  @uuid_regex ~r|[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}|
 
   @refresh_token "refresh_token"
   @access_token "access_token"
   @access_token_2fa "2fa_access_token"
   @change_password_token "change_password_token"
   @authorization_code "authorization_code"
+
+  def access_token_2fa, do: @access_token_2fa
+  def change_password_token, do: @change_password_token
 
   def token_type(:refresh), do: @refresh_token
   def token_type(:access), do: @access_token
@@ -26,10 +34,20 @@ defmodule Mithril.TokenAPI do
   def list_tokens(params) do
     %TokenSearch{}
     |> token_changeset(params)
-    |> search(params, Token)
+    |> search_token(params)
   end
 
-  def get_search_query(entity, %{client_id: client_id} = changes) do
+  def search_token(%Ecto.Changeset{valid?: true, changes: changes}, params) do
+    Token
+    |> get_token_search_query(changes)
+    |> Repo.paginate(params)
+  end
+
+  def search_token(%Ecto.Changeset{valid?: false} = changeset, _search_params) do
+    {:error, changeset}
+  end
+
+  def get_token_search_query(entity, %{client_id: client_id} = changes) do
     params =
       changes
       |> Map.delete(:client_id)
@@ -44,7 +62,7 @@ defmodule Mithril.TokenAPI do
     )
   end
 
-  def get_search_query(entity, changes), do: super(entity, changes)
+  def get_token_search_query(entity, changes), do: get_search_query(entity, changes)
 
   def get_token!(id), do: Repo.get!(Token, id)
 
@@ -154,7 +172,7 @@ defmodule Mithril.TokenAPI do
     |> token_changeset(params)
     |> case do
       %Ecto.Changeset{valid?: true, changes: changes} ->
-        Token |> get_search_query(changes) |> Repo.delete_all()
+        Token |> get_token_search_query(changes) |> Repo.delete_all()
 
       changeset ->
         changeset
@@ -197,23 +215,6 @@ defmodule Mithril.TokenAPI do
   defp deactivate_old_tokens_where_name_clause(query, name) do
     where(query, [t], t.name == ^name)
   end
-
-  def deactivate_old_password_tokens do
-    expiration_days = Confex.get_env(:mithril_api, :password)[:expiration]
-
-    query =
-      Token
-      |> join(:inner, [t], u in User, t.user_id == u.id)
-      |> where([t], t.name not in [@access_token_2fa, @change_password_token])
-      |> where([t], t.expires_at >= ^:os.system_time(:seconds))
-      |> where([t, u], fragment("now() >= ?", datetime_add(u.password_set_at, ^expiration_days, "day")))
-
-    Multi.new()
-    |> Multi.update_all(:tokens, query, set: [expires_at: :os.system_time(:seconds)])
-    |> Repo.transaction()
-  end
-
-  @uuid_regex ~r|[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}|
 
   defp token_changeset(%Token{} = token, attrs) do
     token

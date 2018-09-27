@@ -3,8 +3,8 @@ defmodule Mithril.GlobalUserRoleAPI do
 
   import Ecto.{Query, Changeset}, warn: false
 
-  alias Mithril.Repo
   alias Mithril.GlobalUserRoleAPI.GlobalUserRole
+  alias Mithril.Repo
 
   @required ~w(user_id role_id)a
 
@@ -13,7 +13,7 @@ defmodule Mithril.GlobalUserRoleAPI do
   def create_global_user_role(attrs \\ %{}) do
     %GlobalUserRole{}
     |> user_role_changeset(attrs)
-    |> Repo.insert()
+    |> Repo.insert(on_conflict: :nothing)
     |> preload_role()
   end
 

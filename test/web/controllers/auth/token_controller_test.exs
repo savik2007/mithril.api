@@ -129,7 +129,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
     end
   end
 
-  describe "login via client CABINET with empty factor for 2FA" do
+  describe "login via client CABINET with empty factor for 2FA when USER_2FA_ENABLED conf value is true" do
     setup %{conn: conn} do
       client_type = insert(:client_type, name: ClientType.client_type(:cabinet), scope: "app:authorize")
       user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("Somepa$$word1"))
@@ -151,6 +151,13 @@ defmodule Mithril.OAuth.TokenControllerTest do
           scope: "app:authorize"
         }
       }
+
+      current_value = System.get_env("USER_2FA_ENABLED") || "false"
+      System.put_env("USER_2FA_ENABLED", "true")
+
+      on_exit(fn ->
+        System.put_env("USER_2FA_ENABLED", current_value)
+      end)
 
       %{conn: conn, user: user, payload: payload}
     end
@@ -175,12 +182,74 @@ defmodule Mithril.OAuth.TokenControllerTest do
                |> get_in(~w(urgent next_step))
     end
 
-    test "send user to login via DS when 2FA not exist", %{conn: conn, payload: payload} do
-      assert "REQUEST_LOGIN_VIA_DS" ==
+    test "send user to REQUEST_APPS when 2FA not exist", %{conn: conn, payload: payload} do
+      assert "REQUEST_APPS" ==
                conn
                |> post("/oauth/tokens", payload)
-               |> json_response(403)
-               |> get_in(~w(error message))
+               |> json_response(201)
+               |> get_in(~w(urgent next_step))
+    end
+  end
+
+  describe "login via client CABINET with empty factor for 2FA when USER_2FA_ENABLED conf value is false" do
+    setup %{conn: conn} do
+      client_type = insert(:client_type, name: ClientType.client_type(:cabinet), scope: "app:authorize")
+      user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("Somepa$$word1"))
+
+      client =
+        insert(
+          :client,
+          user_id: user.id,
+          client_type_id: client_type.id,
+          settings: %{"allowed_grant_types" => ["password"]}
+        )
+
+      payload = %{
+        token: %{
+          grant_type: "password",
+          email: user.email,
+          password: "Somepa$$word1",
+          client_id: client.id,
+          scope: "app:authorize"
+        }
+      }
+
+      current_value = System.get_env("USER_2FA_ENABLED") || "false"
+      System.put_env("USER_2FA_ENABLED", "false")
+
+      on_exit(fn ->
+        System.put_env("USER_2FA_ENABLED", current_value)
+      end)
+
+      %{conn: conn, user: user, payload: payload}
+    end
+
+    test "send user to REQUEST_FACTOR when 2FA factor is nil", %{conn: conn, user: user, payload: payload} do
+      insert(:authentication_factor, user_id: user.id, factor: nil)
+
+      assert "REQUEST_FACTOR" ==
+               conn
+               |> post("/oauth/tokens", payload)
+               |> json_response(201)
+               |> get_in(~w(urgent next_step))
+    end
+
+    test "send user to REQUEST_FACTOR when 2FA factor is empty string", %{conn: conn, user: user, payload: payload} do
+      insert(:authentication_factor, user_id: user.id, factor: "")
+
+      assert "REQUEST_FACTOR" ==
+               conn
+               |> post("/oauth/tokens", payload)
+               |> json_response(201)
+               |> get_in(~w(urgent next_step))
+    end
+
+    test "do not send user to login via DS when 2FA not exist", %{conn: conn, payload: payload} do
+      assert "REQUEST_APPS" ==
+               conn
+               |> post("/oauth/tokens", payload)
+               |> json_response(201)
+               |> get_in(~w(urgent next_step))
     end
   end
 
@@ -508,6 +577,32 @@ defmodule Mithril.OAuth.TokenControllerTest do
       assert token["details"]["grant_type"] == "digital_signature"
       assert token["details"]["redirect_uri"] == client.redirect_uri
       assert token["details"]["scope"] == "app:authorize"
+    end
+
+    test "DS expired", %{conn: conn} do
+      expect(SignatureMock, :decode_and_validate, fn signed_content, "base64", _attrs ->
+        data = %{
+          "signed_content" => signed_content,
+          "signatures" => [
+            %{
+              "is_valid" => false,
+              "validation_error_message" => "DS expired."
+            }
+          ]
+        }
+
+        {:ok, %{"data" => data}}
+      end)
+
+      payload = ds_valid_signed_content() |> ds_payload(UUID.generate())
+
+      msg =
+        conn
+        |> post("/oauth/tokens", payload)
+        |> json_response(422)
+        |> get_in(~w(error message))
+
+      assert "DS expired." == msg
     end
 
     test "DS tax_id does not contain drfo", %{conn: conn} do

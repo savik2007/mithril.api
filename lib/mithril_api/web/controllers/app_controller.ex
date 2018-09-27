@@ -18,7 +18,7 @@ defmodule Mithril.Web.AppController do
       conn
       |> put_status(:created)
       |> put_resp_header("location", app_path(conn, :show, app))
-      |> render("show.json", app: app)
+      |> render("show.json", app: AppAPI.get_app!(app.id))
     end
   end
 

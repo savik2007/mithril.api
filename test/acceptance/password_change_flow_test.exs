@@ -12,7 +12,7 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
 
   describe "change password flow without 2fa" do
     setup %{conn: conn} do
-      user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("super$ecre7"))
+      user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("Super$ecre7Pass"))
       client_type = insert(:client_type, scope: "user:change_password")
 
       client =
@@ -36,7 +36,7 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
         "token" => %{
           grant_type: "change_password",
           email: user.email,
-          password: "super$ecre7",
+          password: "Super$ecre7Pass",
           client_id: client.id,
           scope: "user:change_password"
         }
@@ -56,16 +56,22 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
       # The request goes through gateway, which
       # converts login_response["data"]["value"] into user_id
       # and puts it in as "x-consumer-id" header
-      body = %{
-        "user" => %{
-          "password" => "newPa$sw0rD100500"
-        }
-      }
+
+      # not allowed to use previous password
+      assert [invalid] =
+               conn
+               |> put_req_header("x-consumer-id", user.id)
+               |> put_req_header("authorization", "Bearer #{change_pwd_token["value"]}")
+               |> post(oauth2_token_path(conn, :update_password), user: %{password: "Super$ecre7Pass"})
+               |> json_response(422)
+               |> get_in(~w(error invalid))
+
+      assert "password_used" = hd(invalid["rules"])["rule"]
 
       conn
       |> put_req_header("x-consumer-id", user.id)
       |> put_req_header("authorization", "Bearer #{change_pwd_token["value"]}")
-      |> post("/oauth/users/actions/update_password", Poison.encode!(body))
+      |> post(oauth2_token_path(conn, :update_password), user: %{password: "newPa$sw0rD100500"})
       |> json_response(200)
 
       # check that password is changed
@@ -86,7 +92,7 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
         "token" => %{
           grant_type: "change_password",
           email: user.email,
-          password: "super$ecre7",
+          password: "Super$ecre7Pass",
           client_id: client.id,
           scope: "app:authorize"
         }
@@ -102,7 +108,7 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
         "token" => %{
           grant_type: "change_passwords",
           email: user.email,
-          password: "super$ecre7",
+          password: "Super$ecre7Pass",
           client_id: client.id,
           scope: "user:change_password"
         }
@@ -116,7 +122,7 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
 
   describe "change password flow with 2fa" do
     setup %{conn: conn} do
-      user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("super$ecre7"))
+      user = insert(:user, password: Comeonin.Bcrypt.hashpwsalt("Super$ecre7Pass"))
       client_type = insert(:client_type, scope: "user:change_password")
 
       client =
@@ -155,7 +161,7 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
         "token" => %{
           grant_type: "change_password",
           email: user.email,
-          password: "super$ecre7",
+          password: "Super$ecre7Pass",
           client_id: client.id,
           scope: "user:change_password"
         }
@@ -245,7 +251,7 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
         "token" => %{
           grant_type: "change_password",
           email: user.email,
-          password: "super$ecre7",
+          password: "Super$ecre7Pass",
           client_id: client.id,
           scope: "user:change_password"
         }
