@@ -6,6 +6,7 @@ defmodule Mithril.TokenAPI do
 
   alias Mithril.Authorization.GrantType
   alias Mithril.Clients
+  alias Mithril.Clients.Client
   alias Mithril.Error
   alias Mithril.Repo
   alias Mithril.TokenAPI
@@ -192,6 +193,15 @@ defmodule Mithril.TokenAPI do
 
     Token
     |> where([t], t.user_id == ^id)
+    |> where([t], t.expires_at >= ^now)
+    |> Repo.update_all(set: [expires_at: now])
+  end
+
+  def deactivate_tokens_by_client(%Client{id: id}) do
+    now = :os.system_time(:seconds)
+
+    Token
+    |> where([t], fragment("?->>'client_id' = ?", t.details, ^id))
     |> where([t], t.expires_at >= ^now)
     |> Repo.update_all(set: [expires_at: now])
   end

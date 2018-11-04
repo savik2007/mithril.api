@@ -32,11 +32,11 @@ defmodule Mithril.Factory do
       user: user,
       expires_at: expires_at,
       name: "authorization_code",
-      value: "some_short_lived_code"
+      value: sequence("some_short_lived_code")
     )
   end
 
-  def create_refresh_token(%Client{} = client, user, expires_at \\ 2_000_000_000) do
+  def create_refresh_token(%Client{} = client, %User{} = user, expires_at \\ 2_000_000_000) do
     insert(
       :token,
       details: %{
@@ -47,11 +47,11 @@ defmodule Mithril.Factory do
       user: user,
       expires_at: expires_at,
       name: "refresh_token",
-      value: "some_refresh_token_code"
+      value: sequence("some_refresh_token_code")
     )
   end
 
-  def create_access_token(%Client{} = client, user, expires_at \\ 2_000_000_000) do
+  def create_access_token(%Client{} = client, %User{} = user, expires_at \\ 2_000_000_000) do
     insert(
       :token,
       details: %{
