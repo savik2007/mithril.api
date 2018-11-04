@@ -3,6 +3,7 @@ defmodule Mithril.Web.ClientControllerTest do
 
   alias Ecto.UUID
   alias Mithril.Clients.Client
+  alias Mithril.TokenAPI
 
   @broker Client.access_type(:broker)
 
@@ -220,6 +221,25 @@ defmodule Mithril.Web.ClientControllerTest do
       client = insert(:client)
       conn = put(conn, client_path(conn, :update, client), client: @invalid_attrs)
       assert json_response(conn, 422)["errors"] != %{}
+    end
+
+    test "deactivate client tokens", %{conn: conn} do
+      client = insert(:client)
+      client2 = insert(:client)
+      access_token = create_access_token(client, client.user)
+      refresh_token = create_refresh_token(client, client.user)
+      access_token2 = create_access_token(client2, client2.user)
+      refresh_token2 = create_refresh_token(client2, client2.user)
+
+      conn
+      |> patch(client_actions_path(conn, :deactivate_tokens, client))
+      |> json_response(200)
+
+      assert access_token.id |> TokenAPI.get_token!() |> TokenAPI.expired?()
+      assert refresh_token.id |> TokenAPI.get_token!() |> TokenAPI.expired?()
+
+      refute access_token2.id |> TokenAPI.get_token!() |> TokenAPI.expired?()
+      refute refresh_token2.id |> TokenAPI.get_token!() |> TokenAPI.expired?()
     end
   end
 
