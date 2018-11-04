@@ -113,6 +113,7 @@ defmodule MithrilWeb.Router do
 
     resources "/clients", ClientController, except: [:new, :edit] do
       get("/details", ClientController, :details, as: :details)
+      patch("/actions/deactivate_tokens", ClientController, :deactivate_tokens, as: :actions)
 
       # connections
       get("/connections", ConnectionController, :index)
