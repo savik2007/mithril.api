@@ -3,6 +3,7 @@ defmodule Mithril.Web.ClientController do
 
   alias Mithril.Clients
   alias Mithril.Clients.Client
+  alias Mithril.TokenAPI
   alias Scrivener.Page
 
   action_fallback(Mithril.Web.FallbackController)
@@ -30,6 +31,12 @@ defmodule Mithril.Web.ClientController do
   def details(conn, %{"client_id" => id}) do
     client = Clients.get_client_with!(id, [:client_type])
     render(conn, "details.json", client: client, client_type_name: client.client_type.name)
+  end
+
+  def deactivate_tokens(conn, %{"client_id" => id}) do
+    client = Clients.get_client_with!(id, [:client_type])
+    TokenAPI.deactivate_tokens_by_client(client)
+    render(conn, "client.json", client: client, client_type_name: client.client_type.name)
   end
 
   def update(conn, %{"id" => id, "client" => client_params}) do
