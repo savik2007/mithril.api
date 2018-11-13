@@ -1,10 +1,3 @@
-defmodule Mithril.Repo.Migrations.UpdateConnectionsScope do
-  use Ecto.Migration
-
-  def change do
-  end
-end
-
 defmodule Mithril.Repo.Migrations.UpdateConnectionScopes do
   use Ecto.Migration
 
