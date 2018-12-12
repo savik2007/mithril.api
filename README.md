@@ -20,13 +20,13 @@ Mithril consists of two main parts:
 Mithril by itself does not have any authorization tools, but you have two options to integrate with it:
 
 - Use a Annon API Gateway that allows to configure Access Control Layer over your API;
-- Write your own authorization plug that will resolve token scopes via [Mithrill's API](http://docs.mithril1.apiary.io/#).
+- Write your own authorization plug that will resolve token scopes via [Mithrill's API](https://mithrilapi.docs.apiary.io/#introduction/integration).
 
 ## Specification
 
 - This project uses API Blueprint for [REST API specs](), you can find their source in [apiary.apib](apiary.apib) file.
 
-- [API docs](http://docs.mithril1.apiary.io) or [apiary.apib](apiary.apib).
+- [API docs](https://mithrilapi.docs.apiary.io/#introduction/integration) or [apiary.apib](apiary.apib).
 - [Entity-relation diagram](docs/erd.pdf)
 - [oAuth Sequence](https://www.websequencediagrams.com/cgi-bin/cdraw?lz=dGl0bGUgb0F1dGggRmxvdwoKQ2xpZW50IC0-IExvZ2luIFVJOiByZWRpcmVjdCB0bwANCSB3aXRoIGBjACoFX2lkYCwgYAAgCF91cmlgIGFuZCBgcmVzcG9uc2VfdHlwZT1jb2RlYCBxdWVyeSBwYXJhbXMKAEcJAGUNY29tcGxldGUgU2Vzc2lvbiBhdXRoIGZsb3cAJA1Vc2VyOiByZW5kZXIgcGFnZQCBEAZBcHByb3ZhbCAod2hpY2ggbGlzdHMgcmVxdWVzdGVkIHNjb3BlcykKVXNlcgCBXA5hADUFZQAbBwCBEA0Agh8FU2VydmVyOiBzZW5kIGBQT1NUIC9hcHBzYABWCAoAHAsAgjcOSFRUUCAyMDEsAIEVCmFuZCBMb2NhdGlvbiBoZWFkZXIAggMNAIMGBgCCdQt1c2VyIHRvIHVybCByZXR1cm5lZCBpbiBgAD4IYAA_CACDPQoAgSYSAIExBnRva2Vucz9ncmFudACDGAZhdXRob3JpegCBCwVfY29kZSAtIGV4Y2hhbmdlIGAAgzcGZnJvbQCDNgxldGVycyB0byBhbiBgYWNjZXNzXwBWBWAAgXsQAIIzDnRvcmUgcmVmcmVzaCAAgQcFAIIrEACBdggAJQZgACUHAFYHIChpbiBiYWNrLWVuZCEpAIRoBQCDDwYAdw0gdG8Agj8HIFVJCm5vdGUgb3ZlcgBMEAAmDihpbiBsb2NhbACBIQVhZ2UsIGNvb2tpZSwgZXRjLgBnBm1ha2VzIGFsbCBmdXR1AIFHBQCEWgVzAIYSB0F1aHQAgkQJOiBCZWFyZXIgPACCFgw-AIMlCQo&s=modern-blue)
 
