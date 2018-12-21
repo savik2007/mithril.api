@@ -204,8 +204,8 @@ defmodule Mithril.Authorization.Tokens do
          :ok <- check_client_is_blocked(client),
          user <- UserAPI.get_user!(token.user_id),
          :ok <- check_user_is_blocked(user),
-         {:ok, token} <- BrokerScope.put_broker_scope_into_token_details(token, client, api_key) do
-      {:ok, token}
+         {:ok, token, mis_client_id} <- BrokerScope.put_broker_scope_into_token_details(token, client, api_key) do
+      {:ok, token, mis_client_id}
     else
       {:error, _} = err -> err
       _ -> Error.invalid_grant("Token expired or client approval was revoked.")

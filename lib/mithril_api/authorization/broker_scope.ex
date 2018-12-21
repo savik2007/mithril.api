@@ -15,14 +15,15 @@ defmodule Mithril.Authorization.BrokerScope do
 
       # Clients such as NHS Admin, MIS
       @direct ->
-        {:ok, token}
+        {:ok, token, nil}
 
       # Clients such as MSP, PHARMACY
       @broker ->
         with :ok <- validate_api_key(api_key),
              {:ok, client} <- fetch_client_by_secret(api_key),
-             {:ok, broker_scope} <- fetch_broker_scope(client) do
-          put_broker_scope(token, broker_scope)
+             {:ok, broker_scope} <- fetch_broker_scope(client),
+             {:ok, token} <- put_broker_scope(token, broker_scope) do
+          {:ok, token, client.id}
         end
     end
   end

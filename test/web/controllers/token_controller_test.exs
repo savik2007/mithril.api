@@ -270,7 +270,8 @@ defmodule Mithril.Web.TokenControllerTest do
 
     conn = get(conn, token_verify_path(conn, :verify, token.value))
 
-    token = json_response(conn, 200)["data"]
+    response = json_response(conn, 200)
+    token = response["data"]
 
     assert token["name"] == "authorization_code"
     assert token["value"]
@@ -280,6 +281,7 @@ defmodule Mithril.Web.TokenControllerTest do
     assert token["details"]["grant_type"] == "password"
     assert token["details"]["redirect_uri"] == connection.redirect_uri
     assert token["details"]["scope_request"] == "app:authorize"
+    refute response["urgent"]["mis_client_id"]
   end
 
   test "verify blocked client", %{conn: conn} do
@@ -407,14 +409,14 @@ defmodule Mithril.Web.TokenControllerTest do
           }
         )
 
-      broker_scope =
+      response =
         conn
         |> put_req_header("api-key", broker_connection.secret)
         |> get(token_verify_path(conn, :verify, token.value))
         |> json_response(200)
-        |> get_in(~w(data details broker_scope))
 
-      assert "b c" == broker_scope
+      assert "b c" == get_in(response, ~w(data details broker_scope))
+      assert broker_connection.client_id == response["urgent"]["mis_client_id"]
     end
   end
 end

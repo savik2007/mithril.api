@@ -46,8 +46,8 @@ defmodule Mithril.Web.TokenController do
       |> Plug.Conn.get_req_header("api-key")
       |> List.first()
 
-    with {:ok, %Token{} = token} <- Tokens.verify_client_token(value, api_key) do
-      render(conn, "show.json", token: token)
+    with {:ok, %Token{} = token, mis_client_id} <- Tokens.verify_client_token(value, api_key) do
+      render(conn, "show.json", token: token, urgent: %{mis_client_id: mis_client_id})
     end
   end
 
