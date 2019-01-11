@@ -8,7 +8,7 @@ WORKDIR /app
 
 ENV MIX_ENV=prod
 
-RUN apk add --no-cache --update --virtual .build-deps musl=1.1.19-r10 make g++
+RUN apk add --no-cache --update --virtual .build-deps musl=1.1.19-r10 make g++ git
 
 RUN mix do \
       local.hex --force, \
@@ -16,6 +16,8 @@ RUN mix do \
       deps.get, \
       deps.compile, \
       release
+
+RUN git log --pretty=format:"%H %cd %s" > commits.txt
 
 FROM alpine:3.8
 
@@ -31,6 +33,7 @@ RUN apk add --no-cache \
 WORKDIR /app
 
 COPY --from=builder /app/_build/prod/rel/${APP_NAME}/releases/0.1.0/${APP_NAME}.tar.gz /app
+COPY --from=builder /app/commits.txt /app
 
 RUN tar -xzf ${APP_NAME}.tar.gz; rm ${APP_NAME}.tar.gz
 
