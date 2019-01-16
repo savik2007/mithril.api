@@ -200,11 +200,13 @@ defmodule Mithril.Authorization.Tokens do
     token = TokenAPI.get_token_by_value!(token_value)
 
     with false <- expired?(token),
-         client <- Clients.get_client!(token.details["client_id"]),
+         client <- Clients.get_client_with!(token.details["client_id"], [:client_type]),
          :ok <- check_client_is_blocked(client),
          user <- UserAPI.get_user!(token.user_id),
          :ok <- check_user_is_blocked(user),
          {:ok, token, mis_client_id} <- BrokerScope.put_broker_scope_into_token_details(token, client, api_key) do
+      details = Map.put(token.details, "client_type", client.client_type.name)
+      token = Map.put(token, :details, details)
       {:ok, token, mis_client_id}
     else
       {:error, _} = err -> err

@@ -416,6 +416,7 @@ defmodule Mithril.Web.TokenControllerTest do
         |> json_response(200)
 
       assert "b c" == get_in(response, ~w(data details broker_scope))
+      assert client_connection.client.client_type.name == get_in(response, ~w(data details client_type))
       assert broker_connection.client_id == response["urgent"]["mis_client_id"]
     end
   end
