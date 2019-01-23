@@ -42,7 +42,7 @@ defmodule Mithril.OAuth.TokenController do
            token_params
            |> put_token_value(conn)
            |> put_header_value(conn, "drfo")
-           |> Tokens.create_by_grant_type() do
+           |> Tokens.create_by_grant_type(conn.assigns.grant_types) do
       send_response(conn, resp, "show.json")
     end
   end

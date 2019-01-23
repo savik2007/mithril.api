@@ -33,7 +33,7 @@ defmodule Mithril.Acceptance.CabinetTest do
       }
 
       conn
-      |> post("/oauth/tokens", Poison.encode!(request_payload))
+      |> post(auth_token_path(conn, :create), Poison.encode!(request_payload))
       |> json_response(201)
 
       post_approval(conn, user.id, client_mis.id, connection_mis.redirect_uri, "cabinet:read")

@@ -33,35 +33,34 @@ defmodule Mithril.Authorization.Tokens do
   def grant_type(:"2fa_auth"), do: @grant_type_2fa_authorize
 
   @doc """
-    Create new access_tokens based on grant_type the request came with
+    Create new access_tokens based on grant_type from request
   """
-  def create_by_grant_type(%{"grant_type" => grant_type} = params) when grant_type in ["password", "change_password"] do
-    Password.authorize(params)
+  def create_by_grant_type(params, :all), do: create_by_grant_type(params)
+
+  def create_by_grant_type(%{"grant_type" => grant_type} = params, allowed_grant_types) do
+    case grant_type in allowed_grant_types do
+      true -> create_by_grant_type(params)
+      false -> Error.invalid_grant("Grant type not allowed.")
+    end
   end
 
-  def create_by_grant_type(%{"grant_type" => @grant_type_2fa_authorize} = params) do
-    AccessToken2FA.authorize(params)
-  end
+  def create_by_grant_type(_, _), do: Error.invalid_request("Request must include grant_type.")
 
-  def create_by_grant_type(%{"grant_type" => "refresh_2fa_access_token"} = params) do
-    AccessToken2FA.refresh(params)
-  end
+  def create_by_grant_type(%{"grant_type" => grant_type} = params)
+      when grant_type in ["password", "change_password"],
+      do: Password.authorize(params)
 
-  def create_by_grant_type(%{"grant_type" => "authorization_code"} = params) do
-    AuthorizationCode.authorize(params)
-  end
+  def create_by_grant_type(%{"grant_type" => @grant_type_2fa_authorize} = params), do: AccessToken2FA.authorize(params)
 
-  def create_by_grant_type(%{"grant_type" => "digital_signature"} = params) do
-    Signature.authorize(params)
-  end
+  def create_by_grant_type(%{"grant_type" => "refresh_2fa_access_token"} = params), do: AccessToken2FA.refresh(params)
 
-  def create_by_grant_type(%{"grant_type" => "refresh_token"} = params) do
-    RefreshToken.authorize(params)
-  end
+  def create_by_grant_type(%{"grant_type" => "authorization_code"} = params), do: AuthorizationCode.authorize(params)
 
-  def create_by_grant_type(_) do
-    Error.invalid_request("Request must include grant_type.")
-  end
+  def create_by_grant_type(%{"grant_type" => "digital_signature"} = params), do: Signature.authorize(params)
+
+  def create_by_grant_type(%{"grant_type" => "refresh_token"} = params), do: RefreshToken.authorize(params)
+
+  def create_by_grant_type(_), do: Error.invalid_request("Request must include grant_type.")
 
   def init_factor(attrs) do
     with :ok <- AccessToken2FA.validate_authorization_header(attrs),

@@ -32,7 +32,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
 
     conn
     |> put_req_header("accept", "application/json")
-    |> post(oauth2_token_path(conn, :create), Poison.encode!(login_request_body))
+    |> post(auth_token_path(conn, :create), Poison.encode!(login_request_body))
     |> json_response(201)
 
     # 2. After login user is presented with a list of scopes
@@ -84,7 +84,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
     tokens_response =
       conn
       |> put_req_header("accept", "application/json")
-      |> post(oauth2_token_path(conn, :create), Poison.encode!(tokens_request_body))
+      |> post(auth_token_path(conn, :create), Poison.encode!(tokens_request_body))
       |> Map.get(:resp_body)
       |> Poison.decode!()
 
@@ -125,7 +125,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       # 1. Create 2FA access token, that requires OTP confirmation
       resp =
         conn
-        |> post(oauth2_token_path(conn, :create), Poison.encode!(login_request_body))
+        |> post(auth_token_path(conn, :create), Poison.encode!(login_request_body))
         |> json_response(201)
 
       assert "REQUEST_OTP" == resp["urgent"]["next_step"]
@@ -153,7 +153,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       resp =
         conn
         |> put_req_header("authorization", "Bearer #{otp_token_value}")
-        |> post(oauth2_token_path(conn, :create), Poison.encode!(otp_request_body))
+        |> post(auth_token_path(conn, :create), Poison.encode!(otp_request_body))
         |> json_response(201)
 
       assert "REQUEST_APPS" == resp["urgent"]["next_step"]
@@ -205,7 +205,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       tokens_response =
         conn
         |> put_req_header("accept", "application/json")
-        |> post(oauth2_token_path(conn, :create), Poison.encode!(tokens_request_body))
+        |> post(auth_token_path(conn, :create), Poison.encode!(tokens_request_body))
         |> Map.get(:resp_body)
         |> Poison.decode!()
 
@@ -223,7 +223,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       }
 
       conn
-      |> post(oauth2_token_path(conn, :create), Poison.encode!(otp_request_body))
+      |> post(auth_token_path(conn, :create), Poison.encode!(otp_request_body))
       |> json_response(401)
     end
 
@@ -243,7 +243,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       # 1. Create 2FA access token, that requires OTP confirmation
       otp_token_value =
         conn
-        |> post(oauth2_token_path(conn, :create), Poison.encode!(login_request_body))
+        |> post(auth_token_path(conn, :create), Poison.encode!(login_request_body))
         |> json_response(201)
         |> get_in(~w(data value))
 
@@ -260,7 +260,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       assert "otp_invalid" ==
                conn
                |> put_req_header("authorization", "Bearer #{otp_token_value}")
-               |> post(oauth2_token_path(conn, :create), Poison.encode!(otp_request_body))
+               |> post(auth_token_path(conn, :create), Poison.encode!(otp_request_body))
                |> json_response(401)
                |> get_in(~w(error type))
     end
@@ -313,7 +313,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
 
       resp =
         conn
-        |> post(oauth2_token_path(conn, :create), token: token_payload)
+        |> post(auth_token_path(conn, :create), token: token_payload)
         |> json_response(201)
 
       assert "REQUEST_OTP" == resp["urgent"]["next_step"]
@@ -339,7 +339,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       resp =
         conn
         |> put_req_header("authorization", "Bearer #{otp_token_value}")
-        |> post(oauth2_token_path(conn, :create), token: otp_request_body)
+        |> post(auth_token_path(conn, :create), token: otp_request_body)
         |> json_response(201)
 
       assert "REQUEST_APPS" == resp["urgent"]["next_step"]
@@ -369,7 +369,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       tokens_response =
         conn
         |> put_req_header("accept", "application/json")
-        |> post(oauth2_token_path(conn, :create), token: tokens_request_body)
+        |> post(auth_token_path(conn, :create), token: tokens_request_body)
         |> json_response(201)
         |> Map.get("data")
 
@@ -415,7 +415,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
 
       resp =
         conn
-        |> post(oauth2_token_path(conn, :create), payload)
+        |> post(auth_token_path(conn, :create), payload)
         |> json_response(201)
 
       # For DS login do not need 2 factor auth, request approval next
@@ -447,7 +447,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       tokens_response =
         conn
         |> put_req_header("accept", "application/json")
-        |> post(oauth2_token_path(conn, :create), token: tokens_request_body)
+        |> post(auth_token_path(conn, :create), token: tokens_request_body)
         |> json_response(201)
         |> Map.get("data")
 

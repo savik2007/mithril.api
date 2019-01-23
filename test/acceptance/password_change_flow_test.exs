@@ -40,7 +40,7 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
       # 1. Create password change access token, that allow to change password
       change_pwd_token =
         conn
-        |> post(oauth2_token_path(conn, :create), Poison.encode!(request_body))
+        |> post(auth_token_path(conn, :create), Poison.encode!(request_body))
         |> json_response(201)
         |> Map.get("data")
 
@@ -71,14 +71,14 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
 
       # check that password is changed
       conn
-      |> post(oauth2_token_path(conn, :create), Poison.encode!(request_body))
+      |> post(auth_token_path(conn, :create), Poison.encode!(request_body))
       |> json_response(401)
 
       # check that password is changed
       body = put_in(request_body, ~w(token password), "newPa$sw0rD100500")
 
       conn
-      |> post(oauth2_token_path(conn, :create), Poison.encode!(body))
+      |> post(auth_token_path(conn, :create), Poison.encode!(body))
       |> json_response(201)
     end
 
@@ -94,7 +94,7 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
       }
 
       conn
-      |> post(oauth2_token_path(conn, :create), Poison.encode!(request_body))
+      |> post(auth_token_path(conn, :create), Poison.encode!(request_body))
       |> json_response(422)
     end
 
@@ -110,7 +110,7 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
       }
 
       conn
-      |> post(oauth2_token_path(conn, :create), Poison.encode!(request_body))
+      |> post(auth_token_path(conn, :create), Poison.encode!(request_body))
       |> json_response(422)
     end
   end
@@ -161,7 +161,7 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
       # 1. Create 2fa_access_token with change_password scope
       token_2fa =
         conn
-        |> post(oauth2_token_path(conn, :create), Poison.encode!(request_body))
+        |> post(auth_token_path(conn, :create), Poison.encode!(request_body))
         |> json_response(201)
         |> Map.get("data")
 
@@ -195,7 +195,7 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
       change_pwd_token =
         conn
         |> put_req_header("authorization", "Bearer #{token_2fa["value"]}")
-        |> post(oauth2_token_path(conn, :create), Poison.encode!(otp_request_body))
+        |> post(auth_token_path(conn, :create), Poison.encode!(otp_request_body))
         |> json_response(201)
         |> Map.get("data")
 
@@ -215,14 +215,14 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
 
       # check that password is changed
       conn
-      |> post(oauth2_token_path(conn, :create), Poison.encode!(request_body))
+      |> post(auth_token_path(conn, :create), Poison.encode!(request_body))
       |> json_response(401)
 
       # check that password is changed
       body = put_in(request_body, ~w(token password), "newPa$sw0rD100500")
 
       conn
-      |> post(oauth2_token_path(conn, :create), Poison.encode!(body))
+      |> post(auth_token_path(conn, :create), Poison.encode!(body))
       |> json_response(201)
     end
 
@@ -250,7 +250,7 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
 
       resp =
         conn
-        |> post(oauth2_token_path(conn, :create), Poison.encode!(token_request_body))
+        |> post(auth_token_path(conn, :create), Poison.encode!(token_request_body))
         |> json_response(201)
 
       assert "REQUEST_FACTOR" == get_in(resp, ~w(urgent next_step))
@@ -322,14 +322,14 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
 
       # check that password is changed
       conn
-      |> post(oauth2_token_path(conn, :create), Poison.encode!(token_request_body))
+      |> post(auth_token_path(conn, :create), Poison.encode!(token_request_body))
       |> json_response(401)
 
       # check that password is changed
       body = put_in(token_request_body, ~w(token password), "newPa$sw0rD100500")
 
       conn
-      |> post(oauth2_token_path(conn, :create), Poison.encode!(body))
+      |> post(auth_token_path(conn, :create), Poison.encode!(body))
       |> json_response(201)
     end
   end

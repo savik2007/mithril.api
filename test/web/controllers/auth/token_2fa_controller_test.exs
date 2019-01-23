@@ -36,7 +36,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       }
     }
 
-    conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
+    conn = post(conn, auth_token_path(conn, :create), Poison.encode!(request_payload))
     json_response(conn, 409)
   end
 
@@ -62,7 +62,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
         }
       }
 
-      conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
+      conn = post(conn, auth_token_path(conn, :create), Poison.encode!(request_payload))
       resp = json_response(conn, 201)
 
       assert Map.has_key?(resp, "urgent")
@@ -92,7 +92,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       conn =
         conn
         |> put_req_header("authorization", "Bearer a")
-        |> post("/oauth/tokens", Poison.encode!(request_payload))
+        |> post(auth_token_path(conn, :create), Poison.encode!(request_payload))
 
       result = json_response(conn, 401)["error"]
       assert "token_invalid" == result["type"]
@@ -109,7 +109,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       conn =
         conn
         |> delete_req_header("authorization")
-        |> post("/oauth/tokens", Poison.encode!(request_payload))
+        |> post(auth_token_path(conn, :create), Poison.encode!(request_payload))
 
       result = json_response(conn, 401)["error"]
       assert "Authorization header required." == result["message"]
@@ -130,7 +130,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
         }
       }
 
-      conn1 = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
+      conn1 = post(conn, auth_token_path(conn, :create), Poison.encode!(request_payload))
 
       %{
         "data" => %{
@@ -139,7 +139,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
         }
       } = json_response(conn1, 201)
 
-      conn2 = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
+      conn2 = post(conn, auth_token_path(conn, :create), Poison.encode!(request_payload))
       assert json_response(conn2, 201)
 
       now = DateTime.to_unix(DateTime.utc_now())
@@ -154,7 +154,6 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
     setup %{conn: conn, user: user, client: client} do
       insert(:authentication_factor, user: user)
       token = authorize(user.email, client.id)
-      conn1 = put_req_header(conn, "authorization", "Bearer #{token.value}")
 
       request_payload = %{
         token: %{
@@ -163,11 +162,16 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
         }
       }
 
-      conn2 = post(conn1, "/oauth/tokens", Poison.encode!(request_payload))
-      token = json_response(conn2, 201)["data"]["value"]
+      token_value =
+        conn
+        |> put_req_header("authorization", "Bearer #{token.value}")
+        |> post(auth_token_path(conn, :create), Poison.encode!(request_payload))
+        |> json_response(201)
+        |> get_in(~w(data value))
 
-      conn = put_req_header(conn, "authorization", "Bearer #{token}")
-      {:ok, conn: conn, token: token, user: user, client: client}
+      conn = put_req_header(conn, "authorization", "Bearer #{token_value}")
+
+      {:ok, conn: conn, token: token_value, user: user, client: client}
     end
 
     test "success create token for changing factor", %{conn: conn, user: user} do
@@ -337,7 +341,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
         }
       }
 
-      conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
+      conn = post(conn, auth_token_path(conn, :create), Poison.encode!(request_payload))
       resp = json_response(conn, 201)
 
       assert Map.has_key?(resp, "urgent")
@@ -367,8 +371,12 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
         }
       }
 
-      conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
-      assert "Invalid token type" == json_response(conn, 401)["error"]["message"]
+      resp =
+        conn
+        |> post(auth_token_path(conn, :create), Poison.encode!(request_payload))
+        |> json_response(401)
+
+      assert "Invalid token type" == resp["error"]["message"]
     end
   end
 
@@ -383,8 +391,9 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
       }
     }
 
-    conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
-    json_response(conn, 409)
+    conn
+    |> post(auth_token_path(conn, :create), Poison.encode!(request_payload))
+    |> json_response(409)
   end
 
   describe "SMS not send" do
@@ -418,7 +427,7 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
         }
       }
 
-      conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
+      conn = post(conn, auth_token_path(conn, :create), Poison.encode!(request_payload))
       json_response(conn, 503)
     end
 
@@ -433,8 +442,9 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
         }
       }
 
-      conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
-      json_response(conn, 503)
+      conn
+      |> post(auth_token_path(conn, :create), Poison.encode!(request_payload))
+      |> json_response(503)
     end
   end
 
