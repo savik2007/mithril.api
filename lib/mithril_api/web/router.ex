@@ -53,13 +53,18 @@ defmodule MithrilWeb.Router do
       post("/authorize", OAuth.AppController, :authorize)
     end
 
-    post("/tokens", OAuth.TokenController, :create)
+    post("/tokens", OAuth.TokenController, :create, assigns: %{grant_types: ["authorization_code", "refresh_token"]})
     post("/tokens/actions/change_password", OAuth.TokenController, :create_change_pwd_token)
 
     # 2FA
     post("/users/actions/init_factor", OAuth.TokenController, :init_factor)
     post("/users/actions/approve_factor", OAuth.TokenController, :approve_factor)
     post("/users/actions/update_password", OAuth.TokenController, :update_password)
+  end
+
+  scope "/auth", as: :auth, alias: Mithril do
+    pipe_through(:api)
+    post("/login", OAuth.TokenController, :create, assigns: %{grant_types: :all})
   end
 
   scope "/admin", Mithril.Web do

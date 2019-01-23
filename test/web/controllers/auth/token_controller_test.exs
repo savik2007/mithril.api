@@ -26,7 +26,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
     resp =
       conn
-      |> post("/oauth/tokens", Poison.encode!(payload))
+      |> post(auth_token_path(conn, :create), Poison.encode!(payload))
       |> json_response(401)
 
     assert %{"message" => "User blocked.", "type" => "user_blocked"} == resp["error"]
@@ -39,15 +39,26 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
     assert %{"message" => "Identity, password combination is wrong.", "type" => "access_denied"} ==
              conn
-             |> post("/oauth/tokens", Poison.encode!(request_payload))
+             |> post(auth_token_path(conn, :create), Poison.encode!(request_payload))
              |> json_response(401)
              |> Map.get("error")
 
     data = request_payload |> put_in(~w(token password)a, user_raw_password()) |> Poison.encode!()
 
     conn
-    |> post("/oauth/tokens", data)
+    |> post(auth_token_path(conn, :create), data)
     |> json_response(201)
+  end
+
+  test "invalid grant_type for public login endpoint", %{conn: conn} do
+    client = :client |> insert() |> with_connection()
+    payload = token_payload(client)
+
+    assert "Grant type not allowed." ==
+             conn
+             |> post(oauth2_token_path(conn, :create), payload)
+             |> json_response(401)
+             |> get_in(~w(error message))
   end
 
   describe "login user via client CABINET" do
@@ -66,7 +77,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
     test "user tax_id is empty", %{conn: conn, payload: payload} do
       assert "User is not registered" ==
                conn
-               |> post("/oauth/tokens", payload)
+               |> post(auth_token_path(conn, :create), payload)
                |> json_response(403)
                |> get_in(~w(error message))
     end
@@ -77,7 +88,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
       assert "User is not registered" ==
                conn
-               |> post("/oauth/tokens", payload)
+               |> post(auth_token_path(conn, :create), payload)
                |> json_response(403)
                |> get_in(~w(error message))
 
@@ -107,7 +118,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
       assert "REQUEST_FACTOR" ==
                conn
-               |> post("/oauth/tokens", payload)
+               |> post(auth_token_path(conn, :create), payload)
                |> json_response(201)
                |> get_in(~w(urgent next_step))
     end
@@ -117,7 +128,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
       assert "REQUEST_FACTOR" ==
                conn
-               |> post("/oauth/tokens", payload)
+               |> post(auth_token_path(conn, :create), payload)
                |> json_response(201)
                |> get_in(~w(urgent next_step))
     end
@@ -125,7 +136,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
     test "send user to REQUEST_APPS when 2FA not exist", %{conn: conn, payload: payload} do
       assert "REQUEST_APPS" ==
                conn
-               |> post("/oauth/tokens", payload)
+               |> post(auth_token_path(conn, :create), payload)
                |> json_response(201)
                |> get_in(~w(urgent next_step))
     end
@@ -148,7 +159,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
       assert "REQUEST_FACTOR" ==
                conn
-               |> post("/oauth/tokens", payload)
+               |> post(auth_token_path(conn, :create), payload)
                |> json_response(201)
                |> get_in(~w(urgent next_step))
     end
@@ -158,7 +169,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
       assert "REQUEST_FACTOR" ==
                conn
-               |> post("/oauth/tokens", payload)
+               |> post(auth_token_path(conn, :create), payload)
                |> json_response(201)
                |> get_in(~w(urgent next_step))
     end
@@ -166,7 +177,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
     test "do not send user to login via DS when 2FA not exist", %{conn: conn, payload: payload} do
       assert "REQUEST_APPS" ==
                conn
-               |> post("/oauth/tokens", payload)
+               |> post(auth_token_path(conn, :create), payload)
                |> json_response(201)
                |> get_in(~w(urgent next_step))
     end
@@ -181,9 +192,11 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
     request_payload = token_payload(client)
 
-    conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
+    resp =
+      conn
+      |> post(auth_token_path(conn, :create), Poison.encode!(request_payload))
+      |> json_response(201)
 
-    resp = json_response(conn, 201)
     assert Map.has_key?(resp, "urgent")
     assert Map.has_key?(resp["urgent"], "next_step")
     assert "REQUEST_OTP" = resp["urgent"]["next_step"]
@@ -221,9 +234,11 @@ defmodule Mithril.OAuth.TokenControllerTest do
       }
     }
 
-    conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
-
-    token = json_response(conn, 201)["data"]
+    token =
+      conn
+      |> post(oauth2_token_path(conn, :create), Poison.encode!(request_payload))
+      |> json_response(201)
+      |> Map.get("data")
 
     assert token["name"] == "access_token"
     assert token["value"]
@@ -237,7 +252,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
   test "incorrectly crafted body is still treated nicely", %{conn: conn} do
     assert_error_sent(400, fn ->
-      post(conn, "/oauth/tokens", Poison.encode!(%{"scope" => "legal_entity:read"}))
+      post(conn, auth_token_path(conn, :create), Poison.encode!(%{"scope" => "legal_entity:read"}))
     end)
   end
 
@@ -248,7 +263,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
       }
     }
 
-    conn = post(conn, "/oauth/tokens", Poison.encode!(request))
+    conn = post(conn, auth_token_path(conn, :create), Poison.encode!(request))
 
     result = json_response(conn, 422)["error"]
     assert result["message"] == "Request must include grant_type."
@@ -277,9 +292,9 @@ defmodule Mithril.OAuth.TokenControllerTest do
       }
     }
 
-    conn1 = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
+    conn1 = post(conn, auth_token_path(conn, :create), Poison.encode!(request_payload))
     %{"data" => %{"id" => token1_id, "expires_at" => expires_at}} = json_response(conn1, 201)
-    conn2 = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
+    conn2 = post(conn, auth_token_path(conn, :create), Poison.encode!(request_payload))
     assert json_response(conn2, 201)
 
     now = DateTime.to_unix(DateTime.utc_now())
@@ -315,7 +330,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
       }
     }
 
-    conn = post(conn, "/oauth/tokens", Poison.encode!(request_payload))
+    conn = post(conn, auth_token_path(conn, :create), Poison.encode!(request_payload))
     res = json_response(conn, 401)
     message = "The password expired for user: #{user.id}"
 
@@ -360,7 +375,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
       resp =
         conn
-        |> post(oauth2_token_path(conn, :create), Poison.encode!(request_payload))
+        |> post(auth_token_path(conn, :create), Poison.encode!(request_payload))
         |> json_response(201)
 
       on_exit(fn ->
@@ -392,7 +407,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
       resp =
         conn
-        |> post(oauth2_token_path(conn, :create), Poison.encode!(request_payload))
+        |> post(auth_token_path(conn, :create), Poison.encode!(request_payload))
         |> json_response(201)
 
       on_exit(fn ->
@@ -454,7 +469,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
       msg =
         conn
-        |> post("/oauth/tokens", payload)
+        |> post(auth_token_path(conn, :create), payload)
         |> json_response(422)
         |> get_in(~w(error message))
 
@@ -486,7 +501,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
       msg =
         conn
-        |> post("/oauth/tokens", payload)
+        |> post(auth_token_path(conn, :create), payload)
         |> json_response(422)
         |> get_in(~w(error message))
 
@@ -504,7 +519,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
       "JWT is invalid." =
         conn
-        |> post("/oauth/tokens", payload)
+        |> post(auth_token_path(conn, :create), payload)
         |> json_response(401)
         |> get_in(~w(error message))
     end
@@ -517,7 +532,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
       "Signed content does not contain field jwt." =
         conn
-        |> post("/oauth/tokens", payload)
+        |> post(auth_token_path(conn, :create), payload)
         |> json_response(401)
         |> get_in(~w(error message))
     end
@@ -535,7 +550,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
       "JWT is invalid." =
         conn
-        |> post("/oauth/tokens", payload)
+        |> post(auth_token_path(conn, :create), payload)
         |> json_response(401)
         |> get_in(~w(error message))
     end
@@ -549,7 +564,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
       "JWT is invalid." =
         conn
-        |> post("/oauth/tokens", payload)
+        |> post(auth_token_path(conn, :create), payload)
         |> json_response(401)
         |> get_in(~w(error message))
     end
@@ -573,7 +588,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
       msg =
         conn
-        |> post("/oauth/tokens", payload)
+        |> post(auth_token_path(conn, :create), payload)
         |> json_response(401)
         |> get_in(~w(error message))
 
@@ -582,7 +597,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
     test "invalid params", %{conn: conn} do
       conn
-      |> post("/oauth/tokens", %{token: %{invalid: "params"}})
+      |> post(auth_token_path(conn, :create), %{token: %{invalid: "params"}})
       |> json_response(422)
     end
   end
@@ -624,7 +639,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
       token =
         conn
-        |> post("/oauth/tokens", payload)
+        |> post(auth_token_path(conn, :create), payload)
         |> json_response(201)
         |> Map.get("data")
 
@@ -645,7 +660,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
       msg =
         conn
-        |> post("/oauth/tokens", payload)
+        |> post(auth_token_path(conn, :create), payload)
         |> json_response(401)
         |> get_in(~w(error message))
 
@@ -663,7 +678,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
       msg =
         conn
-        |> post("/oauth/tokens", payload)
+        |> post(auth_token_path(conn, :create), payload)
         |> json_response(401)
         |> get_in(~w(error message))
 
@@ -684,7 +699,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
       msg =
         conn
-        |> post("/oauth/tokens", payload)
+        |> post(auth_token_path(conn, :create), payload)
         |> json_response(403)
         |> get_in(~w(error message))
 
@@ -698,7 +713,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
       msg =
         conn
-        |> post("/oauth/tokens", payload)
+        |> post(auth_token_path(conn, :create), payload)
         |> json_response(422)
         |> get_in(~w(error message))
 
@@ -742,7 +757,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
       resp =
         conn
-        |> post("/oauth/tokens", payload)
+        |> post(auth_token_path(conn, :create), payload)
         |> json_response(422)
 
       %{"error" => %{"invalid" => [%{"rules" => [%{"description" => err_desc}]}]}} = resp
