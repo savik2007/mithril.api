@@ -1,8 +1,10 @@
 defmodule Mithril.Mixfile do
   use Mix.Project
 
+  @version "3.3.3"
   def project do
     [
+      version: @version,
       app: :mithril_api,
       description: "Add description to your package.",
       package: package(),
@@ -68,7 +70,8 @@ defmodule Mithril.Mixfile do
       {:mox, "~> 0.3", only: :test},
       {:ex_machina, "~> 2.0", only: [:dev, :test]},
       {:excoveralls, "~> 0.10", only: [:dev, :test]},
-      {:credo, "~> 0.9", only: [:dev, :test]}
+      {:credo, "~> 0.9", only: [:dev, :test]},
+      {:git_ops, "~> 0.6.0", only: [:dev]}
     ]
   end
 

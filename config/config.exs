@@ -133,4 +133,27 @@ config :mithril_api, Mithril.Scheduler,
   token_deleting: {:system, :string, "TOKEN_DELETING_SCHEDULE", "* 1-4 * * *"},
   otp_expiration: {:system, :string, "OTP_EXPIRATION_SCHEDULE", "*/5 * * * *"}
 
+config :git_ops,
+  mix_project: Mithril.Mixfile,
+  changelog_file: "CHANGELOG.md",
+  repository_url: "https://github.com/edenlabllc/mithril.api/",
+  types: [
+    # Makes an allowed commit type called `tidbit` that is not
+    # shown in the changelog
+    tidbit: [
+      hidden?: true
+    ],
+    # Makes an allowed commit type called `important` that gets
+    # a section in the changelog with the header "Important Changes"
+    important: [
+      header: "Important Changes"
+    ]
+  ],
+  # Instructs the tool to manage your mix version in your `mix.exs` file
+  # See below for more information
+  manage_mix_version?: true,
+  # Instructs the tool to manage the version in your README.md
+  # Pass in `true` to use `"README.md"` or a string to customize
+  manage_readme_version: "README.md"
+
 import_config "#{Mix.env()}.exs"
