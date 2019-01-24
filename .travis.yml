@@ -24,7 +24,7 @@ env:
   global:
     - MIX_ENV=test
     - DOCKER_NAMESPACE=edenlabllc
-    - APPS='{"mithril_api":"mithril"}'
+    - APPS='[{"app":"mithril_api","label":"api","namespace":"mithril","chart":"mithril", "deployment":"api"}]'
     - POSTGRES_VERSION=9.6
     # Docker and GitHub credentials
     - secure: "F8a3M90470KBwgq8Q3A7dAKeDui42z/lsiaPB9cnFspB1Uwp6NHRCUGjd2jgfGsIOtlA4kvlIvc2WE5aO3z1+djLdWhLUtU2WqgY/9Eo2zWd7qTTS+sibp9HDuhR5OjkNKkZWE1fmhEW9EDUz8Iw27pF82ZyuJf9SCqmvHfKLpgHu03Yoi+jISTLUEJ7NQiIc+pyO0VAsGRXQfSLrTwsNGZxjtmvlQqM1Z1eyhZvF7mSPTME9n28qLwEtpPTGABO714DwSiphBJxno3KFroVzjf36xHAF5y9zq0Rqtp156XaGVF/++9thgHEWnsmbulptKf0ZWhxbNYm9GiT6HLwZbXDAuGhNypxcIpqTxMrDnNL8dgl/W3f3zExPy4kDqJoShDE6NJV4CRDRRyljGWA89J3dDhBVODqgC/1SDVBCdthwcjIy7u6T9/otiGbBtD5RdAfVlm0iR4qMTYrHOJFsxhtAn5cfKmsRbsgNjiOyBVokB5z38qLtdJZkwhaqNdja4HGDONrJvJ03NLLVMSfWbCUopnV7v8RQ/h/UkM56XQL4CbTdpATRZf5oDZvgxz307+RYESRngMskaTMl7w9kBOQKTJa7qiXdD9WsgJnPF0zM7ANSlK6JhZeY0785o0IFYTYY9dd0T/fB9j5g1j2YC3bdrh5owVUw1uoMQuogFI="
@@ -35,15 +35,20 @@ branches:
     - /[0-9]*\.[0-9]*\.[0-9]*/
 before_install:
   - sudo apt-get install jq
-  - curl -s https://raw.githubusercontent.com/edenlabllc/ci-utils/umbrella/init-db.sh -o init-db.sh; sudo sh ./init-db.sh
+  - curl -s https://raw.githubusercontent.com/edenlabllc/ci-utils/umbrella_v2/init-db.sh -o init-db.sh; sudo sh ./init-db.sh
 jobs:
   include:
     - stage: "test and build"
+      name: "test"
       # run tests
-      script: (curl -s https://raw.githubusercontent.com/edenlabllc/ci-utils/umbrella/tests.sh -o tests.sh; bash ./tests.sh) || travis_terminate 1
+      script: (curl -s https://raw.githubusercontent.com/edenlabllc/ci-utils/umbrella_v2/tests.sh -o tests.sh; bash ./tests.sh) || travis_terminate 1
       # Build Docker container
     - stage: "test and build"
+      name: "mithril_api"
+      env:
+        - DB_MIGRATE=true
+        - APPS='[{"app":"mithril_api","label":"api","namespace":"mithril","chart":"mithril", "deployment":"api"}]'
       # "Decrypting deploy key..."
       script:
       - openssl aes-256-cbc -K $encrypted_792e32fefb8e_key -iv $encrypted_792e32fefb8e_iv -in eHealth-8110bd102a69.json.enc -out eHealth-8110bd102a69.json -d
-      - (curl -s https://raw.githubusercontent.com/edenlabllc/ci-utils/umbrella/docker.sh -o docker.sh; bash ./docker.sh) || travis_terminate 1
+      - (curl -s https://raw.githubusercontent.com/edenlabllc/ci-utils/umbrella_v2/docker.sh -o docker.sh; bash ./docker.sh) || travis_terminate 1
