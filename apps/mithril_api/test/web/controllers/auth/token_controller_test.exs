@@ -341,6 +341,43 @@ defmodule Mithril.OAuth.TokenControllerTest do
     assert %{"message" => ^message, "type" => "password_expired"} = res["error"]
   end
 
+  describe "login with CAPTCHA" do
+    setup %{conn: conn} do
+      client_type = insert(:client_type, name: @cabinet)
+      client = :client |> insert(client_type: client_type) |> with_connection()
+
+      current_value = System.get_env("USER_2FA_ENABLED") || "false"
+      System.put_env("USER_2FA_ENABLED", "false")
+      on_exit(fn -> System.put_env("USER_2FA_ENABLED", current_value) end)
+
+      payload = put_in(token_payload(client), ~w(token token)a, "some-captcha-token")
+
+      %{conn: conn, user: client.user, payload: payload}
+    end
+
+    test "valid captcha token", %{conn: conn, payload: payload} do
+      expect(ReCAPTCHAMock, :verify_token, fn _body -> {:ok, %{"success" => true}} end)
+
+      assert "REQUEST_APPS" ==
+               conn
+               |> post(auth_token_path(conn, :create), payload)
+               |> json_response(201)
+               |> get_in(~w(urgent next_step))
+    end
+
+    test "invalid captcha token", %{conn: conn, payload: payload} do
+      expect(ReCAPTCHAMock, :verify_token, fn _body ->
+        {:ok, %{"error-codes" => ["invalid-input-secret"], "success" => false}}
+      end)
+
+      assert "Invalid CAPTCHA token" ==
+               conn
+               |> post(auth_token_path(conn, :create), payload)
+               |> json_response(403)
+               |> get_in(~w(error message))
+    end
+  end
+
   describe "change password token flow" do
     setup %{conn: conn} do
       allowed_scope = "user:change_password"

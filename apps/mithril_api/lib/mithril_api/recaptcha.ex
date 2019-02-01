@@ -20,7 +20,7 @@ defmodule Mithril.ReCAPTCHA do
     |> @http_client.verify_token()
     |> case do
       {:ok, %{"success" => true}} -> :ok
-      _ -> {:error, {:forbidden, "Invalid CAPTCHA token"}}
+      _ -> {:error, {:forbidden, %{message: "Invalid CAPTCHA token"}}}
     end
   end
 
