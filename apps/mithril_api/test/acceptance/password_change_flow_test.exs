@@ -26,14 +26,19 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
       %{conn: conn, user: client.user, client: client}
     end
 
-    test "happy path", %{conn: conn, user: user, client: client} do
+    test "happy path with captcha", %{conn: conn, user: user, client: client} do
+      expect(ReCAPTCHAMock, :verify_token, 2, fn _body ->
+        {:ok, %{"success" => true}}
+      end)
+
       request_body = %{
         "token" => %{
           grant_type: "change_password",
           email: user.email,
           password: user_raw_password(),
           client_id: client.id,
-          scope: "user:change_password"
+          scope: "user:change_password",
+          token: "some-response"
         }
       }
 

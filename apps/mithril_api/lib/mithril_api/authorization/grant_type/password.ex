@@ -12,6 +12,7 @@ defmodule Mithril.Authorization.GrantType.Password do
   alias Mithril.Clients
   alias Mithril.ClientTypeAPI.ClientType
   alias Mithril.Error
+  alias Mithril.ReCAPTCHA
   alias Mithril.TokenAPI
   alias Mithril.UserAPI
   alias Mithril.UserAPI.User
@@ -36,6 +37,7 @@ defmodule Mithril.Authorization.GrantType.Password do
          :ok <- validate_user_password(user, grant_type),
          :ok <- validate_client_allowed_scope(client, attrs["scope"]),
          :ok <- validate_token_scope_by_grant(grant_type, attrs["scope"]),
+         :ok <- validate_captcha(attrs["token"]),
          factor <- Factors.get_factor_by(user_id: user.id, is_active: true),
          {:ok, token} <- create_token_by_grant_type(factor, user, client, attrs["scope"], grant_type),
          {_, nil} <- TokenAPI.deactivate_old_tokens(token),
@@ -46,11 +48,13 @@ defmodule Mithril.Authorization.GrantType.Password do
   end
 
   defp changeset(attrs) do
-    types = %{email: :string, password: :string, client_id: :string, scope: :string}
+    types = %{email: :string, password: :string, client_id: :string, scope: :string, token: :string}
+    required = ~w(email password client_id scope)a
+    optional = ~w(token)a
 
     {%{}, types}
-    |> cast(attrs, Map.keys(types))
-    |> validate_required(Map.keys(types))
+    |> cast(attrs, required ++ optional)
+    |> validate_required(required)
   end
 
   defp validate_user_password(_, @grant_type_change_password), do: :ok
@@ -84,6 +88,9 @@ defmodule Mithril.Authorization.GrantType.Password do
   defp validate_token_scope_by_grant(@grant_type_change_password, "user:change_password"), do: :ok
   defp validate_token_scope_by_grant(@grant_type_change_password, _), do: Error.invalid_scope(["user:change_password"])
   defp validate_token_scope_by_grant(_, _requested_scope), do: :ok
+
+  defp validate_captcha(nil), do: :ok
+  defp validate_captcha(response), do: ReCAPTCHA.verify(response)
 
   defp create_token_by_grant_type(
          _,

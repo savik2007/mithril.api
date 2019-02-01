@@ -33,7 +33,8 @@ config :mithril_api,
   api_resolvers: [
     sms: Mithril.API.SMS,
     mpi: Mithril.API.MPI,
-    digital_signature: Mithril.API.Signature
+    digital_signature: Mithril.API.Signature,
+    recaptcha: Mithril.ReCAPTCHA
   ],
   token_ttl_after_expiration: {:system, :integer, "TOKEN_TTL_AFTER_EXPIRATION_DAYS", 30}
 
@@ -46,6 +47,10 @@ config :mithril_api, Mithril.Repo,
   hostname: {:system, "DB_HOST", "localhost"},
   port: {:system, :integer, "DB_PORT", 5432},
   loggers: [{Ecto.LoggerJSON, :log, [:info]}]
+
+config :mithril_api, Mithril.ReCAPTCHA,
+  url: {:system, "RECAPTCHA_VERIFY_URL", "https://www.google.com/recaptcha/api/siteverify"},
+  secret: {:system, "RECAPTCHA_SECRET"}
 
 config :mithril_api, :generators,
   migration: false,

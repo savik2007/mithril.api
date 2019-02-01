@@ -12,6 +12,7 @@ config :mithril_api,
   api_resolvers: [
     sms: SMSMock,
     mpi: MPIMock,
+    recaptcha: ReCAPTCHAMock,
     digital_signature: SignatureMock
   ]
 

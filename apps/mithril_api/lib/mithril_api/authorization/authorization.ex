@@ -43,9 +43,9 @@ defmodule Mithril.Authorization do
   end
 
   defp changeset(attrs) do
-    types = %{user_id: UUID, client_id: UUID, redirect_uri: :string, scope: :string}
+    types = %{user_id: UUID, client_id: UUID, redirect_uri: :string, scope: :string, token: :string}
     required = ~w(user_id client_id redirect_uri)a
-    optional = ~w(scope)a
+    optional = ~w(scope token)a
 
     {%{}, types}
     |> cast(attrs, required ++ optional)

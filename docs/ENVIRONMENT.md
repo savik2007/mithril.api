@@ -5,10 +5,11 @@ Also sample `.env` can be used as payload for `docker run` cli.
 
 ### General
 
-| VAR_NAME      | Default Value           | Description |
-| ------------- | ----------------------- | ----------- |
-| ERLANG_COOKIE | `mFd1nWJ1KUxj`.. | Erlang [distribution cookie](http://erlang.org/doc/reference_manual/distributed.html). **Make sure that default value is changed in production.** |
-| LOG_LEVEL     | `info` | Elixir Logger severity level. Possible values: `debug`, `info`, `warn`, `error`. |
+| VAR_NAME              | Default Value               | Description |
+| --------------------- | --------------------------- | ----------- |
+| ERLANG_COOKIE         | `mFd1nWJ1KUxj`..            | Erlang [distribution cookie](http://erlang.org/doc/reference_manual/distributed.html). **Make sure that default value is changed in production.** |
+| LOG_LEVEL             | `info`                      | Elixir Logger severity level. Possible values: `debug`, `info`, `warn`, `error`. |
+| RECAPTCHA_VERIFY_URL  | `https://www.google.com...` | ReCAPTCHA verify URL|
 
 ### Database
 
