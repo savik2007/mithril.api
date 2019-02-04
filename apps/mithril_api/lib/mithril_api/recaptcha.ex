@@ -6,7 +6,7 @@ defmodule Mithril.ReCAPTCHA do
   @behaviour Mithril.API.ReCAPTCHABehaviour
   @http_client Application.get_env(:mithril_api, :api_resolvers)[:recaptcha]
 
-  use Confex, otp_app: :ehealth
+  use Confex, otp_app: :mithril_api
 
   def verify(response, remote_ip \\ nil) do
     body = %{
@@ -31,7 +31,7 @@ defmodule Mithril.ReCAPTCHA do
   end
 
   def verify_token(body) do
-    url = "https://www.google.com/recaptcha/api/siteverify"
+    url = config()[:url]
 
     headers = [
       {"Content-type", "application/x-www-form-urlencoded"}
