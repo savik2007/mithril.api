@@ -19,8 +19,14 @@ defmodule Mithril.ReCAPTCHA do
     |> URI.encode_query()
     |> @http_client.verify_token()
     |> case do
-      {:ok, %{"success" => true}} -> :ok
-      _ -> {:error, {:forbidden, %{message: "Invalid CAPTCHA token"}}}
+      {:ok, %{"success" => true}} ->
+        :ok
+
+      {:ok, %{"error-codes" => errors}} ->
+        {:error, {:forbidden, %{message: "Invalid CAPTCHA token. Errors: #{traverse_errors(errors)}"}}}
+
+      _ ->
+        {:error, {:forbidden, %{message: "Invalid CAPTCHA token"}}}
     end
   end
 
@@ -44,4 +50,7 @@ defmodule Mithril.ReCAPTCHA do
       {:error, %{reason: reason}} -> {:error, [reason]}
     end
   end
+
+  defp traverse_errors(errors) when is_list(errors), do: Enum.join(errors, ", ")
+  defp traverse_errors(errors), do: inspect(errors)
 end

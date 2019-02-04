@@ -367,10 +367,10 @@ defmodule Mithril.OAuth.TokenControllerTest do
 
     test "invalid captcha token", %{conn: conn, payload: payload} do
       expect(ReCAPTCHAMock, :verify_token, fn _body ->
-        {:ok, %{"error-codes" => ["invalid-input-secret"], "success" => false}}
+        {:ok, %{"error-codes" => ["invalid-input-secret", "invalid-input-response"], "success" => false}}
       end)
 
-      assert "Invalid CAPTCHA token" ==
+      assert "Invalid CAPTCHA token. Errors: invalid-input-secret, invalid-input-response" ==
                conn
                |> post(auth_token_path(conn, :create), payload)
                |> json_response(403)
