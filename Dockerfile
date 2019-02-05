@@ -8,7 +8,7 @@ WORKDIR /app
 
 ENV MIX_ENV=prod
 
-RUN apk add --no-cache --update --virtual .build-deps musl=1.1.19-r10 make g++ git
+RUN apk add --no-cache --update --virtual .build-deps musl=1.1.20-r3 make g++ git
 
 RUN mix do \
       local.hex --force, \
@@ -19,7 +19,7 @@ RUN mix do \
 
 RUN git log --pretty=format:"%H %cd %s" > commits.txt
 
-FROM alpine:3.8
+FROM alpine:3.9
 
 ARG APP_NAME
 
