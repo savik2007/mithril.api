@@ -66,17 +66,6 @@ defmodule Mithril.Repo.Migrations.AddReimbursementScopes do
     WHERE name IN ('PHARMACY_OWNER');
     """)
 
-    # ======== Update broker scopes ===========
-    execute("""
-    DO $$DECLARE r record;
-    BEGIN
-      FOR r IN SELECT unnest(ARRAY['drugs:read', 'medication_dispense:read', 'medication_request:details', 'medication_request:read', 'medication_request:reject', 'medication_request:resend', 'medication_request_request:read', 'medication_request_request:reject', 'medication_request_request:sign', 'medication_request_request:write', 'medication_dispense:write', 'medication_dispense:process', 'medication_dispense:reject']) as scope
-    LOOP
-      EXECUTE 'UPDATE clients SET priv_settings = jsonb_set(priv_settings, ''{broker_scope}'', to_json(lower(replace(upper(trim(priv_settings ->> ''broker_scope'')), upper($1), '''')))::jsonb) WHERE upper(priv_settings::text) ~ upper($2);' USING r.scope, r.scope;
-    END LOOP;
-    END$$;
-    """)
-
     execute("""
     UPDATE clients c
     SET priv_settings = jsonb_set(priv_settings, '{broker_scope}', to_json(trim(priv_settings ->> 'broker_scope') || ' drugs:read medication_dispense:read medication_request:details medication_request:read medication_request:reject medication_request:resend medication_request_request:read medication_request_request:reject medication_request_request:sign medication_request_request:write medication_dispense:write medication_dispense:process medication_dispense:reject')::jsonb)
