@@ -24,3 +24,13 @@ release :mithril_api do
     ]
   )
 end
+
+release :mithril_scheduler do
+  set(version: current_version(:mithril_scheduler))
+
+  set(
+    applications: [
+      mithril_scheduler: :permanent
+    ]
+  )
+end

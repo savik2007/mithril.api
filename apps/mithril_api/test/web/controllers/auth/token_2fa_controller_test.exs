@@ -3,10 +3,10 @@ defmodule Mithril.OAuth.Token2FAControllerTest do
 
   import Mox
 
-  alias Mithril.OTP
-  alias Mithril.TokenAPI.Token
-  alias Mithril.UserAPI.User.PrivSettings
-  alias Mithril.Authorization.GrantType.Password, as: PasswordGrantType
+  alias Core.OTP
+  alias Core.TokenAPI.Token
+  alias Core.UserAPI.User.PrivSettings
+  alias Core.Authorization.GrantType.Password, as: PasswordGrantType
 
   @password user_raw_password()
 

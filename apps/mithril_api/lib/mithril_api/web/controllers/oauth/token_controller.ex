@@ -1,8 +1,8 @@
 defmodule Mithril.OAuth.TokenController do
   use Mithril.Web, :controller
 
-  alias Mithril.Authorization.Tokens
-  alias Mithril.TokenAPI
+  alias Core.Authorization.Tokens
+  alias Core.TokenAPI
   alias Mithril.Web.TokenView
 
   action_fallback(Mithril.Web.FallbackController)

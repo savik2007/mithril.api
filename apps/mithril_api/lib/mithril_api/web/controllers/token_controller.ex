@@ -1,10 +1,10 @@
 defmodule Mithril.Web.TokenController do
   use Mithril.Web, :controller
 
-  alias Mithril.Authorization.Tokens
-  alias Mithril.TokenAPI
-  alias Mithril.TokenAPI.Token
-  alias Mithril.UserAPI
+  alias Core.Authorization.Tokens
+  alias Core.TokenAPI
+  alias Core.TokenAPI.Token
+  alias Core.UserAPI
   alias Scrivener.Page
 
   action_fallback(Mithril.Web.FallbackController)
@@ -53,7 +53,7 @@ defmodule Mithril.Web.TokenController do
 
   def user(conn, %{"token_id" => value}) do
     with {:ok, %Token{} = token} <- Tokens.verify(value) do
-      user = Mithril.UserAPI.get_user_with_roles(token.user_id, token.details["client_id"])
+      user = Core.UserAPI.get_user_with_roles(token.user_id, token.details["client_id"])
       render(conn, Mithril.Web.UserView, "urgent.json", user: user, urgent: true, expires_at: token.expires_at)
     end
   end

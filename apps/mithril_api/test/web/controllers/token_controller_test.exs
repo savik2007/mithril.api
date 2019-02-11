@@ -2,8 +2,8 @@ defmodule Mithril.Web.TokenControllerTest do
   use Mithril.Web.ConnCase
 
   alias Ecto.UUID
-  alias Mithril.Clients.Client
-  alias Mithril.TokenAPI.Token
+  alias Core.Clients.Client
+  alias Core.TokenAPI.Token
 
   @broker Client.access_type(:broker)
   @direct Client.access_type(:direct)
@@ -240,7 +240,7 @@ defmodule Mithril.Web.TokenControllerTest do
     user = insert(:user)
     client = insert(:client)
 
-    {:ok, role} = Mithril.RoleAPI.create_role(%{name: "Some role", scope: "legal_entity:read"})
+    {:ok, role} = Core.RoleAPI.create_role(%{name: "Some role", scope: "legal_entity:read"})
 
     insert(:user_role, client: client, user: user, role: role)
     insert(:app, client: client, user: user, scope: "legal_entity:read,legal_entity:write")

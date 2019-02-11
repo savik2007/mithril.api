@@ -1,8 +1,8 @@
 defmodule Mithril.Web.GlobalUserRoleController do
   use Mithril.Web, :controller
 
-  alias Mithril.GlobalUserRoleAPI
-  alias Mithril.GlobalUserRoleAPI.GlobalUserRole
+  alias Core.GlobalUserRoleAPI
+  alias Core.GlobalUserRoleAPI.GlobalUserRole
 
   action_fallback(Mithril.Web.FallbackController)
 

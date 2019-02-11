@@ -1,7 +1,7 @@
 defmodule Mithril.Web.ClientTypeControllerTest do
   use Mithril.Web.ConnCase
 
-  alias Mithril.ClientTypeAPI.ClientType
+  alias Core.ClientTypeAPI.ClientType
 
   @create_attrs %{scope: "some scope"}
   @update_attrs %{name: "some updated name", scope: "some updated scope"}

@@ -1,8 +1,8 @@
 defmodule Mithril.OAuth.AppControllerTest do
   use Mithril.Web.ConnCase
-  alias Mithril.AppAPI
-  alias Mithril.Clients.Client
-  alias Mithril.UserRoleAPI
+  alias Core.AppAPI
+  alias Core.Clients.Client
+  alias Core.UserRoleAPI
 
   @direct Client.access_type(:direct)
   @trusted_client_id "30074b6e-fbab-4dc1-9d37-88c21dab1847"
@@ -163,7 +163,7 @@ defmodule Mithril.OAuth.AppControllerTest do
     client = :client |> insert(priv_settings: %{"access_type" => @direct}) |> with_connection()
     user = insert(:user)
     user_role = insert(:role, scope: "legal_entity:read legal_entity:write")
-    Mithril.UserRoleAPI.create_user_role(%{user_id: user.id, role_id: user_role.id, client_id: client.id})
+    Core.UserRoleAPI.create_user_role(%{user_id: user.id, role_id: user_role.id, client_id: client.id})
     redirect_uri = "http://some_other_host.com:3000/path?param=1"
 
     request = %{
@@ -193,7 +193,7 @@ defmodule Mithril.OAuth.AppControllerTest do
     connection = insert(:connection, redirect_uri: "http://some_host.com:3000/", client: client)
     user = insert(:user)
     user_role = insert(:role, scope: "a b c")
-    Mithril.UserRoleAPI.create_user_role(%{user_id: user.id, role_id: user_role.id, client_id: client.id})
+    Core.UserRoleAPI.create_user_role(%{user_id: user.id, role_id: user_role.id, client_id: client.id})
 
     request = %{
       app: %{
@@ -220,7 +220,7 @@ defmodule Mithril.OAuth.AppControllerTest do
     connection = insert(:connection, redirect_uri: "http://some_host.com:3000/", client: client)
     user = insert(:user)
     user_role = insert(:role, scope: "b c d")
-    Mithril.UserRoleAPI.create_user_role(%{user_id: user.id, role_id: user_role.id, client_id: client.id})
+    Core.UserRoleAPI.create_user_role(%{user_id: user.id, role_id: user_role.id, client_id: client.id})
 
     request = %{
       app: %{

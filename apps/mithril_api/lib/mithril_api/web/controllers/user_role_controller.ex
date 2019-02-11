@@ -1,8 +1,8 @@
 defmodule Mithril.Web.UserRoleController do
   use Mithril.Web, :controller
 
-  alias Mithril.UserRoleAPI
-  alias Mithril.UserRoleAPI.UserRole
+  alias Core.UserRoleAPI
+  alias Core.UserRoleAPI.UserRole
 
   action_fallback(Mithril.Web.FallbackController)
 

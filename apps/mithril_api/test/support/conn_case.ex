@@ -23,9 +23,9 @@ defmodule Mithril.Web.ConnCase do
       import Ecto
       import Ecto.Changeset
       import Ecto.Query
-      import Mithril.Factory
-      import Mithril.Test.Helpers
-      alias Mithril.Repo
+      import Core.Factory
+      import Core.Test.Helpers
+      alias Core.Repo
 
       # The default endpoint for testing
       @endpoint Mithril.Web.Endpoint
@@ -57,10 +57,10 @@ defmodule Mithril.Web.ConnCase do
   end
 
   setup tags do
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Mithril.Repo)
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Core.Repo)
 
     unless tags[:async] do
-      Ecto.Adapters.SQL.Sandbox.mode(Mithril.Repo, {:shared, self()})
+      Ecto.Adapters.SQL.Sandbox.mode(Core.Repo, {:shared, self()})
     end
 
     conn =

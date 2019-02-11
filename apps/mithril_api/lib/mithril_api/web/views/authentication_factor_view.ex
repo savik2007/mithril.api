@@ -1,7 +1,7 @@
 defmodule Mithril.Web.AuthenticationFactorView do
   use Mithril.Web, :view
 
-  alias Mithril.Authentication
+  alias Core.Authentication
   alias Mithril.Web.UserView
 
   @fields ~w(id factor is_active type user_id inserted_at updated_at)a

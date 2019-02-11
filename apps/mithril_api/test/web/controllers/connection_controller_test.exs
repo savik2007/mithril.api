@@ -2,7 +2,7 @@ defmodule Mithril.Web.ConnectionControllerTest do
   use Mithril.Web.ConnCase
 
   alias Ecto.UUID
-  alias Mithril.Clients
+  alias Core.Clients
 
   setup %{conn: conn} do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}

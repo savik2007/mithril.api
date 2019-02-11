@@ -1,9 +1,9 @@
 defmodule Mithril.Web.OTPController do
   use Mithril.Web, :controller
 
-  alias Mithril.Authentication
-  alias Mithril.Guardian.Plug
-  alias Mithril.OTP
+  alias Core.Authentication
+  alias Core.Guardian.Plug
+  alias Core.OTP
   alias Scrivener.Page
 
   action_fallback(Mithril.Web.FallbackController)

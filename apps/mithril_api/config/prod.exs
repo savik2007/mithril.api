@@ -7,15 +7,6 @@ use Mix.Config
 # config :logger,
 #   compile_time_purge_level: :info
 
-# Configure your database
-config :mithril_api, Mithril.Repo,
-  adapter: Ecto.Adapters.Postgres,
-  database: {:system, "DB_NAME"},
-  username: {:system, "DB_USER"},
-  password: {:system, "DB_PASSWORD"},
-  hostname: {:system, "DB_HOST"},
-  port: {:system, :integer, "DB_PORT"}
-
 # For production, we often load configuration from external
 # sources, such as your system environment. For this reason,
 # you won't find the :http configuration below, but set inside

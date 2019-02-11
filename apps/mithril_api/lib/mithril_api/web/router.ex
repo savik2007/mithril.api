@@ -28,11 +28,11 @@ defmodule MithrilWeb.Router do
   end
 
   pipeline :jwt do
-    plug(Guardian.Plug.Pipeline, module: Mithril.Guardian, error_handler: Mithril.Web.FallbackController)
+    plug(Guardian.Plug.Pipeline, module: Core.Guardian, error_handler: Mithril.Web.FallbackController)
   end
 
   pipeline :jwt_access_registration do
-    plug(Guardian.Plug.VerifyHeader, claims: %{typ: "access", aud: Mithril.Guardian.get_aud(:registration)})
+    plug(Guardian.Plug.VerifyHeader, claims: %{typ: "access", aud: Core.Guardian.get_aud(:registration)})
     plug(Guardian.Plug.EnsureAuthenticated)
   end
 

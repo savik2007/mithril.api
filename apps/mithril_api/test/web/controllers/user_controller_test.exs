@@ -3,13 +3,13 @@ defmodule Mithril.Web.UserControllerTest do
 
   import Ecto.Query
   alias Ecto.UUID
-  alias Mithril.TokenAPI
-  alias Mithril.UserAPI
-  alias Mithril.UserAPI.User
-  alias Mithril.Authentication
-  alias Mithril.UserAPI.PasswordHistory
-  alias Mithril.Repo
-  alias Mithril.Authentication.Factor
+  alias Core.TokenAPI
+  alias Core.UserAPI
+  alias Core.UserAPI.User
+  alias Core.Authentication
+  alias Core.UserAPI.PasswordHistory
+  alias Core.Repo
+  alias Core.Authentication.Factor
 
   @create_attrs %{
     email: "email@example.com",

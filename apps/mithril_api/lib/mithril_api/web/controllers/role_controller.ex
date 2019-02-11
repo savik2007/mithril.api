@@ -1,8 +1,8 @@
 defmodule Mithril.Web.RoleController do
   use Mithril.Web, :controller
 
-  alias Mithril.RoleAPI
-  alias Mithril.RoleAPI.Role
+  alias Core.RoleAPI
+  alias Core.RoleAPI.Role
   alias Scrivener.Page
 
   action_fallback(Mithril.Web.FallbackController)

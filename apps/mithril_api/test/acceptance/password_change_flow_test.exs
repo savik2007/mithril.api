@@ -3,7 +3,7 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
 
   import Mox
 
-  alias Mithril.OTP
+  alias Core.OTP
 
   # For Mox lib. Make sure mocks are verified when the test exits
   setup :verify_on_exit!

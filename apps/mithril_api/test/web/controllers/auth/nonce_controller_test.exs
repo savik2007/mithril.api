@@ -1,7 +1,7 @@
 defmodule Mithril.OAuth.NonceControllerTest do
   use Mithril.Web.ConnCase
 
-  import Mithril.Guardian
+  import Core.Guardian
 
   alias Ecto.UUID
 

@@ -1,7 +1,7 @@
 defmodule Mithril.Web.AppControllerTest do
   use Mithril.Web.ConnCase
 
-  alias Mithril.AppAPI.App
+  alias Core.AppAPI.App
   alias Ecto.UUID
 
   @create_attrs %{scope: "some scope"}
@@ -28,7 +28,7 @@ defmodule Mithril.Web.AppControllerTest do
       assert 1 == length(resp["data"])
 
       schema =
-        "specs/json_schemas/apps.json"
+        "../core/specs/json_schemas/apps.json"
         |> File.read!()
         |> Poison.decode!()
 
@@ -273,7 +273,7 @@ defmodule Mithril.Web.AppControllerTest do
       |> json_response(200)
 
     schema =
-      "specs/json_schemas/app.json"
+      "../core/specs/json_schemas/app.json"
       |> File.read!()
       |> Poison.decode!()
 
@@ -310,7 +310,7 @@ defmodule Mithril.Web.AppControllerTest do
       |> json_response(200)
 
     schema =
-      "specs/json_schemas/app.json"
+      "../core/specs/json_schemas/app.json"
       |> File.read!()
       |> Poison.decode!()
 

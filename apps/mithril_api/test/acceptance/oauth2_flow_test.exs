@@ -2,13 +2,13 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
   use Mithril.Web.ConnCase
 
   import Mox
-  import Mithril.Guardian
+  import Core.Guardian
 
   alias Comeonin.Bcrypt
-  alias Mithril.OTP
-  alias Mithril.Authorization.Tokens
-  alias Mithril.ClientTypeAPI.ClientType
-  alias Mithril.Authorization.GrantType
+  alias Core.OTP
+  alias Core.Authorization.Tokens
+  alias Core.ClientTypeAPI.ClientType
+  alias Core.Authorization.GrantType
 
   setup :verify_on_exit!
 

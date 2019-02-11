@@ -3,9 +3,9 @@ defmodule Mithril.Web.UserController do
 
   use Mithril.Web, :controller
 
-  alias Mithril.Repo
-  alias Mithril.UserAPI
-  alias Mithril.UserAPI.User
+  alias Core.Repo
+  alias Core.UserAPI
+  alias Core.UserAPI.User
   alias Scrivener.Page
 
   action_fallback(Mithril.Web.FallbackController)

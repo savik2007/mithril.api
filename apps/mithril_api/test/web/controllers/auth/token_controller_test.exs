@@ -2,13 +2,13 @@ defmodule Mithril.OAuth.TokenControllerTest do
   use Mithril.Web.ConnCase
 
   import Mox
-  import Mithril.Guardian
+  import Core.Guardian
 
   alias Comeonin.Bcrypt
   alias Ecto.UUID
-  alias Mithril.AppAPI
-  alias Mithril.TokenAPI.Token
-  alias Mithril.ClientTypeAPI.ClientType
+  alias Core.AppAPI
+  alias Core.TokenAPI.Token
+  alias Core.ClientTypeAPI.ClientType
 
   setup :verify_on_exit!
 
@@ -83,7 +83,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
     end
 
     test "password has been expired", %{conn: conn, payload: payload} do
-      default_expiration = Confex.get_env(:mithril_api, :password)[:expiration]
+      default_expiration = Confex.fetch_env!(:core, :password)[:expiration]
       System.put_env("PASSWORD_EXPIRATION_DAYS", "0")
 
       assert "User is not registered" ==
@@ -305,7 +305,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
   end
 
   test "password has been expired", %{conn: conn} do
-    default_expiration = Confex.get_env(:mithril_api, :password)[:expiration]
+    default_expiration = Confex.fetch_env!(:core, :password)[:expiration]
     System.put_env("PASSWORD_EXPIRATION_DAYS", "0")
 
     allowed_scope = "app:authorize"
@@ -397,7 +397,7 @@ defmodule Mithril.OAuth.TokenControllerTest do
     end
 
     test "get change_password token when password has been expired", %{conn: conn, client: client, user: user} do
-      default_expiration = Confex.get_env(:mithril_api, :password)[:expiration]
+      default_expiration = Confex.fetch_env!(:core, :password)[:expiration]
       System.put_env("PASSWORD_EXPIRATION_DAYS", "0")
 
       request_payload = %{
@@ -426,8 +426,8 @@ defmodule Mithril.OAuth.TokenControllerTest do
     end
 
     test "get change_password token when password has not been expired", %{conn: conn, client: client, user: user} do
-      default_expiration = Confex.get_env(:mithril_api, :password)[:expiration]
-      default_2fa = Confex.get_env(:mithril_api, :"2fa")[:user_2fa_enabled?]
+      default_expiration = Confex.fetch_env!(:core, :password)[:expiration]
+      default_2fa = Confex.fetch_env!(:core, :"2fa")[:user_2fa_enabled?]
 
       System.put_env("PASSWORD_EXPIRATION_DAYS", "180")
       System.put_env("USER_2FA_ENABLED", "false")

@@ -1,7 +1,7 @@
 defmodule Mithril.Web.GlobalUserRoleControllerTest do
   use Mithril.Web.ConnCase
 
-  alias Mithril.UserAPI.User
+  alias Core.UserAPI.User
 
   setup %{conn: conn} do
     user = insert(:user)

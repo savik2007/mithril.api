@@ -1,8 +1,8 @@
 defmodule Mithril.Web.ConnectionController do
   use Mithril.Web, :controller
 
-  alias Mithril.Clients
-  alias Mithril.Clients.Connection
+  alias Core.Clients
+  alias Core.Clients.Connection
   alias Scrivener.Page
 
   action_fallback(Mithril.Web.FallbackController)

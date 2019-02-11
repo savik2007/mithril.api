@@ -1,7 +1,7 @@
 defmodule Mithril.Web.RoleControllerTest do
   use Mithril.Web.ConnCase
 
-  alias Mithril.RoleAPI.Role
+  alias Core.RoleAPI.Role
 
   @create_attrs %{scope: "some scope"}
   @update_attrs %{name: "some updated name", scope: "some updated scope"}

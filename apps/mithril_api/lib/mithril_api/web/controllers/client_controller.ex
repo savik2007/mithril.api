@@ -1,9 +1,9 @@
 defmodule Mithril.Web.ClientController do
   use Mithril.Web, :controller
 
-  alias Mithril.Clients
-  alias Mithril.Clients.Client
-  alias Mithril.TokenAPI
+  alias Core.Clients
+  alias Core.Clients.Client
+  alias Core.TokenAPI
   alias Scrivener.Page
 
   action_fallback(Mithril.Web.FallbackController)

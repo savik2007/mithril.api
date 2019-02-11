@@ -1,7 +1,7 @@
 defmodule Mithril.OAuth.NonceController do
   use Mithril.Web, :controller
 
-  alias Mithril.Authentication
+  alias Core.Authentication
   alias Mithril.NonceValidator
   alias Mithril.Web.FallbackController
   alias Mithril.Web.TokenView

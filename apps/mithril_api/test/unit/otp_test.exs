@@ -1,10 +1,10 @@
-defmodule Mithril.OTPTest do
+defmodule Core.OTPTest do
   @doc false
 
   use Mithril.Web.ConnCase
 
-  alias Mithril.OTP
-  alias Mithril.OTP.Schema, as: OTPSchema
+  alias Core.OTP
+  alias Core.OTP.Schema, as: OTPSchema
 
   describe "create otp" do
     test "success" do

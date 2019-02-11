@@ -1,8 +1,8 @@
 defmodule Mithril.Web.AppController do
   use Mithril.Web, :controller
 
-  alias Mithril.AppAPI
-  alias Mithril.AppAPI.App
+  alias Core.AppAPI
+  alias Core.AppAPI.App
   alias Scrivener.Page
 
   action_fallback(Mithril.Web.FallbackController)

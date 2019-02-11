@@ -1,8 +1,8 @@
 defmodule Mithril.Web.AuthenticationFactorControllerTest do
   use Mithril.Web.ConnCase
 
-  alias Mithril.Authentication
-  alias Mithril.Authentication.Factor
+  alias Core.Authentication
+  alias Core.Authentication.Factor
 
   describe "list user auth factor" do
     setup %{conn: conn} do

@@ -1,7 +1,7 @@
 defmodule Mithril.Web.UserRoleView do
   use Mithril.Web, :view
 
-  alias Mithril.RoleAPI.Role
+  alias Core.RoleAPI.Role
   alias Mithril.Web.UserRoleView
 
   def render("index.json", %{user_roles: user_roles}) do

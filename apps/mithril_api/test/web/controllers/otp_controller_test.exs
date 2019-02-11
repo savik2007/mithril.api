@@ -2,7 +2,7 @@ defmodule Mithril.Web.OTPControllerTest do
   use Mithril.Web.ConnCase
 
   import Mox
-  import Mithril.Guardian
+  import Core.Guardian
 
   alias Ecto.UUID
 

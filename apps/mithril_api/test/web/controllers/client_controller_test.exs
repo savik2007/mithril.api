@@ -2,8 +2,8 @@ defmodule Mithril.Web.ClientControllerTest do
   use Mithril.Web.ConnCase
 
   alias Ecto.UUID
-  alias Mithril.Clients.Client
-  alias Mithril.TokenAPI
+  alias Core.Clients.Client
+  alias Core.TokenAPI
 
   @broker Client.access_type(:broker)
 
