@@ -37,18 +37,20 @@ defmodule Core.MixProject do
   defp deps do
     [
       {:confex, "~> 3.2"},
-      {:ecto, "~> 2.1"},
+      {:ecto, "~> 2.2.11"},
       {:phoenix_ecto, "~> 3.2"},
       {:httpoison, "~> 1.0"},
-      {:eview, "~> 0.12"},
-      {:phoenix, "~> 1.3.0"},
+      {:eview, "~> 0.15.0"},
+      {:phoenix, "~> 1.4.0"},
       {:scrivener_ecto, "~> 1.2"},
-      {:guardian, "~> 1.0"},
+      {:guardian, "~> 1.2.1"},
       {:ex_machina, "~> 2.0", only: [:dev, :test]},
-      {:timex, "~> 3.1", override: true},
       {:bcrypt_elixir, "~> 1.0"},
       {:secure_random, ">= 0.0.0"},
-      {:postgrex, ">= 0.0.0"}
+      {:postgrex, ">= 0.0.0"},
+      {:poison, "~> 3.1"},
+      {:comeonin, ">= 0.0.0"},
+      {:plug_logger_json, "~> 0.5"}
     ]
   end
 

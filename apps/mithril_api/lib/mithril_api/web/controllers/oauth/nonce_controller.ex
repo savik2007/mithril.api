@@ -12,7 +12,9 @@ defmodule Mithril.OAuth.NonceController do
 
   def nonce(conn, %{"client_id" => client_id}) do
     with {:ok, jwt, _} <- Authentication.generate_nonce_for_client(client_id) do
-      render(conn, TokenView, "raw.json", json: %{token: jwt})
+      conn
+      |> put_view(TokenView)
+      |> render("raw.json", json: %{token: jwt})
     end
   end
 end

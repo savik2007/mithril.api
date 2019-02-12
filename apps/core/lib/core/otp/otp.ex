@@ -142,7 +142,7 @@ defmodule Core.OTP do
 
   @spec verify_expiration_time(otp :: OTPSchema.t()) :: atom()
   defp verify_expiration_time(%OTPSchema{code_expired_at: code_expired_at}) do
-    if Timex.before?(Timex.now(), code_expired_at),
+    if :lt == DateTime.compare(DateTime.utc_now(), code_expired_at),
       do: :ok,
       else: :expired
   end
@@ -234,7 +234,7 @@ defmodule Core.OTP do
 
   @spec get_code_expiration_time :: String.t()
   defp get_code_expiration_time,
-    do: DateTime.to_iso8601(Timex.shift(Timex.now(), seconds: Confex.fetch_env!(:core, :"2fa")[:otp_ttl]))
+    do: DateTime.to_iso8601(DateTime.add(DateTime.utc_now(), Confex.fetch_env!(:core, :"2fa")[:otp_ttl], :second))
 
   @spec deactivate_otps(key :: String.t()) :: {integer, nil | [term]} | no_return
   defp deactivate_otps(key) do
@@ -252,7 +252,7 @@ defmodule Core.OTP do
 
     OTPSchema
     |> where(active: true)
-    |> where([o], o.code_expired_at < ^Timex.now())
+    |> where([o], o.code_expired_at < ^DateTime.utc_now())
     |> Repo.update_all(set: data)
   end
 end

@@ -8,9 +8,7 @@ defmodule MithrilWeb.Router do
   """
   use Mithril.Web, :router
   use Plug.ErrorHandler
-
   alias Plug.LoggerJSON
-
   require Logger
 
   pipeline :api do
@@ -141,7 +139,7 @@ defmodule MithrilWeb.Router do
     get("/otps", OTPController, :index)
 
     scope "/apps" do
-      pipe_through([:api, :api_consumer_id])
+      pipe_through([:api_consumer_id])
       resources("/", AppController, except: [:new, :edit])
     end
   end

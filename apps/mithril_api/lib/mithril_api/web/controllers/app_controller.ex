@@ -3,13 +3,16 @@ defmodule Mithril.Web.AppController do
 
   alias Core.AppAPI
   alias Core.AppAPI.App
+  alias Mithril.Web.AppView
   alias Scrivener.Page
 
   action_fallback(Mithril.Web.FallbackController)
 
   def index(conn, params) do
     with %Page{} = paging <- AppAPI.list_apps(params) do
-      render(conn, "index.json", apps: paging.entries, paging: paging)
+      conn
+      |> put_view(AppView)
+      |> render("index.json", apps: paging.entries, paging: paging)
     end
   end
 
@@ -18,20 +21,26 @@ defmodule Mithril.Web.AppController do
       conn
       |> put_status(:created)
       |> put_resp_header("location", app_path(conn, :show, app))
+      |> put_view(AppView)
       |> render("show.json", app: AppAPI.get_app!(app.id))
     end
   end
 
   def show(conn, %{"id" => id}) do
     app = AppAPI.get_app!(id)
-    render(conn, "show.json", app: app)
+
+    conn
+    |> put_view(AppView)
+    |> render("show.json", app: app)
   end
 
   def update(conn, %{"id" => id, "app" => app_params}) do
     app = AppAPI.get_app!(id)
 
     with {:ok, %App{} = app} <- AppAPI.update_app(app, app_params) do
-      render(conn, "show.json", app: app)
+      conn
+      |> put_view(AppView)
+      |> render("show.json", app: app)
     end
   end
 

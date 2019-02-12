@@ -6,13 +6,16 @@ defmodule Mithril.Web.UserController do
   alias Core.Repo
   alias Core.UserAPI
   alias Core.UserAPI.User
+  alias Mithril.Web.UserView
   alias Scrivener.Page
 
   action_fallback(Mithril.Web.FallbackController)
 
   def index(conn, params) do
     with %Page{} = paging <- UserAPI.list_users(params) do
-      render(conn, "index.json", users: paging.entries, paging: paging)
+      conn
+      |> put_view(UserView)
+      |> render("index.json", users: paging.entries, paging: paging)
     end
   end
 
@@ -21,20 +24,26 @@ defmodule Mithril.Web.UserController do
       conn
       |> put_status(:created)
       |> put_resp_header("location", user_path(conn, :show, user))
+      |> put_view(UserView)
       |> render("show.json", user: user)
     end
   end
 
   def show(conn, %{"id" => id}) do
     user = UserAPI.get_user!(id)
-    render(conn, "show.json", user: user)
+
+    conn
+    |> put_view(UserView)
+    |> render("show.json", user: user)
   end
 
   def update(conn, %{"id" => id, "user" => user_params}) do
     user = id |> UserAPI.get_user!() |> Repo.preload(:factor)
 
     with {:ok, %User{} = user} <- UserAPI.update_user(user, user_params) do
-      render(conn, "show.json", user: user)
+      conn
+      |> put_view(UserView)
+      |> render("show.json", user: user)
     end
   end
 
@@ -50,14 +59,18 @@ defmodule Mithril.Web.UserController do
     user = UserAPI.get_user!(id)
 
     with {:ok, %User{} = user} <- UserAPI.change_user_password(user, user_params) do
-      render(conn, "show.json", user: user)
+      conn
+      |> put_view(UserView)
+      |> render("show.json", user: user)
     end
   end
 
   def block(conn, %{"user_id" => id} = user_params) do
     with %User{is_blocked: false} = user <- UserAPI.get_user!(id),
          {:ok, %User{} = user} <- UserAPI.block_user(user, fetch_user_block_reason(user_params)) do
-      render(conn, "show.json", user: user)
+      conn
+      |> put_view(UserView)
+      |> render("show.json", user: user)
     else
       %User{is_blocked: true} -> {:error, {:conflict, "user already blocked"}}
       err -> err
@@ -67,7 +80,9 @@ defmodule Mithril.Web.UserController do
   def unblock(conn, %{"user_id" => id} = user_params) do
     with %User{is_blocked: true} = user <- UserAPI.get_user!(id),
          {:ok, %User{} = user} <- UserAPI.unblock_user(user, fetch_user_block_reason(user_params)) do
-      render(conn, "show.json", user: user)
+      conn
+      |> put_view(UserView)
+      |> render("show.json", user: user)
     else
       %User{is_blocked: false} -> {:error, {:conflict, "user already unblocked"}}
       err -> err

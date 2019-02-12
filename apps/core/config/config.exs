@@ -93,4 +93,6 @@ config :core, Core.API.SMS,
     timeout: {:system, :integer, "OTP_REQUEST_TIMEOUT", 30_000}
   ]
 
+config :phoenix, :json_library, Jason
+
 import_config "#{Mix.env()}.exs"

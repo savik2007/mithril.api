@@ -4,6 +4,7 @@ defmodule Mithril.OAuth.TokenController do
   alias Core.Authorization.Tokens
   alias Core.TokenAPI
   alias Mithril.Web.TokenView
+  alias Mithril.Web.UserView
 
   action_fallback(Mithril.Web.FallbackController)
 
@@ -23,7 +24,8 @@ defmodule Mithril.OAuth.TokenController do
            |> Tokens.approve_factor() do
       conn
       |> put_status(:created)
-      |> render(TokenView, "show.json", token: token)
+      |> put_view(TokenView)
+      |> render("show.json", token: token)
     end
   end
 
@@ -33,7 +35,8 @@ defmodule Mithril.OAuth.TokenController do
            |> put_token_value(conn)
            |> TokenAPI.update_user_password() do
       conn
-      |> render(Mithril.Web.UserView, "show.json", user: user)
+      |> put_view(UserView)
+      |> render("show.json", user: user)
     end
   end
 
@@ -65,12 +68,14 @@ defmodule Mithril.OAuth.TokenController do
     conn
     |> put_status(:created)
     |> assign(:urgent, urgent)
-    |> render(TokenView, view, token: token)
+    |> put_view(TokenView)
+    |> render(view, token: token)
   end
 
   defp send_response(conn, token, view) do
     conn
     |> put_status(:created)
-    |> render(TokenView, view, token: token)
+    |> put_view(TokenView)
+    |> render(view, token: token)
   end
 end

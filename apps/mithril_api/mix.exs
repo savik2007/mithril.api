@@ -39,10 +39,7 @@ defmodule Mithril.Mixfile do
     [
       {:nex_json_schema, "~> 0.8"},
       {:confex, "~> 3.2"},
-      {:cowboy, "~> 1.1"},
-      {:poison, "~> 3.1"},
-      {:comeonin, ">= 0.0.0"},
-      {:plug_logger_json, "~> 0.5"},
+      {:plug_cowboy, "~> 2.0"},
       {:mox, "~> 0.3", only: :test},
       {:core, in_umbrella: true}
     ]

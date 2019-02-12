@@ -5,9 +5,12 @@ defmodule Mithril.Web.TokenController do
   alias Core.TokenAPI
   alias Core.TokenAPI.Token
   alias Core.UserAPI
+  alias Mithril.Web.FallbackController
+  alias Mithril.Web.TokenView
+  alias Mithril.Web.UserView
   alias Scrivener.Page
 
-  action_fallback(Mithril.Web.FallbackController)
+  action_fallback(FallbackController)
 
   def index(conn, params) do
     with %Page{} = paging <- TokenAPI.list_tokens(params) do
@@ -20,6 +23,7 @@ defmodule Mithril.Web.TokenController do
       conn
       |> put_status(:created)
       |> put_resp_header("location", token_path(conn, :show, token))
+      |> put_view(TokenView)
       |> render("show.json", token: token)
     end
   end
@@ -31,13 +35,17 @@ defmodule Mithril.Web.TokenController do
       conn
       |> put_status(:created)
       |> put_resp_header("location", token_path(conn, :show, token))
+      |> put_view(TokenView)
       |> render("show.json", token: token)
     end
   end
 
   def show(conn, %{"id" => id}) do
     token = TokenAPI.get_token!(id)
-    render(conn, "show.json", token: token)
+
+    conn
+    |> put_view(TokenView)
+    |> render("show.json", token: token)
   end
 
   def verify(conn, %{"token_id" => value}) do
@@ -47,14 +55,19 @@ defmodule Mithril.Web.TokenController do
       |> List.first()
 
     with {:ok, %Token{} = token, mis_client_id} <- Tokens.verify_client_token(value, api_key) do
-      render(conn, "show.json", token: token, urgent: %{mis_client_id: mis_client_id})
+      conn
+      |> put_view(TokenView)
+      |> render("show.json", token: token, urgent: %{mis_client_id: mis_client_id})
     end
   end
 
   def user(conn, %{"token_id" => value}) do
     with {:ok, %Token{} = token} <- Tokens.verify(value) do
       user = Core.UserAPI.get_user_with_roles(token.user_id, token.details["client_id"])
-      render(conn, Mithril.Web.UserView, "urgent.json", user: user, urgent: true, expires_at: token.expires_at)
+
+      conn
+      |> put_view(UserView)
+      |> render("urgent.json", user: user, urgent: true, expires_at: token.expires_at)
     end
   end
 
@@ -62,7 +75,9 @@ defmodule Mithril.Web.TokenController do
     token = TokenAPI.get_token!(id)
 
     with {:ok, %Token{} = token} <- TokenAPI.update_token(token, token_params) do
-      render(conn, "show.json", token: token)
+      conn
+      |> put_view(TokenView)
+      |> render("show.json", token: token)
     end
   end
 

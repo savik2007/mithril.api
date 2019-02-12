@@ -7,7 +7,7 @@ defmodule Mithril.Plugs.Headers do
   @header_api_key "api-key"
 
   import Plug.Conn, only: [put_status: 2, get_req_header: 2, halt: 1]
-  import Phoenix.Controller, only: [render: 4]
+  import Phoenix.Controller, only: [render: 3, put_view: 2]
 
   def put_user_id_header(%Plug.Conn{params: params, req_headers: headers} = conn, _) do
     %{conn | params: Map.merge(params, %{"user_id" => get_consumer_id(headers)})}
@@ -22,7 +22,8 @@ defmodule Mithril.Plugs.Headers do
       [] ->
         conn
         |> put_status(:unauthorized)
-        |> render(EView.Views.Error, :"401", %{
+        |> put_view(EView.Views.Error)
+        |> render(:"401", %{
           message: "Missing header #{header}",
           invalid: [
             %{

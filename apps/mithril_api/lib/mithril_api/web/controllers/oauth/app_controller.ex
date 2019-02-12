@@ -15,7 +15,8 @@ defmodule Mithril.OAuth.AppController do
       |> put_status(:created)
       |> assign(:urgent, %{redirect_uri: location})
       |> put_resp_header("location", location)
-      |> render(TokenView, "show.json", token: token)
+      |> put_view(TokenView)
+      |> render("show.json", token: token)
     end
   end
 

@@ -6,64 +6,88 @@ defmodule Mithril.Web.FallbackController do
   alias EView.Views.Error
   alias EView.Views.ValidationError
 
+  def call(conn, {:error, {:"422", error}}) do
+    conn
+    |> put_status(422)
+    |> put_view(Error)
+    |> render(:"400", %{message: error})
+  end
+
+  def call(conn, {:error, %Ecto.Changeset{valid?: false} = changeset}) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> put_view(ValidationError)
+    |> render(:"422", changeset)
+  end
+
   def call(conn, {:error, {:bad_request, reason}}) when is_binary(reason) do
     conn
     |> put_status(:bad_request)
-    |> render(Error, :"400", %{message: reason})
+    |> put_view(Error)
+    |> render(:"400", %{message: reason})
   end
 
   def call(conn, {:error, :access_denied}) do
     conn
     |> put_status(:unauthorized)
-    |> render(Error, :"401")
+    |> put_view(Error)
+    |> render(:"401")
   end
 
   def call(conn, {:error, {:access_denied, reason}}) when is_map(reason) do
     conn
     |> put_status(:unauthorized)
-    |> render(Error, :"401", reason)
+    |> put_view(Error)
+    |> render(:"401", reason)
   end
 
   def call(conn, {:error, {:access_denied, reason}}) do
     conn
     |> put_status(:unauthorized)
-    |> render(Error, :"401", %{message: reason})
+    |> put_view(Error)
+    |> render(:"401", %{message: reason})
   end
 
   def call(conn, {:error, {:too_many_requests, reason}}) when is_map(reason) do
     conn
     |> put_status(:too_many_requests)
-    |> render(Error, :"401", reason)
+    |> put_view(Error)
+    |> render(:"401", reason)
   end
 
   def call(conn, {:error, :forbidden}) do
     conn
     |> put_status(:forbidden)
-    |> render(Error, :"403")
+    |> put_view(Error)
+    |> render(:"403")
   end
 
   def call(conn, {:error, {:forbidden, reason}}) when is_map(reason) do
     conn
     |> put_status(:forbidden)
-    |> render(Error, :"403", reason)
+    |> put_view(Error)
+    |> render(:"403", reason)
   end
 
   def call(conn, {:error, {:password_expired, reason}}) do
     conn
     |> put_status(:unauthorized)
-    |> render(Error, :"401", %{message: reason, type: :password_expired})
+    |> put_view(Error)
+    |> render(:"401", %{message: reason, type: :password_expired})
   end
 
   def call(conn, {:error, :not_found}) do
     conn
     |> put_status(:not_found)
-    |> render(Error, :"404")
+    |> put_view(Error)
+    |> render(:"404")
   end
 
   def call(conn, nil) do
     conn
     |> put_status(:not_found)
-    |> render(Error, :"404")
+    |> put_view(Error)
+    |> render(:"404")
   end
 
   def call(conn, {:error, {:conflict, reason}}) do
@@ -73,23 +97,12 @@ defmodule Mithril.Web.FallbackController do
   def call(conn, {:conflict, reason}) do
     conn
     |> put_status(:conflict)
-    |> render(Error, :"409", %{message: reason})
-  end
-
-  def call(conn, {:error, {:"422", error}}) do
-    conn
-    |> put_status(422)
-    |> render(Error, :"400", %{message: error})
+    |> put_view(Error)
+    |> render(:"409", %{message: reason})
   end
 
   def call(conn, %Ecto.Changeset{valid?: false} = changeset) do
     call(conn, {:error, changeset})
-  end
-
-  def call(conn, {:error, %Ecto.Changeset{valid?: false} = changeset}) do
-    conn
-    |> put_status(:unprocessable_entity)
-    |> render(ValidationError, :"422", changeset)
   end
 
   def call(conn, {:error, %Ecto.Changeset{} = changeset, _status_code}), do: call(conn, {:error, changeset})
@@ -97,19 +110,22 @@ defmodule Mithril.Web.FallbackController do
   def call(conn, {:error, {:unprocessable_entity, error}}) do
     conn
     |> put_status(:unprocessable_entity)
-    |> render(Error, :"400", %{message: error})
+    |> put_view(Error)
+    |> render(:"400", %{message: error})
   end
 
   def call(conn, {:error, {:internal_error, reason}}) do
     conn
     |> put_status(:internal_error)
-    |> render(Error, :"500", %{message: reason})
+    |> put_view(Error)
+    |> render(:"500", %{message: reason})
   end
 
   def call(conn, {:error, {:service_unavailable, reason}}) do
     conn
     |> put_status(:service_unavailable)
-    |> render(Error, :"503", %{message: reason})
+    |> put_view(Error)
+    |> render(:"503", %{message: reason})
   end
 
   @doc """
