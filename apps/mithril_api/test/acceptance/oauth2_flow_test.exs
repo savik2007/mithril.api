@@ -84,9 +84,8 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
     tokens_response =
       conn
       |> put_req_header("accept", "application/json")
-      |> post(auth_token_path(conn, :create), Poison.encode!(tokens_request_body))
-      |> Map.get(:resp_body)
-      |> Poison.decode!()
+      |> post(oauth2_token_path(conn, :create), Poison.encode!(tokens_request_body))
+      |> json_response(201)
 
     assert tokens_response["data"]["name"] == "access_token"
     assert tokens_response["data"]["value"]
@@ -205,7 +204,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       tokens_response =
         conn
         |> put_req_header("accept", "application/json")
-        |> post(auth_token_path(conn, :create), Poison.encode!(tokens_request_body))
+        |> post(oauth2_token_path(conn, :create), Poison.encode!(tokens_request_body))
         |> Map.get(:resp_body)
         |> Poison.decode!()
 
@@ -369,7 +368,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       tokens_response =
         conn
         |> put_req_header("accept", "application/json")
-        |> post(auth_token_path(conn, :create), token: tokens_request_body)
+        |> post(oauth2_token_path(conn, :create), token: tokens_request_body)
         |> json_response(201)
         |> Map.get("data")
 
@@ -447,7 +446,7 @@ defmodule Mithril.Acceptance.Oauth2FlowTest do
       tokens_response =
         conn
         |> put_req_header("accept", "application/json")
-        |> post(auth_token_path(conn, :create), token: tokens_request_body)
+        |> post(oauth2_token_path(conn, :create), token: tokens_request_body)
         |> json_response(201)
         |> Map.get("data")
 

@@ -114,9 +114,11 @@ defmodule Mithril.Acceptance.ChangePasswordFlowTest do
         }
       }
 
-      conn
-      |> post(auth_token_path(conn, :create), Poison.encode!(request_body))
-      |> json_response(422)
+      assert "Grant type not allowed." =
+               conn
+               |> post(auth_token_path(conn, :create), Poison.encode!(request_body))
+               |> json_response(401)
+               |> get_in(~w(error message))
     end
   end
 

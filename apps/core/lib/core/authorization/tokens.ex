@@ -35,8 +35,6 @@ defmodule Core.Authorization.Tokens do
   @doc """
     Create new access_tokens based on grant_type from request
   """
-  def create_by_grant_type(params, :all), do: create_by_grant_type(params)
-
   def create_by_grant_type(%{"grant_type" => grant_type} = params, allowed_grant_types) do
     case grant_type in allowed_grant_types do
       true -> create_by_grant_type(params)
