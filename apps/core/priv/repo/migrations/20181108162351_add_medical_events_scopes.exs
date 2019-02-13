@@ -37,7 +37,7 @@ defmodule Core.Repo.Migrations.AddMedicalEventsScopes do
     UPDATE roles
     SET scope = trim(scope) || ' encounter:write encounter:read episode:write episode:read job:read condition:read observation:read immunization:read allergy_intolerance:read encounter:cancel risk_assessment:read device:read medication_statement:read'
     WHERE name IN ('DOCTOR')
-    AND scope NOT LIKE '%encounter:write encounter:read episode:write episode:read job:read condition:read observation:read immunization:read allergy_intolerance:read encounter:cancel risk_assessment:read device:read medication_statement:read , 'risk_assessment:read', 'device:read', 'medication_statement:read%';
+    AND scope NOT LIKE '%encounter:write encounter:read episode:write episode:read job:read condition:read observation:read immunization:read allergy_intolerance:read encounter:cancel risk_assessment:read device:read medication_statement:read';
     """)
 
     # ======== Update broker scopes ===========
